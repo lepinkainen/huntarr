@@ -38,7 +38,7 @@ class CleanLogFormatter(logging.Formatter):
                 return "system"  # Just "huntarr" becomes "system"
         
         # For other logger names, try to extract app type
-        known_apps = ["sonarr", "radarr", "lidarr", "readarr", "whisparr", "eros", "swaparr"]
+        known_apps = ["sonarr", "radarr", "lidarr", "readarr", "whisparr", "eros"]
         logger_lower = logger_name.lower()
         for app in known_apps:
             if app in logger_lower:
@@ -168,7 +168,7 @@ def setup_clean_logging():
     from src.primary.utils.logger import get_logger
     
     # Known app types for Huntarr
-    app_types = ['system', 'sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros', 'swaparr']
+    app_types = ['system', 'sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros']
     
     # Set up database handlers for each app type
     for app_type in app_types:

@@ -46,7 +46,6 @@ def get_configured_instances():
                 instance_settings["api_url"] = api_url
                 instance_settings["api_key"] = api_key
                 instance_settings["instance_name"] = instance.get("name", "Default")
-                instance_settings["swaparr_enabled"] = instance.get("swaparr_enabled", False)
                 
                 # Add per-instance hunt values for missing/upgrade processing
                 instance_settings["hunt_missing_movies"] = instance.get("hunt_missing_movies", 1)
@@ -69,7 +68,6 @@ def get_configured_instances():
             settings_copy = settings.copy()
             settings_copy["api_url"] = api_url  # Use corrected URL
             settings_copy["instance_name"] = "Default"
-            settings_copy["swaparr_enabled"] = settings.get("swaparr_enabled", False)
             # Add per-instance hunt values for legacy config
             settings_copy["hunt_missing_movies"] = settings.get("hunt_missing_movies", 1)
             settings_copy["hunt_upgrade_movies"] = settings.get("hunt_upgrade_movies", 0)

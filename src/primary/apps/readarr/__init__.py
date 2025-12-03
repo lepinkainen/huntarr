@@ -46,7 +46,6 @@ def get_configured_instances():
                     "instance_name": instance.get("name", "Default"),
                     "api_url": api_url,
                     "api_key": api_key,
-                    "swaparr_enabled": instance.get("swaparr_enabled", False),
                     "hunt_missing_books": instance.get("hunt_missing_books", 1),  # Per-instance missing hunt value
                     "hunt_upgrade_books": instance.get("hunt_upgrade_books", 0),  # Per-instance upgrade hunt value
                 }
@@ -81,7 +80,6 @@ def get_configured_instances():
                 "instance_name": "Default",
                 "api_url": api_url,
                 "api_key": api_key,
-                "swaparr_enabled": settings.get("swaparr_enabled", False),
                 "hunt_missing_books": settings.get("hunt_missing_books", 1),  # Legacy missing hunt value
                 "hunt_upgrade_books": settings.get("hunt_upgrade_books", 0),  # Legacy upgrade hunt value
             }

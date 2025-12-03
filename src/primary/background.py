@@ -41,9 +41,6 @@ stop_event = threading.Event() # Use an event for clearer stop signaling
 # Hourly cap scheduler thread
 hourly_cap_scheduler_thread = None
 
-# Swaparr processing thread
-swaparr_thread = None
-
 # Background refresher for Prowlarr statistics
 prowlarr_stats_thread = None
 
@@ -72,7 +69,7 @@ def app_specific_loop(app_type: str) -> None:
     app_logger = get_logger(app_type)
     app_logger.info(f"=== [{app_type.upper()}] Thread starting ===")
 
-    # Immediately exit for non-cyclical apps (e.g., prowlarr, swaparr)
+    # Immediately exit for non-cyclical apps (e.g., prowlarr)
     if app_type not in CYCLICAL_APP_TYPES:
         app_logger.info(f"Skipping background loop for non-cyclical app: {app_type}")
         return
@@ -437,86 +434,82 @@ def app_specific_loop(app_type: str) -> None:
         else:
             app_logger.info(f"=== {app_type.upper()} cycle finished. No items processed in any instance. ===")
             
-        # Add state management summary logging for user clarity (only for hunting apps, not Swaparr)
-        if app_type != "swaparr":
-            try:
-                from src.primary.stateful_manager import get_state_management_summary
-                
-                # Get summary for each enabled instance with per-instance settings
-                instance_summaries = []
-                total_processed = 0
-                has_any_processed = False
-                
-                for instance_name in enabled_instances:
-                    # Get per-instance settings
-                    instance_hours = None
-                    instance_enabled = True
-                    instance_mode = "custom"
-                    
-                    try:
-                        # Look up the instance in the configured instances
-                        if configured_instances and app_type in configured_instances:
-                            for instance_details in configured_instances[app_type]:
-                                if instance_details.get("instance_name") == instance_name:
-                                    instance_hours = instance_details.get("state_management_hours", 168)
-                                    instance_mode = instance_details.get("state_management_mode", "custom")
-                                    instance_enabled = (instance_mode != "disabled")
-                                    break
-                    except Exception as e:
-                        app_logger.warning(f"Could not load instance settings for {instance_name}: {e}")
-                        instance_hours = 168  # Default fallback
-                    
-                    # Get summary for this instance
-                    summary = get_state_management_summary(app_type, instance_name, instance_hours)
-                    
-                    # Store instance-specific information
-                    instance_summaries.append({
-                        "name": instance_name,
-                        "enabled": instance_enabled,
-                        "mode": instance_mode,
-                        "hours": instance_hours,
-                        "processed_count": summary["processed_count"],
-                        "next_reset_time": summary["next_reset_time"],
-                        "has_processed_items": summary["has_processed_items"]
-                    })
-                    
-                    # Only count if state management is enabled for this instance
-                    if instance_enabled and summary["has_processed_items"]:
-                        total_processed += summary["processed_count"]
-                        has_any_processed = True
-                
-                # Log per-instance state management info
-                if instance_summaries:
-                    app_logger.info(f"=== STATE MANAGEMENT SUMMARY FOR {app_type.upper()} ===")
-                    
-                    for inst in instance_summaries:
-                        if inst["enabled"]:
-                            if inst["processed_count"] > 0:
-                                app_logger.info(f"  {inst['name']}: {inst['processed_count']} items tracked, next reset: {inst['next_reset_time']} ({inst['hours']}h interval)")
-                            else:
-                                app_logger.info(f"  {inst['name']}: No items tracked yet, next reset: {inst['next_reset_time']} ({inst['hours']}h interval)")
+        # Add state management summary logging for user clarity
+        try:
+            from src.primary.stateful_manager import get_state_management_summary
+
+            # Get summary for each enabled instance with per-instance settings
+            instance_summaries = []
+            total_processed = 0
+            has_any_processed = False
+
+            for instance_name in enabled_instances:
+                # Get per-instance settings
+                instance_hours = None
+                instance_enabled = True
+                instance_mode = "custom"
+
+                try:
+                    # Look up the instance in the configured instances
+                    if configured_instances and app_type in configured_instances:
+                        for instance_details in configured_instances[app_type]:
+                            if instance_details.get("instance_name") == instance_name:
+                                instance_hours = instance_details.get("state_management_hours", 168)
+                                instance_mode = instance_details.get("state_management_mode", "custom")
+                                instance_enabled = (instance_mode != "disabled")
+                                break
+                except Exception as e:
+                    app_logger.warning(f"Could not load instance settings for {instance_name}: {e}")
+                    instance_hours = 168  # Default fallback
+
+                # Get summary for this instance
+                summary = get_state_management_summary(app_type, instance_name, instance_hours)
+
+                # Store instance-specific information
+                instance_summaries.append({
+                    "name": instance_name,
+                    "enabled": instance_enabled,
+                    "mode": instance_mode,
+                    "hours": instance_hours,
+                    "processed_count": summary["processed_count"],
+                    "next_reset_time": summary["next_reset_time"],
+                    "has_processed_items": summary["has_processed_items"]
+                })
+
+                # Only count if state management is enabled for this instance
+                if instance_enabled and summary["has_processed_items"]:
+                    total_processed += summary["processed_count"]
+                    has_any_processed = True
+
+            # Log per-instance state management info
+            if instance_summaries:
+                app_logger.info(f"=== STATE MANAGEMENT SUMMARY FOR {app_type.upper()} ===")
+
+                for inst in instance_summaries:
+                    if inst["enabled"]:
+                        if inst["processed_count"] > 0:
+                            app_logger.info(f"  {inst['name']}: {inst['processed_count']} items tracked, next reset: {inst['next_reset_time']} ({inst['hours']}h interval)")
                         else:
-                            app_logger.info(f"  {inst['name']}: State management disabled")
-                    
-                    # Overall summary
-                    if not processed_any_items and has_any_processed:
-                        # Items were skipped due to state management
-                        app_logger.info(f"RESULT: {total_processed} items skipped due to state management (already processed)")
-                    elif processed_any_items:
-                        # Items were processed, show summary
-                        app_logger.info(f"RESULT: Items processed successfully. Total tracked across instances: {total_processed}")
+                            app_logger.info(f"  {inst['name']}: No items tracked yet, next reset: {inst['next_reset_time']} ({inst['hours']}h interval)")
                     else:
-                        # No items processed and no state management blocking
-                        if total_processed > 0:
-                            app_logger.info(f"RESULT: No new items found. Total tracked across instances: {total_processed}")
-                        else:
-                            app_logger.info(f"RESULT: No items to process and no items tracked yet")
-                    
-            except Exception as e:
-                app_logger.warning(f"Could not generate state management summary: {e}")
-        else:
-            # Swaparr uses its own state management for strikes and removed downloads
-            app_logger.debug(f"Swaparr uses its own strike/removal tracking, not the hunting state manager")
+                        app_logger.info(f"  {inst['name']}: State management disabled")
+
+                # Overall summary
+                if not processed_any_items and has_any_processed:
+                    # Items were skipped due to state management
+                    app_logger.info(f"RESULT: {total_processed} items skipped due to state management (already processed)")
+                elif processed_any_items:
+                    # Items were processed, show summary
+                    app_logger.info(f"RESULT: Items processed successfully. Total tracked across instances: {total_processed}")
+                else:
+                    # No items processed and no state management blocking
+                    if total_processed > 0:
+                        app_logger.info(f"RESULT: No new items found. Total tracked across instances: {total_processed}")
+                    else:
+                        app_logger.info(f"RESULT: No items to process and no items tracked yet")
+
+        except Exception as e:
+            app_logger.warning(f"Could not generate state management summary: {e}")
             
         # Calculate sleep duration (use configured or default value)
         sleep_seconds = app_settings.get("sleep_duration", 900)  # Default to 15 minutes
@@ -620,7 +613,7 @@ def start_app_threads():
 
     for app_type, is_configured in configured_apps.items():
         if is_configured:
-            # Skip non-cyclical apps (e.g., prowlarr handled via routes, swaparr has its own thread)
+            # Skip non-cyclical apps (e.g., prowlarr handled via routes)
             if app_type not in CYCLICAL_APP_TYPES:
                 logger.debug(f"Configured non-cyclical app detected; not starting background thread: {app_type}")
                 continue
@@ -706,17 +699,6 @@ def shutdown_threads():
         else:
             logger.info("Prowlarr stats refresher stopped")
 
-    # Stop the Swaparr processing thread
-    global swaparr_thread
-    if swaparr_thread and swaparr_thread.is_alive():
-        # The thread should exit naturally due to the stop_event being set
-        logger.info("Waiting for Swaparr thread to stop...")
-        swaparr_thread.join(timeout=5.0)
-        if swaparr_thread.is_alive():
-            logger.warning("Swaparr thread did not stop gracefully")
-        else:
-            logger.info("Swaparr thread stopped")
-    
     # Stop the scheduler engine
     try:
         logger.info("Stopping schedule action engine...")
@@ -835,105 +817,6 @@ def prowlarr_stats_loop():
         refresher_logger.info("Prowlarr stats refresher thread stopped")
 
 
-def swaparr_app_loop():
-    """Dedicated Swaparr processing loop that follows same patterns as other apps"""
-    swaparr_logger = get_logger("swaparr")
-    swaparr_logger.info("Swaparr thread started")
-    
-    try:
-        from src.primary.apps.swaparr.handler import run_swaparr
-        from src.primary.settings_manager import load_settings
-        from src.primary.cycle_tracker import start_cycle, end_cycle, update_next_cycle
-        
-        while not stop_event.is_set():
-            try:
-                # Load Swaparr settings
-                swaparr_settings = load_settings("swaparr")
-                
-                if not swaparr_settings or not swaparr_settings.get("enabled", False):
-                    # Swaparr is disabled - no need to log this repeatedly
-                    # Sleep for 30 seconds when disabled, then check again
-                    if not stop_event.wait(30):
-                        continue
-                    else:
-                        break
-                
-                # Get sleep duration from settings
-                sleep_duration = swaparr_settings.get("sleep_duration", 900)
-                
-                # Get user's timezone
-                user_tz = _get_user_timezone()
-                
-                # Calculate next cycle time in user's timezone
-                now_user_tz = datetime.datetime.now(user_tz).replace(microsecond=0)
-                next_cycle_time = now_user_tz + datetime.timedelta(seconds=sleep_duration)
-                
-                # Start cycle tracking
-                start_cycle("swaparr")
-                
-                # Start cycle
-                swaparr_logger.info("=== SWAPARR cycle started. Processing stalled downloads across all instances. ===")
-                
-                try:
-                    # Run Swaparr processing
-                    run_swaparr()
-                    swaparr_logger.info("=== SWAPARR cycle finished. Processed stalled downloads across instances. ===")
-                except Exception as e:
-                    swaparr_logger.error(f"Error during Swaparr processing: {e}", exc_info=True)
-                    swaparr_logger.info("=== SWAPARR cycle finished with errors. ===")
-                
-                # End cycle tracking
-                next_cycle_naive = next_cycle_time.replace(tzinfo=None) if next_cycle_time.tzinfo else next_cycle_time
-                end_cycle("swaparr", next_cycle_naive)
-                update_next_cycle("swaparr", next_cycle_naive)
-                
-                # Sleep duration and next cycle info (like other apps)
-                swaparr_logger.debug(f"Current time ({user_tz}): {now_user_tz.strftime('%Y-%m-%d %H:%M:%S')}")
-                swaparr_logger.info(f"Next cycle will begin at {next_cycle_time.strftime('%Y-%m-%d %H:%M:%S')} ({user_tz})")
-                swaparr_logger.info(f"Sleep duration: {sleep_duration} seconds")
-                
-                # Sleep with responsiveness to stop events and reset requests (like other apps)
-                elapsed = 0
-                wait_interval = 5  # Check every 5 seconds for responsiveness
-                while elapsed < sleep_duration and not stop_event.is_set():
-                    # Check for database reset request (same logic as other apps)
-                    try:
-                        from src.primary.utils.database import get_database
-                        db = get_database()
-                        reset_timestamp = db.get_pending_reset_request("swaparr")
-                        if reset_timestamp:
-                            swaparr_logger.info(f"!!! RESET REQUEST DETECTED !!! Manual cycle reset triggered for swaparr (timestamp: {reset_timestamp}). Starting new cycle immediately.")
-                            
-                            # Mark the reset request as processed
-                            db.mark_reset_request_processed("swaparr")
-                            swaparr_logger.info(f"Reset request processed for swaparr. Starting new cycle now.")
-                            break
-                    except Exception as e:
-                        swaparr_logger.error(f"Error checking reset request for swaparr: {e}", exc_info=True)
-                    
-                    # Check for stop event
-                    if stop_event.is_set():
-                        swaparr_logger.info("Stop event detected during sleep. Breaking out of sleep cycle.")
-                        break
-                    
-                    # Sleep for a short interval
-                    stop_event.wait(wait_interval)
-                    elapsed += wait_interval
-                    
-                    # Log progress every 30 seconds (like other apps)
-                    if elapsed > 0 and elapsed % 30 == 0:
-                        swaparr_logger.debug(f"Still sleeping, {sleep_duration - elapsed} seconds remaining before next cycle...")
-                
-            except Exception as e:
-                swaparr_logger.error(f"Unexpected error in Swaparr loop: {e}", exc_info=True)
-                # Sleep briefly to avoid spinning in case of repeated errors
-                time.sleep(60)
-                
-    except Exception as e:
-        swaparr_logger.error(f"Fatal error in Swaparr thread: {e}", exc_info=True)
-    
-    swaparr_logger.info("Swaparr thread stopped")
-
 def start_hourly_cap_scheduler():
     """Start the hourly API cap scheduler thread"""
     global hourly_cap_scheduler_thread
@@ -966,45 +849,18 @@ def start_prowlarr_stats_thread():
     prowlarr_stats_thread.start()
     logger.info(f"Prowlarr stats refresher started. Thread is alive: {prowlarr_stats_thread.is_alive()}")
 
-def start_swaparr_thread():
-    """Start the dedicated Swaparr processing thread"""
-    global swaparr_thread
-    
-    if swaparr_thread and swaparr_thread.is_alive():
-        logger.info("Swaparr thread already running")
-        return
-    
-    # Create and start the Swaparr thread
-    swaparr_thread = threading.Thread(
-        target=swaparr_app_loop, 
-        name="SwaparrApp", 
-        daemon=True
-    )
-    swaparr_thread.start()
-    
-    logger.info(f"Swaparr thread started. Thread is alive: {swaparr_thread.is_alive()}")
 
 def start_huntarr():
     """Main entry point for Huntarr background tasks."""
     logger.info(f"--- Starting Huntarr Background Tasks v{__version__} --- ")
-    
 
-    # Migration environment variable no longer used
-        
     # Start the hourly API cap scheduler
     try:
         start_hourly_cap_scheduler()
         logger.info("Hourly API cap scheduler started successfully")
     except Exception as e:
         logger.error(f"Failed to start hourly API cap scheduler: {e}")
-        
-    # Start the Swaparr processing thread
-    try:
-        start_swaparr_thread()
-        logger.info("Swaparr thread started successfully")
-    except Exception as e:
-        logger.error(f"Failed to start Swaparr thread: {e}")
-    
+
     # Start the Prowlarr stats refresher
     try:
         start_prowlarr_stats_thread()

@@ -416,16 +416,6 @@ class HuntarrDatabase:
                 )
             ''')
             
-            # Create swaparr_stats table for Swaparr-specific statistics
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS swaparr_stats (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    stat_key TEXT NOT NULL UNIQUE,
-                    stat_value INTEGER DEFAULT 0,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            
             # History table moved to manager.db - remove this table if it exists
             conn.execute('DROP TABLE IF EXISTS history')
             
@@ -455,19 +445,6 @@ class HuntarrDatabase:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(app_type, state_type)
-                )
-            ''')
-            
-            # Create swaparr_state table for Swaparr-specific state management
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS swaparr_state (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    app_name TEXT NOT NULL,
-                    state_type TEXT NOT NULL,
-                    state_data TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(app_name, state_type)
                 )
             ''')
             
@@ -582,12 +559,10 @@ class HuntarrDatabase:
             conn.execute('CREATE INDEX IF NOT EXISTS idx_media_stats_app_type ON media_stats(app_type, stat_type)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_hourly_caps_app_type ON hourly_caps(app_type)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_sleep_data_app_type ON sleep_data(app_type)')
-            conn.execute('CREATE INDEX IF NOT EXISTS idx_swaparr_stats_key ON swaparr_stats(stat_key)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_schedules_app_type ON schedules(app_type)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_schedules_enabled ON schedules(enabled)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_schedules_time ON schedules(time_hour, time_minute)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_state_data_app_type ON state_data(app_type, state_type)')
-            conn.execute('CREATE INDEX IF NOT EXISTS idx_swaparr_state_app_name ON swaparr_state(app_name, state_type)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_sponsors_login ON sponsors(login)')
             # Logs indexes moved to logs.db
@@ -763,7 +738,7 @@ class HuntarrDatabase:
     
     def initialize_from_defaults(self, defaults_dir: Path):
         """Initialize database with default configurations if empty"""
-        app_types = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros', 'swaparr', 'general']
+        app_types = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros', 'general']
         
         for app_type in app_types:
             # Check if config already exists
@@ -1189,30 +1164,6 @@ class HuntarrDatabase:
                 ''', (app_type, next_cycle_time, cycle_lock, last_cycle_start, last_cycle_end))
             
             conn.commit()
-    
-    def get_swaparr_stats(self) -> Dict[str, int]:
-        """Get Swaparr statistics"""
-        with self.get_connection() as conn:
-            cursor = conn.execute('SELECT stat_key, stat_value FROM swaparr_stats')
-            return {row[0]: row[1] for row in cursor.fetchall()}
-    
-    def set_swaparr_stat(self, stat_key: str, value: int):
-        """Set a Swaparr statistic value"""
-        with self.get_connection() as conn:
-            conn.execute('''
-                INSERT OR REPLACE INTO swaparr_stats (stat_key, stat_value, updated_at)
-                VALUES (?, ?, CURRENT_TIMESTAMP)
-            ''', (stat_key, value))
-            conn.commit()
-    
-    def increment_swaparr_stat(self, stat_key: str, increment: int = 1):
-        """Increment a Swaparr statistic"""
-        with self.get_connection() as conn:
-            conn.execute('''
-                INSERT OR REPLACE INTO swaparr_stats (stat_key, stat_value, updated_at)
-                VALUES (?, COALESCE((SELECT stat_value FROM swaparr_stats WHERE stat_key = ?), 0) + ?, CURRENT_TIMESTAMP)
-            ''', (stat_key, stat_key, increment))
-            conn.commit()
 
     # History methods moved to manager_database.py - Hunt Manager functionality
 
@@ -1432,55 +1383,6 @@ class HuntarrDatabase:
     def set_last_reset_time_state(self, app_type: str, reset_time: str):
         """Set the last reset time for a specific app type"""
         self.set_state_data(app_type, "last_reset", reset_time)
-
-    # Swaparr State Management Methods
-    def get_swaparr_state_data(self, app_name: str, state_type: str) -> Any:
-        """Get Swaparr state data for a specific app name and state type"""
-        with self.get_connection() as conn:
-            cursor = conn.execute(
-                'SELECT state_data FROM swaparr_state WHERE app_name = ? AND state_type = ?',
-                (app_name, state_type)
-            )
-            row = cursor.fetchone()
-            
-            if row:
-                try:
-                    return json.loads(row[0])
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse Swaparr state data for {app_name}/{state_type}: {e}")
-                    return None
-            return None
-
-    def set_swaparr_state_data(self, app_name: str, state_type: str, data: Any):
-        """Set Swaparr state data for a specific app name and state type"""
-        data_json = json.dumps(data)
-        with self.get_connection() as conn:
-            conn.execute(
-                '''INSERT OR REPLACE INTO swaparr_state 
-                   (app_name, state_type, state_data, updated_at) 
-                   VALUES (?, ?, ?, CURRENT_TIMESTAMP)''',
-                (app_name, state_type, data_json)
-            )
-            conn.commit()
-            logger.debug(f"Set Swaparr state data for {app_name}/{state_type}")
-
-    def get_swaparr_strike_data(self, app_name: str) -> Dict[str, Any]:
-        """Get strike data for a specific Swaparr app"""
-        data = self.get_swaparr_state_data(app_name, "strikes")
-        return data if data is not None else {}
-
-    def set_swaparr_strike_data(self, app_name: str, strike_data: Dict[str, Any]):
-        """Set strike data for a specific Swaparr app"""
-        self.set_swaparr_state_data(app_name, "strikes", strike_data)
-
-    def get_swaparr_removed_items(self, app_name: str) -> Dict[str, Any]:
-        """Get removed items data for a specific Swaparr app"""
-        data = self.get_swaparr_state_data(app_name, "removed_items")
-        return data if data is not None else {}
-    
-    def set_swaparr_removed_items(self, app_name: str, removed_items: Dict[str, Any]):
-        """Set removed items data for a specific Swaparr app"""
-        self.set_swaparr_state_data(app_name, "removed_items", removed_items)
 
     # Reset Request Management Methods (replaces file-based reset system)
     
@@ -2039,7 +1941,7 @@ class HuntarrDatabase:
                 deleted_by_age = cursor.rowcount
                 
                 # Count-based cleanup per app type
-                app_types = ['system', 'sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros', 'swaparr']
+                app_types = ['system', 'sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros']
                 total_deleted_by_count = 0
                 
                 for app_type in app_types:

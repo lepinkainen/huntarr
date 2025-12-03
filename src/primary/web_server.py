@@ -39,7 +39,7 @@ from src.primary.auth import (
 from src.primary.routes.common import common_bp
 from src.primary.routes.plex_auth_routes import plex_auth_bp
 # Import blueprints for each app from the centralized blueprints module
-from src.primary.apps.blueprints import sonarr_bp, radarr_bp, lidarr_bp, readarr_bp, whisparr_bp, eros_bp, swaparr_bp, prowlarr_bp
+from src.primary.apps.blueprints import sonarr_bp, radarr_bp, lidarr_bp, readarr_bp, whisparr_bp, eros_bp, prowlarr_bp
 
 # Import stateful blueprint
 from src.primary.stateful_routes import stateful_api
@@ -273,7 +273,6 @@ app.register_blueprint(lidarr_bp, url_prefix='/api/lidarr')
 app.register_blueprint(readarr_bp, url_prefix='/api/readarr')
 app.register_blueprint(whisparr_bp, url_prefix='/api/whisparr')
 app.register_blueprint(eros_bp, url_prefix='/api/eros')
-app.register_blueprint(swaparr_bp, url_prefix='/api/swaparr')
 app.register_blueprint(prowlarr_bp, url_prefix='/api/prowlarr')
 app.register_blueprint(stateful_api, url_prefix='/api/stateful')
 app.register_blueprint(history_blueprint, url_prefix='/api/hunt-manager')
@@ -1070,30 +1069,19 @@ def reset_app_cycle(app_name):
     web_logger.info(f"Manual cycle reset requested for {app_name} via API")
     
     # Check if app name is valid
-    if app_name not in ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros', 'swaparr']:
+    if app_name not in ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros']:
         return jsonify({
             'success': False,
             'error': f"Invalid app name: {app_name}"
         }), 400
-    
-    # Check if the app is configured (special handling for Swaparr)
-    if app_name == 'swaparr':
-        # For Swaparr, check if it's enabled in settings
-        from src.primary.settings_manager import load_settings
-        swaparr_settings = load_settings("swaparr")
-        if not swaparr_settings or not swaparr_settings.get("enabled", False):
-            return jsonify({
-                'success': False,
-                'error': f"{app_name} is not enabled"
-            }), 400
-    else:
-        # For other apps, use the standard configured apps check
-        configured_apps = settings_manager.get_configured_apps()
-        if app_name not in configured_apps:
-            return jsonify({
-                'success': False,
-                'error': f"{app_name} is not configured"
-            }), 400
+
+    # Check if the app is configured
+    configured_apps = settings_manager.get_configured_apps()
+    if app_name not in configured_apps:
+        return jsonify({
+            'success': False,
+            'error': f"{app_name} is not configured"
+        }), 400
         
     try:
         # Trigger cycle reset using database

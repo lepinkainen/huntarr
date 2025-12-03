@@ -64,7 +64,6 @@ def get_configured_instances():
                 instance_settings["api_url"] = api_url
                 instance_settings["api_key"] = api_key
                 instance_settings["instance_name"] = instance_name
-                instance_settings["swaparr_enabled"] = instance.get("swaparr_enabled", False)
                 
                 # Add timeout setting with default if not present
                 if "api_timeout" not in instance_settings:
@@ -78,7 +77,6 @@ def get_configured_instances():
                     "instance_name": instance_name,
                     "api_url": api_url,
                     "api_key": api_key,
-                    "swaparr_enabled": instance.get("swaparr_enabled", False),
                     "hunt_missing_items": instance.get("hunt_missing_items", 1),  # Per-instance missing hunt value
                     "hunt_upgrade_items": instance.get("hunt_upgrade_items", 0),  # Per-instance upgrade hunt value
                 }

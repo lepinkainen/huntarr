@@ -49,7 +49,6 @@ def get_configured_instances():
                     "instance_name": instance_name,
                     "api_url": api_url,
                     "api_key": api_key,
-                    "swaparr_enabled": instance.get("swaparr_enabled", False),
                     "hunt_missing_items": instance.get("hunt_missing_items", 1),  # Per-instance missing hunt value
                     "hunt_upgrade_items": instance.get("hunt_upgrade_items", 0),  # Per-instance upgrade hunt value
                     "hunt_missing_mode": instance.get("hunt_missing_mode", "seasons_packs"),  # Per-instance missing mode

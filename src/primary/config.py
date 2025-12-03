@@ -31,10 +31,6 @@ def get_debug_mode():
 # Determine the hunt mode for a specific app
 def determine_hunt_mode(app_name: str) -> str:
     """Determine the hunt mode for a specific app based on its settings."""
-    # Swaparr is not a hunting app, it doesn't have hunt modes
-    if app_name == "swaparr":
-        return "N/A (monitoring app)"
-    
     # Fetch settings directly for the given app
     hunt_missing = 0
     hunt_upgrade = 0

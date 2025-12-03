@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Helper function to get app type from card classes
     function getAppType(card) {
         const classList = card.classList;
-        const appTypes = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros', 'swaparr'];
+        const appTypes = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros'];
         
         for (const type of appTypes) {
             if (classList.contains(type)) {

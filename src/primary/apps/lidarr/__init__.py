@@ -46,7 +46,6 @@ def get_configured_instances():
                     "instance_name": instance.get("name", "Default"),
                     "api_url": api_url,
                     "api_key": api_key,
-                    "swaparr_enabled": instance.get("swaparr_enabled", False),
                     "hunt_missing_items": instance.get("hunt_missing_items", 1),  # Per-instance missing hunt value
                     "hunt_upgrade_items": instance.get("hunt_upgrade_items", 0),  # Per-instance upgrade hunt value
                 }
@@ -81,7 +80,6 @@ def get_configured_instances():
                 "instance_name": "Default",
                 "api_url": api_url,
                 "api_key": api_key,
-                "swaparr_enabled": settings.get("swaparr_enabled", False),
                 "hunt_missing_items": settings.get("hunt_missing_items", 1),  # Legacy missing hunt value
                 "hunt_upgrade_items": settings.get("hunt_upgrade_items", 0),  # Legacy upgrade hunt value
             }

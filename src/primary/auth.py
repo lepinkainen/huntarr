@@ -305,7 +305,7 @@ def authenticate_request():
 
     # Check if this is a commonly polled API endpoint to reduce log verbosity
     is_polling_endpoint = any(endpoint in request.path for endpoint in [
-        '/api/logs/', '/api/cycle/', '/api/hourly-caps', '/api/swaparr/status'
+        '/api/logs/', '/api/cycle/', '/api/hourly-caps'
     ])
     
     if not is_polling_endpoint:

@@ -4,60 +4,6 @@
  */
 
 const SettingsForms = {
-  // Check if Swaparr is globally enabled
-  isSwaparrGloballyEnabled: function () {
-    // Try to get Swaparr settings from cache or current settings
-    try {
-      // First check the DOM - if we're on the Swaparr page, check the toggle directly
-      const swaparrToggle = document.querySelector("#swaparr_enabled");
-      if (swaparrToggle) {
-        console.log(
-          `[SettingsForms] Reading Swaparr state from DOM toggle: ${swaparrToggle.checked}`
-        );
-        return swaparrToggle.checked;
-      }
-
-      // Check if we have cached settings
-      const cachedSettings = localStorage.getItem("huntarr-settings-cache");
-      if (cachedSettings) {
-        const settings = JSON.parse(cachedSettings);
-        if (settings.swaparr && settings.swaparr.enabled !== undefined) {
-          console.log(
-            `[SettingsForms] Reading Swaparr state from cache: ${settings.swaparr.enabled}`
-          );
-          return settings.swaparr.enabled === true;
-        }
-      }
-
-      // Fallback: check if we have current settings loaded
-      if (
-        window.huntarrUI &&
-        window.huntarrUI.originalSettings &&
-        window.huntarrUI.originalSettings.swaparr
-      ) {
-        console.log(
-          `[SettingsForms] Reading Swaparr state from window settings: ${window.huntarrUI.originalSettings.swaparr.enabled}`
-        );
-        return window.huntarrUI.originalSettings.swaparr.enabled === true;
-      }
-
-      // If we can't determine the state, trigger an async fetch but return false for now
-      console.log(
-        "[SettingsForms] Cannot determine Swaparr state, fetching from server..."
-      );
-      this.fetchAndCacheSwaparrState().then(() => {
-        // After fetching, trigger a visibility update
-        setTimeout(() => {
-          this.updateSwaparrFieldsDisabledState();
-        }, 100);
-      });
-      return false;
-    } catch (e) {
-      console.warn("[SettingsForms] Error checking Swaparr global status:", e);
-      return false; // Default to disabling the field if there's an error
-    }
-  },
-
   // Generate Sonarr settings form
   generateSonarrForm: function (container, settings = {}) {
     // Ensure settings is a valid object
@@ -323,22 +269,6 @@ const SettingsForms = {
                             </div>
                         </div>
                         
-                        ${
-                          this.isSwaparrGloballyEnabled()
-                            ? `<div class="setting-item">
-                            <label for="sonarr-swaparr-${index}"><a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html" class="info-icon" title="Enable Swaparr stalled download monitoring for this instance" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Swaparr:</label>
-                            <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                                <input type="checkbox" id="sonarr-swaparr-${index}" name="swaparr_enabled" ${
-                                instance.swaparr_enabled === true
-                                  ? "checked"
-                                  : ""
-                              }>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                            </label>
-                            <p class="setting-help">Enable Swaparr to monitor and remove stalled downloads for this Sonarr instance</p>
-                        </div>`
-                            : ""
-                        }
                     </div>
                 </div>
             `;
@@ -1030,22 +960,6 @@ const SettingsForms = {
                             </div>
                         </div>
                         
-                        ${
-                          this.isSwaparrGloballyEnabled()
-                            ? `<div class="setting-item">
-                            <label for="radarr-swaparr-${index}"><a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html" class="info-icon" title="Enable Swaparr stalled download monitoring for this instance" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Swaparr:</label>
-                            <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                                <input type="checkbox" id="radarr-swaparr-${index}" name="swaparr_enabled" ${
-                                instance.swaparr_enabled === true
-                                  ? "checked"
-                                  : ""
-                              }>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                            </label>
-                            <p class="setting-help">Enable Swaparr to monitor and remove stalled downloads for this Radarr instance</p>
-                        </div>`
-                            : ""
-                        }
                     </div>
                 </div>
             `;
@@ -1517,22 +1431,6 @@ const SettingsForms = {
                             </div>
                         </div>
                         
-                        ${
-                          this.isSwaparrGloballyEnabled()
-                            ? `<div class="setting-item">
-                            <label for="lidarr-swaparr-${index}"><a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html" class="info-icon" title="Enable Swaparr stalled download monitoring for this instance" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Swaparr:</label>
-                            <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                                <input type="checkbox" id="lidarr-swaparr-${index}" name="swaparr_enabled" ${
-                                instance.swaparr_enabled === true
-                                  ? "checked"
-                                  : ""
-                              }>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                            </label>
-                            <p class="setting-help">Enable Swaparr to monitor and remove stalled downloads for this Lidarr instance</p>
-                        </div>`
-                            : ""
-                        }
                     </div>
                 </div>
             `;
@@ -1893,22 +1791,6 @@ const SettingsForms = {
                             </div>
                         </div>
                         
-                        ${
-                          this.isSwaparrGloballyEnabled()
-                            ? `<div class="setting-item">
-                            <label for="readarr-swaparr-${index}"><a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html" class="info-icon" title="Enable Swaparr stalled download monitoring for this instance" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Swaparr:</label>
-                            <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                                <input type="checkbox" id="readarr-swaparr-${index}" name="swaparr_enabled" ${
-                                instance.swaparr_enabled === true
-                                  ? "checked"
-                                  : ""
-                              }>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                            </label>
-                            <p class="setting-help">Enable Swaparr to monitor and remove stalled downloads for this Readarr instance</p>
-                        </div>`
-                            : ""
-                        }
                     </div>
                 </div>
             `;
@@ -2252,22 +2134,6 @@ const SettingsForms = {
                             </div>
                         </div>
                         
-                        ${
-                          this.isSwaparrGloballyEnabled()
-                            ? `<div class="setting-item">
-                            <label for="whisparr-swaparr-${index}"><a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html" class="info-icon" title="Enable Swaparr stalled download monitoring for this instance" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Swaparr:</label>
-                            <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                                <input type="checkbox" id="whisparr-swaparr-${index}" name="swaparr_enabled" ${
-                                instance.swaparr_enabled === true
-                                  ? "checked"
-                                  : ""
-                              }>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                            </label>
-                            <p class="setting-help">Enable Swaparr to monitor and remove stalled downloads for this Whisparr V2 instance</p>
-                        </div>`
-                            : ""
-                        }
                     </div>
                 </div>
             `;
@@ -2705,22 +2571,6 @@ const SettingsForms = {
                             </div>
                         </div>
                         
-                        ${
-                          this.isSwaparrGloballyEnabled()
-                            ? `<div class="setting-item">
-                            <label for="eros-swaparr-${index}"><a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html" class="info-icon" title="Enable Swaparr stalled download monitoring for this instance" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Swaparr:</label>
-                            <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                                <input type="checkbox" id="eros-swaparr-${index}" name="swaparr_enabled" ${
-                                instance.swaparr_enabled === true
-                                  ? "checked"
-                                  : ""
-                              }>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                            </label>
-                            <p class="setting-help">Enable Swaparr to monitor and remove stalled downloads for this Whisparr V3 instance</p>
-                        </div>`
-                            : ""
-                        }
                     </div>
                 </div>
             `;
@@ -2969,471 +2819,6 @@ const SettingsForms = {
         `[SettingsForms] Restored change detection suppression state for Eros: ${wasSuppressionActive}`
       );
     }, 100);
-  },
-
-  // Generate Swaparr settings form
-  generateSwaparrForm: function (container, settings = {}) {
-    // Add data-app-type attribute to container
-    container.setAttribute("data-app-type", "swaparr");
-
-    const html = `
-            <!-- Swaparr Save Button -->
-            <div class="swaparr-save-container" style="margin-bottom: 20px;">
-                <button id="swaparr-save-button" class="swaparr-save-btn" disabled style="
-                    background: #6b7280;
-                    color: #9ca3af;
-                    border: 1px solid #4b5563;
-                    padding: 8px 16px;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: not-allowed;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    transition: all 0.2s ease;
-                ">
-                    <i class="fas fa-save"></i>
-                    Save Changes
-                </button>
-            </div>
-            
-            <!-- Swaparr Developer Credit Section -->
-            <div class="settings-group" style="margin-bottom: 20px;">
-                <div class="swaparr-credit-section" style="
-                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-                    border: 2px solid #00c2ce;
-                    border-radius: 8px;
-                    padding: 12px;
-                    margin: 10px 0 15px 0;
-                    box-shadow: 0 4px 12px rgba(0, 194, 206, 0.15);
-                ">
-                    <div style="
-                        background: rgba(255, 255, 255, 0.05);
-                        border-radius: 6px;
-                        padding: 10px;
-                        margin: 8px 0;
-                        border-left: 3px solid #00c2ce;
-                    ">
-                        <p style="color: #e2e8f0; margin: 0 0 5px 0; font-size: 0.85em; line-height: 1.4;">
-                            <strong>Developer:</strong> <a href="https://github.com/ThijmenGThN" target="_blank" rel="noopener" style="color: #00c2ce; text-decoration: none;">ThijmenGThN</a> • 
-                            <strong>GitHub Stars:</strong> <span style="color: #fbbf24;">⭐ <span id="swaparr-stars-count">172</span></span> • 
-                            <strong>Version:</strong> v0.10.0
-                        </p>
-                        <p style="color: #cbd5e1; margin: 0; font-size: 0.75em; line-height: 1.3; font-style: italic;">
-                            <strong>Beta Notice:</strong> This is a rewritten implementation by Admin9705 for Huntarr integration. 
-                            Please note that the original Swaparr project does not provide support for this Huntarr-specific implementation. 
-                            For Huntarr-related issues, use Huntarr's support channels.
-                        </p>
-                    </div>
-                    
-                    <div style="text-align: center; margin: 8px 0;">
-                        <a href="https://github.com/ThijmenGThN/swaparr" target="_blank" rel="noopener" style="
-                            display: inline-block;
-                            background: linear-gradient(90deg, #00c2ce 0%, #0891b2 100%);
-                            color: white;
-                            padding: 6px 12px;
-                            border-radius: 5px;
-                            text-decoration: none;
-                            font-weight: 500;
-                            font-size: 0.8em;
-                            transition: all 0.3s ease;
-                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <i class="fas fa-star" style="margin-right: 4px;"></i>
-                            Star Swaparr Project
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Advanced Options Notice -->
-                <div style="
-                    background: linear-gradient(135deg, #164e63 0%, #0e7490 50%, #0891b2 100%);
-                    border: 1px solid #22d3ee;
-                    border-radius: 6px;
-                    padding: 10px;
-                    margin: 10px 0 15px 0;
-                    box-shadow: 0 2px 8px rgba(34, 211, 238, 0.1);
-                ">
-                    <p style="color: #e0f7fa; margin: 0; font-size: 0.8em; line-height: 1.4;">
-                        <i class="fas fa-rocket" style="margin-right: 6px; color: #22d3ee;"></i>
-                        <strong>Need Advanced Options?</strong> For enhanced control and features, we recommend 
-                        <a href="https://github.com/flmorg/cleanuperr" target="_blank" rel="noopener" style="color: #fbbf24; text-decoration: none; font-weight: 600;">
-                            <strong>Cleanuperr</strong>
-                        </a> which offers more comprehensive management capabilities.
-                    </p>
-                </div>
-            </div>
-            
-            <div class="settings-group" style="
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-                border: 2px solid rgba(90, 109, 137, 0.3);
-                border-radius: 12px;
-                padding: 20px;
-                margin: 15px 0 25px 0;
-                box-shadow: 0 4px 12px rgba(90, 109, 137, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            ">
-                <h3>Swaparr Configuration</h3>
-                <p class="setting-help" style="margin-bottom: 20px; color: #9ca3af;">
-                    Swaparr monitors your *arr applications' download queues and removes stalled downloads automatically.
-                </p>
-                
-                <div class="setting-item">
-                    <label for="swaparr_enabled">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#enable-swaparr" class="info-icon" title="Enable or disable Swaparr" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Enable Swaparr:
-                    </label>
-                    <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                        <input type="checkbox" id="swaparr_enabled" ${
-                          settings.enabled === true ? "checked" : ""
-                        }>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                    </label>
-                    <p class="setting-help">Enable automatic removal of stalled downloads</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_max_strikes">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#max-strikes" class="info-icon" title="Number of strikes before removal" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Max Strikes:
-                    </label>
-                    <input type="number" id="swaparr_max_strikes" min="1" max="10" value="${
-                      settings.max_strikes || 3
-                    }">
-                    <p class="setting-help">Number of strikes a download gets before being removed (default: 3)</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_max_download_time">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#max-download-time" class="info-icon" title="Maximum time before considering download stalled" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Max Download Time:
-                    </label>
-                    <input type="text" id="swaparr_max_download_time" value="${
-                      settings.max_download_time || "2h"
-                    }" placeholder="e.g., 2h, 120m, 7200s">
-                    <p class="setting-help">Maximum time before considering a download stalled (examples: 2h, 120m, 7200s)</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_ignore_above_size">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#ignore-above-size" class="info-icon" title="Ignore downloads larger than this size" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Ignore Above Size:
-                    </label>
-                    <input type="text" id="swaparr_ignore_above_size" value="${
-                      settings.ignore_above_size || "25GB"
-                    }" placeholder="e.g., 25GB, 10GB, 5000MB">
-                    <p class="setting-help">Ignore downloads larger than this size (examples: 25GB, 10GB, 5000MB)</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_remove_from_client">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#remove-from-client" class="info-icon" title="Remove downloads from download client" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Remove from Client:
-                    </label>
-                    <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                        <input type="checkbox" id="swaparr_remove_from_client" ${
-                          settings.remove_from_client !== false ? "checked" : ""
-                        }>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                    </label>
-                    <p class="setting-help">Also remove downloads from the download client (recommended: enabled)</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_research_removed">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#research-removed" class="info-icon" title="Automatically blocklist and re-search removed downloads" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Re-Search Removed Download:
-                    </label>
-                    <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                        <input type="checkbox" id="swaparr_research_removed" ${
-                          settings.research_removed === true ? "checked" : ""
-                        }>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                    </label>
-                    <p class="setting-help">When a download is removed, blocklist it in the *arr app and automatically search for alternatives (retry once)</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_failed_import_detection">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#failed-import-detection" class="info-icon" title="Automatically handle failed imports" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Handle Failed Imports:
-                    </label>
-                    <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                        <input type="checkbox" id="swaparr_failed_import_detection" ${
-                          settings.failed_import_detection === true
-                            ? "checked"
-                            : ""
-                        }>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                    </label>
-                    <p class="setting-help">Automatically detect failed imports, blocklist them, and search for alternatives</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_dry_run">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#dry-run-mode" class="info-icon" title="Test mode - no actual removals" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Dry Run Mode:
-                    </label>
-                    <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                        <input type="checkbox" id="swaparr_dry_run" ${
-                          settings.dry_run === true ? "checked" : ""
-                        }>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                    </label>
-                    <p class="setting-help">Test mode - logs what would be removed without actually removing anything</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_sleep_duration">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#sleep-duration" class="info-icon" title="Time between Swaparr cycles" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Sleep Duration (Minutes):
-                    </label>
-                    <div class="input-group" style="display: flex; align-items: center; gap: 10px;">
-                        <input type="number" id="swaparr_sleep_duration" value="${
-                          settings.sleep_duration
-                            ? Math.round(settings.sleep_duration / 60)
-                            : 15
-                        }" min="10" max="1440" style="width: 120px;">
-                        <span style="color: #9ca3af; font-size: 14px;">minutes</span>
-                    </div>
-                    <p class="setting-help">Time to wait between Swaparr processing cycles (minimum 10 minutes, default: 15 minutes)</p>
-                </div>
-                
-            </div>
-            
-            <div class="settings-group" style="
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-                border: 2px solid rgba(90, 109, 137, 0.3);
-                border-radius: 12px;
-                padding: 20px;
-                margin: 15px 0 25px 0;
-                box-shadow: 0 4px 12px rgba(90, 109, 137, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            ">
-                <h3>Security Features</h3>
-                <p class="setting-help" style="margin-bottom: 20px; color: #9ca3af;">
-                    Advanced security features to protect your system from malicious downloads and suspicious content by analyzing download names and titles. Detection is based on filename patterns, not file contents.
-                </p>
-                
-                <div class="setting-item">
-                    <label for="swaparr_malicious_detection">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#malicious-file-detection" class="info-icon" title="Enable malicious file detection" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Malicious File Detection:
-                    </label>
-                    <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                        <input type="checkbox" id="swaparr_malicious_detection" ${
-                          settings.malicious_file_detection === true
-                            ? "checked"
-                            : ""
-                        }>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                    </label>
-                    <p class="setting-help">Automatically detect and immediately remove downloads with malicious file types</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_malicious_extensions_input">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#malicious-extensions" class="info-icon" title="File extensions to consider malicious" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Malicious File Extensions:
-                    </label>
-                    <div class="tag-input-container">
-                        <div class="tag-list" id="swaparr_malicious_extensions_tags"></div>
-                        <div class="tag-input-wrapper">
-                            <input type="text" id="swaparr_malicious_extensions_input" placeholder="Type extension and press Enter (e.g. .lnk)" class="tag-input">
-                            <button type="button" class="tag-add-btn" onclick="addExtensionTag()">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <p class="setting-help">File extensions to block. Type extension and press Enter or click +. Examples: .lnk, .exe, .bat, .zipx</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_suspicious_patterns_input">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#suspicious-patterns" class="info-icon" title="Suspicious filename patterns" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Suspicious Patterns:
-                    </label>
-                    <div class="tag-input-container">
-                        <div class="tag-list" id="swaparr_suspicious_patterns_tags"></div>
-                        <div class="tag-input-wrapper">
-                            <input type="text" id="swaparr_suspicious_patterns_input" placeholder="Type pattern and press Enter (e.g. keygen)" class="tag-input">
-                            <button type="button" class="tag-add-btn" onclick="addPatternTag()">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <p class="setting-help">Filename patterns to block. Type pattern and press Enter or click +. Examples: password.txt, keygen, crack</p>
-                </div>
-            </div>
-            
-            <div class="settings-group" style="
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-                border: 2px solid rgba(90, 109, 137, 0.3);
-                border-radius: 12px;
-                padding: 20px;
-                margin: 15px 0 25px 0;
-                box-shadow: 0 4px 12px rgba(90, 109, 137, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            ">
-                <h3>Age-Based Cleanup</h3>
-                <p class="setting-help" style="margin-bottom: 20px; color: #9ca3af;">
-                    Automatically remove downloads that have been stuck for too long, regardless of strike count.
-                </p>
-                
-                <div class="setting-item">
-                    <label for="swaparr_age_based_removal">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#age-based-removal" class="info-icon" title="Enable age-based removal" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Enable Age-Based Removal:
-                    </label>
-                    <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                        <input type="checkbox" id="swaparr_age_based_removal" ${
-                          settings.age_based_removal === true ? "checked" : ""
-                        }>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                    </label>
-                    <p class="setting-help">Remove downloads that have been stuck longer than the specified age limit</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_max_age_days">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#max-age-days" class="info-icon" title="Maximum age before removal" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Maximum Age (Days):
-                    </label>
-                    <input type="number" id="swaparr_max_age_days" min="1" max="30" value="${
-                      settings.max_age_days || 7
-                    }">
-                    <p class="setting-help">Remove downloads older than this many days (default: 7 days)</p>
-                </div>
-            </div>
-            
-            <div class="settings-group" style="
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-                border: 2px solid rgba(90, 109, 137, 0.3);
-                border-radius: 12px;
-                padding: 20px;
-                margin: 15px 0 25px 0;
-                box-shadow: 0 4px 12px rgba(90, 109, 137, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            ">
-                <h3>Quality-Based Filtering</h3>
-                <p class="setting-help" style="margin-bottom: 20px; color: #9ca3af;">
-                    Automatically remove downloads with poor or undesirable quality indicators in their names.
-                </p>
-                
-                <div class="setting-item">
-                    <label for="swaparr_quality_based_removal">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#quality-based-removal" class="info-icon" title="Enable quality-based filtering" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Enable Quality-Based Filtering:
-                    </label>
-                    <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                        <input type="checkbox" id="swaparr_quality_based_removal" ${
-                          settings.quality_based_removal === true
-                            ? "checked"
-                            : ""
-                        }>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                    </label>
-                    <p class="setting-help">Automatically remove downloads with blocked quality patterns in their names</p>
-                </div>
-                
-                <div class="setting-item">
-                    <label for="swaparr_quality_patterns_input">
-                        <a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#blocked-quality-patterns" class="info-icon" title="Quality patterns to block" target="_blank" rel="noopener">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-                        Blocked Quality Patterns:
-                    </label>
-                    <div class="tag-input-container">
-                        <div class="tag-list" id="swaparr_quality_patterns_tags"></div>
-                        <div class="tag-input-wrapper">
-                            <input type="text" id="swaparr_quality_patterns_input" placeholder="Type quality pattern and press Enter (e.g. cam)" class="tag-input">
-                            <button type="button" class="tag-add-btn" onclick="addQualityTag()">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <p class="setting-help">Quality patterns to block. Type pattern and press Enter or click +. Examples: cam, ts, hdcam, workprint</p>
-                </div>
-            </div>
-
-        `;
-
-    container.innerHTML = html;
-
-    // Load Swaparr GitHub star count dynamically
-    this.loadSwaparrStarCount();
-
-    // Initialize tag systems
-    this.initializeTagSystem(settings);
-
-    // Add event listener for global Swaparr enabled toggle to control instance visibility
-    const swaparrEnabledToggle = container.querySelector("#swaparr_enabled");
-    if (swaparrEnabledToggle) {
-      swaparrEnabledToggle.addEventListener("change", () => {
-        // Update cache when global toggle changes
-        if (
-          window.huntarrUI &&
-          window.huntarrUI.originalSettings &&
-          window.huntarrUI.originalSettings.swaparr
-        ) {
-          window.huntarrUI.originalSettings.swaparr.enabled =
-            swaparrEnabledToggle.checked;
-        }
-
-        // Update cached settings in localStorage
-        try {
-          const cachedSettings = localStorage.getItem("huntarr-settings-cache");
-          if (cachedSettings) {
-            const settings = JSON.parse(cachedSettings);
-            if (!settings.swaparr) settings.swaparr = {};
-            settings.swaparr.enabled = swaparrEnabledToggle.checked;
-            localStorage.setItem(
-              "huntarr-settings-cache",
-              JSON.stringify(settings)
-            );
-          }
-        } catch (e) {
-          console.warn("[SettingsForms] Failed to update cached settings:", e);
-        }
-
-        // Update disabled state of Swaparr fields in all app forms
-        this.updateSwaparrFieldsDisabledState();
-      });
-
-      // Initial disabled state update
-      setTimeout(() => {
-        this.updateSwaparrFieldsDisabledState();
-      }, 100);
-    }
-
-    // Set up manual save functionality for Swaparr
-    this.setupSwaparrManualSave(container, settings);
   },
 
   // Set up manual save functionality for Settings
@@ -4180,275 +3565,6 @@ const SettingsForms = {
     }, 500);
   },
 
-  // Set up manual save functionality for Swaparr
-  setupSwaparrManualSave: function (container, originalSettings = {}) {
-    console.log(
-      "[SettingsForms] Setting up manual save with original settings:",
-      originalSettings
-    );
-
-    const saveButton = container.querySelector("#swaparr-save-button");
-    if (!saveButton) {
-      console.error("[SettingsForms] Save button not found!");
-      return;
-    }
-
-    let hasChanges = false;
-
-    // Clear any existing unsaved changes state and warnings when setting up
-    window.swaparrUnsavedChanges = false;
-    this.removeUnsavedChangesWarning();
-
-    // Initialize button in disabled/grey state immediately
-    saveButton.disabled = true;
-    saveButton.style.background = "#6b7280";
-    saveButton.style.color = "#9ca3af";
-    saveButton.style.borderColor = "#4b5563";
-    saveButton.style.cursor = "not-allowed";
-    console.log("[SettingsForms] Save button initialized as disabled (grey)");
-
-    // Function to update save button state
-    const updateSaveButtonState = (changesDetected) => {
-      hasChanges = changesDetected;
-      window.swaparrUnsavedChanges = changesDetected;
-      console.log(
-        `[SettingsForms] Updating save button state: hasChanges=${hasChanges}, global unsaved=${window.swaparrUnsavedChanges}`
-      );
-
-      if (hasChanges) {
-        // Red enabled state
-        saveButton.disabled = false;
-        saveButton.style.background = "#dc2626";
-        saveButton.style.color = "#ffffff";
-        saveButton.style.borderColor = "#dc2626";
-        saveButton.style.cursor = "pointer";
-        console.log("[SettingsForms] Save button enabled (red)");
-
-        // Add beforeunload warning for page refresh
-        SettingsForms.addUnsavedChangesWarning();
-      } else {
-        // Grey disabled state
-        saveButton.disabled = true;
-        saveButton.style.background = "#6b7280";
-        saveButton.style.color = "#9ca3af";
-        saveButton.style.borderColor = "#4b5563";
-        saveButton.style.cursor = "not-allowed";
-        console.log("[SettingsForms] Save button disabled (grey)");
-
-        // Remove beforeunload warning when no changes
-        SettingsForms.removeUnsavedChangesWarning();
-      }
-    };
-
-    // Function to detect changes in form elements
-    const detectChanges = () => {
-      // Check regular form inputs
-      const inputs = container.querySelectorAll("input, select, textarea");
-      let formChanged = false;
-
-      inputs.forEach((input) => {
-        // Skip inputs that don't have swaparr prefix or are disabled
-        if (!input.id.startsWith("swaparr_") || input.disabled) {
-          return;
-        }
-
-        let key = input.id.replace("swaparr_", "");
-
-        // Handle field name mappings for settings that have different names
-        if (key === "malicious_detection") {
-          key = "malicious_file_detection";
-        }
-
-        let originalValue, currentValue;
-
-        if (input.type === "checkbox") {
-          originalValue =
-            originalSettings[key] !== undefined ? originalSettings[key] : false;
-          currentValue = input.checked;
-        } else if (input.type === "number") {
-          // Special handling for sleep_duration (stored in seconds, displayed in minutes)
-          if (key === "sleep_duration") {
-            originalValue = originalSettings[key]
-              ? Math.round(originalSettings[key] / 60)
-              : 15;
-            currentValue = parseInt(input.value) || 15;
-          } else {
-            // For other numeric fields, get default from input attributes or use 0
-            const defaultValue =
-              parseInt(input.getAttribute("value")) || parseInt(input.min) || 0;
-            originalValue =
-              originalSettings[key] !== undefined
-                ? parseInt(originalSettings[key])
-                : defaultValue;
-            currentValue = parseInt(input.value) || 0;
-          }
-        } else {
-          originalValue = originalSettings[key] || "";
-          currentValue = input.value.trim();
-        }
-
-        console.log(
-          `[SettingsForms] Checking ${key}: original=${originalValue}, current=${currentValue}`
-        );
-
-        if (originalValue !== currentValue) {
-          console.log(
-            `[SettingsForms] Change detected in ${key}: ${originalValue} -> ${currentValue}`
-          );
-          formChanged = true;
-        }
-      });
-
-      // Check tag containers for changes
-      const tagContainers = [
-        {
-          containerId: "swaparr_malicious_extensions_tags",
-          settingKey: "malicious_extensions",
-        },
-        {
-          containerId: "swaparr_suspicious_patterns_tags",
-          settingKey: "suspicious_patterns",
-        },
-        {
-          containerId: "swaparr_quality_patterns_tags",
-          settingKey: "blocked_quality_patterns",
-        },
-      ];
-
-      tagContainers.forEach(({ containerId, settingKey }) => {
-        const currentTags = this.getTagsFromContainer(containerId);
-        const originalTags = originalSettings[settingKey] || [];
-
-        console.log(`[SettingsForms] Comparing tags for ${settingKey}:`);
-        console.log(`[SettingsForms] Current:`, currentTags);
-        console.log(`[SettingsForms] Original:`, originalTags);
-
-        if (
-          JSON.stringify(currentTags.sort()) !==
-          JSON.stringify(originalTags.sort())
-        ) {
-          console.log(`[SettingsForms] Tag changes detected for ${settingKey}`);
-          formChanged = true;
-        }
-      });
-
-      console.log(`[SettingsForms] Change detection result: ${formChanged}`);
-      updateSaveButtonState(formChanged);
-    };
-
-    // Add event listeners to all form elements
-    const inputs = container.querySelectorAll("input, select, textarea");
-    inputs.forEach((input) => {
-      input.addEventListener("change", detectChanges);
-      if (
-        input.type === "text" ||
-        input.type === "number" ||
-        input.tagName.toLowerCase() === "textarea"
-      ) {
-        input.addEventListener("input", detectChanges);
-      }
-    });
-
-    // Override tag manipulation functions to trigger change detection
-    const originalAddExtensionTag = this.addExtensionTag.bind(this);
-    const originalAddPatternTag = this.addPatternTag.bind(this);
-    const originalAddQualityTag = this.addQualityTag.bind(this);
-
-    this.addExtensionTag = function () {
-      originalAddExtensionTag();
-      setTimeout(detectChanges, 10);
-    };
-
-    this.addPatternTag = function () {
-      originalAddPatternTag();
-      setTimeout(detectChanges, 10);
-    };
-
-    this.addQualityTag = function () {
-      originalAddQualityTag();
-      setTimeout(detectChanges, 10);
-    };
-
-    // Make functions globally available
-    window.addExtensionTag = this.addExtensionTag.bind(this);
-    window.addPatternTag = this.addPatternTag.bind(this);
-    window.addQualityTag = this.addQualityTag.bind(this);
-
-    // Add observer for tag removal (since they use onclick)
-    const observeTagRemovals = () => {
-      const tagContainerIds = [
-        "swaparr_malicious_extensions_tags",
-        "swaparr_suspicious_patterns_tags",
-        "swaparr_quality_patterns_tags",
-      ];
-
-      tagContainerIds.forEach((containerId) => {
-        const container = document.getElementById(containerId);
-        if (container) {
-          const observer = new MutationObserver(() => {
-            setTimeout(detectChanges, 10);
-          });
-          observer.observe(container, { childList: true });
-        }
-      });
-    };
-
-    // Set up tag removal observation after tags are loaded
-    setTimeout(observeTagRemovals, 100);
-
-    // Save button click handler
-    saveButton.addEventListener("click", () => {
-      if (!hasChanges) return;
-
-      console.log("[SettingsForms] Manual save triggered for Swaparr");
-
-      // Show saving state
-      saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-      saveButton.disabled = true;
-
-      // Get settings and save
-      if (window.huntarrUI && window.huntarrUI.autoSaveSwaparrSettings) {
-        window.huntarrUI
-          .autoSaveSwaparrSettings(true)
-          .then(() => {
-            console.log("[SettingsForms] Swaparr manual save successful");
-
-            // Reset button state and clear unsaved changes warning
-            saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-            updateSaveButtonState(false);
-
-            // Update original settings for future change detection
-            const updatedSettings = window.huntarrUI.getFormSettings("swaparr");
-            if (updatedSettings) {
-              Object.assign(originalSettings, updatedSettings);
-            }
-
-            // Update Swaparr field visibility in all loaded app forms
-            console.log(
-              "[SettingsForms] Broadcasting Swaparr state change to all app forms after manual save..."
-            );
-            this.updateSwaparrFieldsDisabledState();
-          })
-          .catch((error) => {
-            console.error("[SettingsForms] Swaparr manual save failed:", error);
-
-            // Reset button state
-            saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-            updateSaveButtonState(hasChanges);
-          });
-      }
-    });
-
-    // Initial change detection - ensure form is fully loaded before checking
-    // Use a longer timeout to ensure all form elements are properly initialized
-    setTimeout(() => {
-      console.log(
-        "[SettingsForms] Running initial change detection for Swaparr"
-      );
-      detectChanges();
-    }, 200);
-  },
-
   // Set up auto-save for a form container
   setupAutoSave: function (container) {
     if (!container) return;
@@ -4457,7 +3573,6 @@ const SettingsForms = {
 
     // Skip auto-save for all forms - they now use manual save
     const manualSaveApps = [
-      "swaparr",
       "general",
       "notifications",
       "sonarr",
@@ -4531,297 +3646,6 @@ const SettingsForms = {
     console.log(
       `[SettingsForms] Auto-save set up for ${inputs.length} inputs in ${appType} form`
     );
-  },
-
-  // Initialize tag input systems for malicious file detection
-  initializeTagSystem: function (settings) {
-    // Initialize extensions
-    const defaultExtensions = [
-      ".lnk",
-      ".exe",
-      ".bat",
-      ".cmd",
-      ".scr",
-      ".pif",
-      ".com",
-      ".zipx",
-      ".jar",
-      ".vbs",
-      ".js",
-      ".jse",
-      ".wsf",
-      ".wsh",
-    ];
-    const extensions = settings.malicious_extensions || defaultExtensions;
-    this.loadTags("swaparr_malicious_extensions_tags", extensions);
-
-    // Initialize patterns
-    const defaultPatterns = [
-      "password.txt",
-      "readme.txt",
-      "install.exe",
-      "setup.exe",
-      "keygen",
-      "crack",
-      "patch.exe",
-      "activator",
-    ];
-    const patterns = settings.suspicious_patterns || defaultPatterns;
-    this.loadTags("swaparr_suspicious_patterns_tags", patterns);
-
-    // Initialize quality patterns
-    const defaultQualityPatterns = [
-      "cam",
-      "camrip",
-      "hdcam",
-      "ts",
-      "telesync",
-      "tc",
-      "telecine",
-      "r6",
-      "dvdscr",
-      "dvdscreener",
-      "workprint",
-      "wp",
-    ];
-    const qualityPatterns =
-      settings.blocked_quality_patterns || defaultQualityPatterns;
-    this.loadTags("swaparr_quality_patterns_tags", qualityPatterns);
-
-    // Add enter key listeners
-    const extensionInput = document.getElementById(
-      "swaparr_malicious_extensions_input"
-    );
-    const patternInput = document.getElementById(
-      "swaparr_suspicious_patterns_input"
-    );
-    const qualityInput = document.getElementById(
-      "swaparr_quality_patterns_input"
-    );
-
-    if (extensionInput) {
-      extensionInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          this.addExtensionTag();
-        }
-      });
-    }
-
-    if (patternInput) {
-      patternInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          this.addPatternTag();
-        }
-      });
-    }
-
-    if (qualityInput) {
-      qualityInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          this.addQualityTag();
-        }
-      });
-    }
-
-    // Make functions globally accessible
-    window.addExtensionTag = () => this.addExtensionTag();
-    window.addPatternTag = () => this.addPatternTag();
-    window.addQualityTag = () => this.addQualityTag();
-  },
-
-  // Load tags into a tag list
-  loadTags: function (containerId, tags) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    container.innerHTML = "";
-    tags.forEach((tag) => {
-      this.createTagElement(container, tag);
-    });
-  },
-
-  // Create a tag element
-  createTagElement: function (container, text) {
-    const tagDiv = document.createElement("div");
-    tagDiv.className = "tag-item";
-    tagDiv.innerHTML = `
-            <span class="tag-text">${text}</span>
-            <button type="button" class="tag-remove" onclick="this.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-    container.appendChild(tagDiv);
-  },
-
-  // Add extension tag
-  addExtensionTag: function () {
-    const input = document.getElementById("swaparr_malicious_extensions_input");
-    const container = document.getElementById(
-      "swaparr_malicious_extensions_tags"
-    );
-
-    if (!input || !container) return;
-
-    let value = input.value.trim();
-    if (!value) return;
-
-    // Auto-add dot if not present for extensions
-    if (!value.startsWith(".")) {
-      value = "." + value;
-    }
-
-    // Check for duplicates
-    const existing = Array.from(container.querySelectorAll(".tag-text")).map(
-      (el) => el.textContent
-    );
-    if (existing.includes(value)) {
-      input.value = "";
-      return;
-    }
-
-    this.createTagElement(container, value);
-    input.value = "";
-  },
-
-  // Add pattern tag
-  addPatternTag: function () {
-    const input = document.getElementById("swaparr_suspicious_patterns_input");
-    const container = document.getElementById(
-      "swaparr_suspicious_patterns_tags"
-    );
-
-    if (!input || !container) return;
-
-    const value = input.value.trim();
-    if (!value) return;
-
-    // Check for duplicates
-    const existing = Array.from(container.querySelectorAll(".tag-text")).map(
-      (el) => el.textContent
-    );
-    if (existing.includes(value)) {
-      input.value = "";
-      return;
-    }
-
-    this.createTagElement(container, value);
-    input.value = "";
-  },
-
-  // Add quality pattern tag
-  addQualityTag: function () {
-    const input = document.getElementById("swaparr_quality_patterns_input");
-    const container = document.getElementById("swaparr_quality_patterns_tags");
-
-    if (!input || !container) return;
-
-    const value = input.value.trim().toLowerCase();
-    if (!value) return;
-
-    // Check for duplicates
-    const existing = Array.from(container.querySelectorAll(".tag-text")).map(
-      (el) => el.textContent.toLowerCase()
-    );
-    if (existing.includes(value)) {
-      input.value = "";
-      return;
-    }
-
-    this.createTagElement(container, value);
-    input.value = "";
-  },
-
-  // Get tags from a container
-  getTagsFromContainer: function (containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return [];
-
-    return Array.from(container.querySelectorAll(".tag-text")).map(
-      (el) => el.textContent
-    );
-  },
-
-  // Load Swaparr GitHub star count dynamically
-  loadSwaparrStarCount: function () {
-    const starsElement = document.getElementById("swaparr-stars-count");
-    if (!starsElement) return;
-
-    // First, try to load from cache immediately for fast display
-    const cachedData = localStorage.getItem("swaparr-github-stars");
-    if (cachedData) {
-      try {
-        const parsed = JSON.parse(cachedData);
-        if (parsed.stars !== undefined) {
-          starsElement.textContent = parsed.stars.toLocaleString();
-          // If cache is recent (less than 1 hour), skip API call
-          const cacheAge = Date.now() - (parsed.timestamp || 0);
-          if (cacheAge < 3600000) {
-            // 1 hour = 3600000ms
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn("Invalid cached Swaparr star data, will fetch fresh");
-        localStorage.removeItem("swaparr-github-stars");
-      }
-    }
-
-    starsElement.textContent = "Loading...";
-
-    // GitHub API endpoint for Swaparr repository
-    const apiUrl = "https://api.github.com/repos/ThijmenGThN/swaparr";
-
-    HuntarrUtils.fetchWithTimeout(apiUrl)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`GitHub API error: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data && data.stargazers_count !== undefined) {
-          // Format the number with commas for thousands
-          const formattedStars = data.stargazers_count.toLocaleString();
-          starsElement.textContent = formattedStars;
-
-          // Store in localStorage to avoid excessive API requests
-          const cacheData = {
-            stars: data.stargazers_count,
-            timestamp: Date.now(),
-          };
-          localStorage.setItem(
-            "swaparr-github-stars",
-            JSON.stringify(cacheData)
-          );
-        } else {
-          throw new Error("Star count not found in response");
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching Swaparr GitHub stars:", error);
-
-        // Try to load from cache if we have it
-        const cachedData = localStorage.getItem("swaparr-github-stars");
-        if (cachedData) {
-          try {
-            const parsed = JSON.parse(cachedData);
-            if (parsed.stars !== undefined) {
-              starsElement.textContent = parsed.stars.toLocaleString();
-            } else {
-              starsElement.textContent = "172"; // Fallback to known value
-            }
-          } catch (e) {
-            console.error("Failed to parse cached Swaparr star data:", e);
-            starsElement.textContent = "172"; // Fallback to known value
-            localStorage.removeItem("swaparr-github-stars"); // Clear bad cache
-          }
-        } else {
-          starsElement.textContent = "172"; // Fallback to known value
-        }
-      });
   },
 
   // Format date nicely for display
@@ -5037,9 +3861,6 @@ const SettingsForms = {
         const urlInput = instance.querySelector('input[name="api_url"]');
         const keyInput = instance.querySelector('input[name="api_key"]');
         const enabledInput = instance.querySelector('input[name="enabled"]');
-        const swaparrEnabledInput = instance.querySelector(
-          'input[name="swaparr_enabled"]'
-        );
 
         // Get per-instance missing/upgrade values
         const huntMissingItemsInput =
@@ -5079,9 +3900,6 @@ const SettingsForms = {
         const url = urlInput ? urlInput.value : null;
         const key = keyInput ? keyInput.value : null;
         const enabled = enabledInput ? enabledInput.checked : true; // Default to enabled if checkbox not found
-        const swaparrEnabled = swaparrEnabledInput
-          ? swaparrEnabledInput.checked
-          : false; // Default to disabled
 
         // Get per-instance hunt values (default: missing=1, upgrade=0)
         const huntMissingItems = huntMissingItemsInput
@@ -5102,7 +3920,6 @@ const SettingsForms = {
           api_url: url || "",
           api_key: key || "",
           enabled: enabled,
-          swaparr_enabled: swaparrEnabled,
         };
 
         // Add per-instance missing/upgrade settings for apps that support it
@@ -5418,65 +4235,6 @@ const SettingsForms = {
           missing: getInputValue("#eros_custom_tag_missing", "huntarr-missing"),
           upgrade: getInputValue("#eros_custom_tag_upgrade", "huntarr-upgrade"),
         };
-      } else if (appType === "swaparr") {
-        // Swaparr doesn't use instances, so set empty array
-        settings.instances = [];
-
-        settings.enabled = getInputValue("#swaparr_enabled", false);
-        settings.max_strikes = getInputValue("#swaparr_max_strikes", 3);
-        settings.max_download_time = getInputValue(
-          "#swaparr_max_download_time",
-          "2h"
-        );
-        settings.ignore_above_size = getInputValue(
-          "#swaparr_ignore_above_size",
-          "25GB"
-        );
-        settings.remove_from_client = getInputValue(
-          "#swaparr_remove_from_client",
-          true
-        );
-        settings.research_removed = getInputValue(
-          "#swaparr_research_removed",
-          false
-        );
-        settings.failed_import_detection = getInputValue(
-          "#swaparr_failed_import_detection",
-          false
-        );
-        settings.dry_run = getInputValue("#swaparr_dry_run", false);
-        settings.sleep_duration =
-          getInputValue("#swaparr_sleep_duration", 15) * 60; // Convert minutes to seconds
-
-        // Malicious file detection settings
-        settings.malicious_file_detection = getInputValue(
-          "#swaparr_malicious_detection",
-          false
-        );
-
-        // Get tags from tag containers
-        settings.malicious_extensions = this.getTagsFromContainer(
-          "swaparr_malicious_extensions_tags"
-        );
-        settings.suspicious_patterns = this.getTagsFromContainer(
-          "swaparr_suspicious_patterns_tags"
-        );
-
-        // Age-based removal settings
-        settings.age_based_removal = getInputValue(
-          "#swaparr_age_based_removal",
-          false
-        );
-        settings.max_age_days = getInputValue("#swaparr_max_age_days", 7);
-
-        // Quality-based removal settings
-        settings.quality_based_removal = getInputValue(
-          "#swaparr_quality_based_removal",
-          false
-        );
-        settings.blocked_quality_patterns = this.getTagsFromContainer(
-          "swaparr_quality_patterns_tags"
-        );
       } else if (appType === "prowlarr") {
         // Prowlarr doesn't use instances array, store directly
         settings.instances = [];
@@ -6681,18 +5439,6 @@ const SettingsForms = {
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="setting-item">
-                                <label for="${appType}-swaparr-${newIndex}"><a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html" class="info-icon" title="Enable Swaparr stalled download monitoring for this instance" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Swaparr:</label>
-                                <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
-                                    <input type="checkbox" id="${appType}-swaparr-${newIndex}" name="swaparr_enabled">
-                                    <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
-                                </label>
-                                <p class="setting-help">Enable Swaparr to monitor and remove stalled downloads for this ${
-                                  appType.charAt(0).toUpperCase() +
-                                  appType.slice(1)
-                                } instance</p>
-                            </div>
                         </div>
                     </div>
                 `;
@@ -6937,8 +5683,6 @@ const SettingsForms = {
         updateAddButtonText(newAddBtn);
         const changeEvent = new Event("change", { bubbles: true });
         container.dispatchEvent(changeEvent);
-
-        // Update Swaparr visibility for the new instance
 
         // Focus on the name input of the new instance
         const nameInput = newInstance.querySelector('input[name="name"]');
@@ -7294,124 +6038,6 @@ const SettingsForms = {
       });
   },
 
-  // Update visibility of Swaparr fields in all app forms based on global Swaparr setting
-  updateSwaparrFieldsDisabledState: function () {
-    // First ensure we have the current Swaparr state
-    this.fetchAndCacheSwaparrState().then(() => {
-      const isEnabled = this.isSwaparrGloballyEnabled();
-      console.log(
-        `[SettingsForms] Updating Swaparr fields visibility with state: ${isEnabled}`
-      );
-
-      // Since Swaparr sections are now conditionally rendered, we need to regenerate forms
-      // to show/hide the Swaparr sections. Check if any app forms are currently visible.
-      const appTypes = [
-        "sonarr",
-        "radarr",
-        "lidarr",
-        "readarr",
-        "whisparr",
-        "eros",
-      ];
-      let formsRegenerated = false;
-
-      appTypes.forEach((appType) => {
-        const container = document.querySelector(
-          `[data-app-type="${appType}"]`
-        );
-        if (container && container.innerHTML.trim() !== "") {
-          // This app form is currently loaded, regenerate it to update Swaparr visibility
-          try {
-            // Get current settings from cache or original settings
-            let settings = {};
-            if (window.huntarrUI?.originalSettings?.[appType]) {
-              settings = window.huntarrUI.originalSettings[appType];
-            }
-
-            // Regenerate the form
-            const formMethodName = `generate${
-              appType.charAt(0).toUpperCase() + appType.slice(1)
-            }Form`;
-            if (this[formMethodName]) {
-              this[formMethodName](container, settings);
-              formsRegenerated = true;
-            }
-          } catch (e) {
-            console.warn(
-              `[SettingsForms] Failed to regenerate ${appType} form:`,
-              e
-            );
-          }
-        }
-      });
-
-      if (formsRegenerated) {
-        console.log(
-          `[SettingsForms] Regenerated app forms to update Swaparr visibility: ${
-            isEnabled ? "enabled" : "disabled"
-          }`
-        );
-      } else {
-        console.log(
-          `[SettingsForms] Updated Swaparr field visibility state: ${
-            isEnabled ? "enabled" : "disabled"
-          }`
-        );
-      }
-    });
-  },
-
-  // Update Swaparr instance visibility for all loaded app forms
-  updateAllSwaparrInstanceVisibility: function () {
-    console.log("[SettingsForms] Updating Swaparr instance visibility...");
-    this.updateSwaparrFieldsDisabledState();
-  },
-
-  // Fetch and cache current Swaparr state from server
-  fetchAndCacheSwaparrState: function () {
-    return fetch("./api/settings/swaparr")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("[SettingsForms] Fetched current Swaparr state:", data);
-
-        // Update cache
-        try {
-          let cachedSettings = {};
-          const existing = localStorage.getItem("huntarr-settings-cache");
-          if (existing) {
-            cachedSettings = JSON.parse(existing);
-          }
-          if (!cachedSettings.swaparr) cachedSettings.swaparr = {};
-          cachedSettings.swaparr.enabled = data.enabled === true;
-          localStorage.setItem(
-            "huntarr-settings-cache",
-            JSON.stringify(cachedSettings)
-          );
-          console.log(
-            "[SettingsForms] Updated Swaparr cache:",
-            cachedSettings.swaparr
-          );
-        } catch (e) {
-          console.warn("[SettingsForms] Failed to update Swaparr cache:", e);
-        }
-
-        // Update window settings if available
-        if (window.huntarrUI && window.huntarrUI.originalSettings) {
-          if (!window.huntarrUI.originalSettings.swaparr) {
-            window.huntarrUI.originalSettings.swaparr = {};
-          }
-          window.huntarrUI.originalSettings.swaparr.enabled =
-            data.enabled === true;
-        }
-
-        return data.enabled === true;
-      })
-      .catch((error) => {
-        console.warn("[SettingsForms] Failed to fetch Swaparr state:", error);
-        return false;
-      });
-  },
-
   // Generate Notifications settings form
   generateNotificationsForm: function (container, settings = {}) {
     // Add data-app-type attribute to container
@@ -7670,11 +6296,9 @@ const SettingsForms = {
     this.setupNotificationsManualSave(container, settings);
   },
 
-  // Refresh Apps section to reflect Swaparr setting changes
+  // Refresh Apps section to reflect setting changes
   refreshAppsSection: function () {
-    console.log(
-      "[SettingsForms] Refreshing Apps section for Swaparr toggle change"
-    );
+    console.log("[SettingsForms] Refreshing Apps section");
 
     // Check if Apps module is available and refresh the currently selected app
     if (window.Apps && window.Apps.loadAppSettings) {
@@ -7696,7 +6320,7 @@ const SettingsForms = {
     }
   },
 
-  // Unsaved changes warning system for both Swaparr and Settings
+  // Unsaved changes warning system for Settings
   addUnsavedChangesWarning: function () {
     console.log("[SettingsForms] Adding unsaved changes warning");
 
@@ -7704,7 +6328,6 @@ const SettingsForms = {
     if (!window.huntarrBeforeUnloadListener) {
       window.huntarrBeforeUnloadListener = function (e) {
         if (
-          window.swaparrUnsavedChanges ||
           window.settingsUnsavedChanges ||
           window.notificationsUnsavedChanges ||
           window.sonarrUnsavedChanges ||
@@ -7732,7 +6355,6 @@ const SettingsForms = {
 
     // Only remove if all sections have no unsaved changes
     if (
-      !window.swaparrUnsavedChanges &&
       !window.settingsUnsavedChanges &&
       !window.notificationsUnsavedChanges &&
       !window.sonarrUnsavedChanges &&
@@ -7756,30 +6378,6 @@ const SettingsForms = {
 
   // Check for unsaved changes before navigation
   checkUnsavedChanges: function () {
-    if (window.swaparrUnsavedChanges) {
-      const userChoice = confirm(
-        "You have unsaved changes in Swaparr settings.\n\n" +
-          'Click "OK" to stay and save your changes.\n' +
-          'Click "Cancel" to continue and lose your changes.'
-      );
-
-      if (userChoice) {
-        // User chose to stay and save
-        console.log(
-          "[SettingsForms] User chose to stay and save Swaparr changes"
-        );
-        return false;
-      } else {
-        // User chose to leave and lose changes
-        console.log(
-          "[SettingsForms] User chose to leave and lose Swaparr changes"
-        );
-        window.swaparrUnsavedChanges = false;
-        this.removeUnsavedChangesWarning();
-        return true;
-      }
-    }
-
     if (window.settingsUnsavedChanges) {
       const userChoice = confirm(
         "You have unsaved changes in Settings.\n\n" +
