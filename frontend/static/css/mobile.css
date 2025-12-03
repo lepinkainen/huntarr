@@ -33,28 +33,15 @@
         margin-right: 0 !important;
     }
     
-    /* Requestarr sidebar - same JavaScript behavior as desktop */
-    #requestarr-sidebar {
-        width: 60px !important;
-        padding: 20px 0 !important;
-    }
-    
     /* When JavaScript sets display: none, enforce it */
-    #sidebar[style*="display: none"],
-    #requestarr-sidebar[style*="display: none"] {
+    #sidebar[style*="display: none"] {
         display: none !important;
     }
-    
+
     /* When JavaScript sets display: block, show as flex */
-    #sidebar[style*="display: block"],
-    #requestarr-sidebar[style*="display: block"] {
+    #sidebar[style*="display: block"] {
         display: flex !important;
         flex-direction: column !important;
-    }
-    
-    /* Ensure only one sidebar shows at a time - default state */
-    #requestarr-sidebar:not([style*="display: block"]) {
-        display: none !important;
     }
     
     /* User nav hiding for local bypass mode */
@@ -79,8 +66,7 @@
 
 /* Very small screens */
 @media (max-width: 480px) {
-    .sidebar,
-    #requestarr-sidebar {
+    .sidebar {
         width: 50px !important;
     }
     

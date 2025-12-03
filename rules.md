@@ -29,23 +29,20 @@ docker logs huntarr
 **Huntarr uses a multi-sidebar system for organized navigation:**
 
 #### **Sidebar Types:**
-1. **Main Sidebar** (`#sidebar`) - Default navigation (Home, Apps, Swaparr, Requestarr, etc.)
+1. **Main Sidebar** (`#sidebar`) - Default navigation (Home, Apps, Swaparr, etc.)
 2. **Apps Sidebar** (`#apps-sidebar`) - App-specific navigation (Sonarr, Radarr, Lidarr, etc.)
 3. **Settings Sidebar** (`#settings-sidebar`) - Settings navigation (Main, Scheduling, Notifications, Backup/Restore, User)
-4. **Requestarr Sidebar** (`#requestarr-sidebar`) - Requestarr navigation (Home, History)
 
 #### **Navigation Logic Pattern:**
 ```javascript
 // CRITICAL: All sidebar sections must be included in initialization logic
-if (this.currentSection === 'settings' || this.currentSection === 'scheduling' || 
-    this.currentSection === 'notifications' || this.currentSection === 'backup-restore' || 
+if (this.currentSection === 'settings' || this.currentSection === 'scheduling' ||
+    this.currentSection === 'notifications' || this.currentSection === 'backup-restore' ||
     this.currentSection === 'user') {
     this.showSettingsSidebar();
-} else if (this.currentSection === 'requestarr' || this.currentSection === 'requestarr-history') {
-    this.showRequestarrSidebar();
-} else if (this.currentSection === 'apps' || this.currentSection === 'sonarr' || 
-           this.currentSection === 'radarr' || this.currentSection === 'lidarr' || 
-           this.currentSection === 'readarr' || this.currentSection === 'whisparr' || 
+} else if (this.currentSection === 'apps' || this.currentSection === 'sonarr' ||
+           this.currentSection === 'radarr' || this.currentSection === 'lidarr' ||
+           this.currentSection === 'readarr' || this.currentSection === 'whisparr' ||
            this.currentSection === 'eros' || this.currentSection === 'prowlarr') {
     this.showAppsSidebar();
 } else {
@@ -65,14 +62,12 @@ showMainSidebar: function() {
     document.getElementById('sidebar').style.display = 'flex';
     document.getElementById('apps-sidebar').style.display = 'none';
     document.getElementById('settings-sidebar').style.display = 'none';
-    document.getElementById('requestarr-sidebar').style.display = 'none';
 },
 
 showAppsSidebar: function() {
     document.getElementById('sidebar').style.display = 'none';
     document.getElementById('apps-sidebar').style.display = 'flex';
     document.getElementById('settings-sidebar').style.display = 'none';
-    document.getElementById('requestarr-sidebar').style.display = 'none';
 }
 // ... etc for other sidebars
 ```
