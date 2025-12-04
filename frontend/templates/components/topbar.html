@@ -8,22 +8,12 @@
         <div class="version-bar">
             <div class="version-item">
                 <i class="fas fa-code-branch version-icon"></i>
-                <span>Version <a href="https://github.com/plexguide/Huntarr.io/releases" target="_blank"><span id="version-value" style="display: none;"></span></a></span>
+                <span>Version <span id="version-value" style="display: none;"></span></span>
             </div>
             <div class="version-divider"></div>
             <div class="version-item">
                 <i class="fas fa-cloud-download-alt version-icon"></i>
-                <span>Latest: <a href="https://github.com/plexguide/Huntarr.io/releases" target="_blank"><span id="latest-version-value" style="display: none;"></span></a></span>
-            </div>
-            <div class="version-divider"></div>
-            <div class="version-item">
-                <i class="fas fa-star version-icon star-icon"></i>
-                <span><a href="https://github.com/plexguide/huntarr" target="_blank"><span id="github-stars-value">764</span></a></span>
-            </div>
-            <div class="version-divider"></div>
-            <div class="version-item">
-                <i class="fas fa-code version-icon"></i>
-                <span class="developer-credit">Dev: <a href="https://github.com/Admin9705/" target="_blank">Admin9705</a></span>
+                <span>Latest: <span id="latest-version-value" style="display: none;"></span></span>
             </div>
         </div>
     </div>
@@ -146,16 +136,6 @@
         color: #3498db;
         font-size: 13px;
         filter: drop-shadow(0 0 2px rgba(52, 152, 219, 0.4));
-    }
-    
-    .star-icon {
-        color: #ffd700;
-        animation: star-pulse 3s infinite alternate;
-    }
-    
-    @keyframes star-pulse {
-        0% { filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.4)); }
-        100% { filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8)); }
     }
     
     .version-bar a {
@@ -367,42 +347,27 @@
         // Connect to the loaded elements from home_section
         const versionElement = document.getElementById('version-value');
         const latestVersionElement = document.getElementById('latest-version-value');
-        const starsElement = document.getElementById('github-stars-value');
-        
+
         // Function to get the values from localStorage if they exist
         function updateVersionInfo() {
-            // Version
             try {
                 const versionInfo = localStorage.getItem('huntarr-version-info');
                 if (versionInfo) {
                     const parsedInfo = JSON.parse(versionInfo);
                     if (parsedInfo.currentVersion) {
                         versionElement.textContent = parsedInfo.currentVersion;
-                        versionElement.style.display = 'inline'; // Show the element
+                        versionElement.style.display = 'inline';
                     }
                     if (parsedInfo.latestVersion) {
                         latestVersionElement.textContent = parsedInfo.latestVersion;
-                        latestVersionElement.style.display = 'inline'; // Show the element
+                        latestVersionElement.style.display = 'inline';
                     }
-                    if (parsedInfo.betaVersion) {
-                        const betaVersionElement = document.getElementById('beta-version-value');
-                        if (betaVersionElement) {
-                            betaVersionElement.textContent = parsedInfo.betaVersion;
-                            betaVersionElement.style.display = 'inline'; // Show the element
-                        }
-                    }
-                }
-                
-                // Stars
-                const starsInfo = localStorage.getItem('huntarr-github-stars');
-                if (starsInfo) {
-                    starsElement.textContent = starsInfo;
                 }
             } catch (e) {
                 console.error('Error updating version info:', e);
             }
         }
-        
+
         // Fallback function to show N/A if data doesn't load within a reasonable time
         function showFallbacks() {
             setTimeout(() => {
@@ -414,18 +379,14 @@
                     latestVersionElement.textContent = 'N/A';
                     latestVersionElement.style.display = 'inline';
                 }
-            }, 3000); // Wait 3 seconds before showing fallback
+            }, 3000);
         }
-        
-        // Initial update
+
         updateVersionInfo();
-        
-        // Start fallback timer
         showFallbacks();
-        
-        // Watch for changes (in case the home page updates values)
+
         window.addEventListener('storage', function(e) {
-            if (e.key === 'huntarr-version-info' || e.key === 'huntarr-github-stars') {
+            if (e.key === 'huntarr-version-info') {
                 updateVersionInfo();
             }
         });

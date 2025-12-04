@@ -2508,7 +2508,7 @@ let huntarrUI = {
 
     // Load latest version from GitHub releases
     loadLatestVersion: function() {
-        HuntarrUtils.fetchWithTimeout('https://api.github.com/repos/plexguide/Huntarr.io/releases/latest')
+        HuntarrUtils.fetchWithTimeout('https://api.github.com/repos/adamflagg/huntarr/releases/latest')
             .then(response => {
                 if (!response.ok) {
                     // Handle rate limiting or other errors
@@ -2553,7 +2553,7 @@ let huntarrUI = {
     
     // Load latest beta version from GitHub tags
     loadBetaVersion: function() {
-        HuntarrUtils.fetchWithTimeout('https://api.github.com/repos/plexguide/Huntarr.io/tags?per_page=100')
+        HuntarrUtils.fetchWithTimeout('https://api.github.com/repos/adamflagg/huntarr/tags?per_page=100')
             .then(response => {
                 if (!response.ok) {
                     // Handle rate limiting or other errors
@@ -2626,7 +2626,7 @@ let huntarrUI = {
         starsElement.textContent = 'Loading...';
         
         // GitHub API endpoint for repository information
-        const apiUrl = 'https://api.github.com/repos/plexguide/huntarr';
+        const apiUrl = 'https://api.github.com/repos/adamflagg/huntarr';
         
         HuntarrUtils.fetchWithTimeout(apiUrl)
             .then(response => {
