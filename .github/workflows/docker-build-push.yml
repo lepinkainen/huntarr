@@ -3,10 +3,10 @@ name: Build and Push Docker Image
 on:
   workflow_dispatch:  # Manual trigger only
     inputs:
-      tag:
-        description: 'Docker image tag (e.g., v1.0.0, baseline, latest)'
+      tags:
+        description: 'Comma-separated tags (e.g., latest,optimized)'
         required: true
-        default: 'latest'
+        default: 'latest,optimized'
 
 permissions:
   contents: read
@@ -33,13 +33,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate tag list
+        id: tags
+        run: |
+          TAGS=""
+          IFS=',' read -ra TAG_ARRAY <<< "${{ github.event.inputs.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+            tag=$(echo "$tag" | xargs)  # trim whitespace
+            TAGS="${TAGS}ghcr.io/adamflagg/huntarr:${tag}"$'\n'
+          done
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/adamflagg/huntarr:${{ github.event.inputs.tag }}
+          tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
