@@ -54,7 +54,7 @@ window.LowUsageMode = (function() {
         if (isEnabled) return;
         isEnabled = true;
         
-        console.log('[LowUsageMode] Enabling Low Usage Mode');
+        console.debug('[LowUsageMode] Enabling Low Usage Mode');
         
         // 1. Apply CSS class to disable animations
         document.body.classList.add('low-usage-mode');
@@ -80,7 +80,7 @@ window.LowUsageMode = (function() {
         if (!isEnabled) return;
         isEnabled = false;
         
-        console.log('[LowUsageMode] Disabling Low Usage Mode');
+        console.debug('[LowUsageMode] Disabling Low Usage Mode');
         
         // 1. Remove CSS classes
         document.body.classList.remove('low-usage-mode');

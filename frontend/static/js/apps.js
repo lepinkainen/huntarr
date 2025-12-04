@@ -80,7 +80,7 @@ const appsModule = {
     
     // Load app settings
     loadAppSettings: function(app) {
-        console.log(`[Apps] Loading settings for ${app}`);
+        console.debug(`[Apps] Loading settings for ${app}`);
         
         // Get the container to put the settings in - now using individual app sections
         const appPanel = document.getElementById(app + 'Apps');
@@ -101,7 +101,7 @@ const appsModule = {
                 return response.json();
             })
             .then(appSettings => {
-                console.log(`[Apps] Received settings for ${app}:`, appSettings);
+                console.debug(`[Apps] Received settings for ${app}:`, appSettings);
                 
                 // Clear loading message
                 appPanel.innerHTML = '';
@@ -131,21 +131,21 @@ const appsModule = {
                             const instancesContainer = formElement.querySelector('.instances-container');
                             if (instancesContainer) {
                                 const instanceCount = appSettings.instances ? appSettings.instances.length : 0;
-                                console.log(`[Apps] Setting up connection status checking for ${app} with ${instanceCount} instances`);
+                                console.debug(`[Apps] Setting up connection status checking for ${app} with ${instanceCount} instances`);
                                 SettingsForms.setupInstanceManagement(instancesContainer.parentElement, app, instanceCount);
                             } else {
                                 console.warn(`[Apps] No instances container found for ${app}, connection status checking may not work`);
                             }
                         } else {
-                            console.log(`[Apps] Skipping connection status setup for ${app} (supported: ${supportedApps.includes(app)}, function available: ${typeof SettingsForms.setupInstanceManagement})`);
+                            console.debug(`[Apps] Skipping connection status setup for ${app} (supported: ${supportedApps.includes(app)}, function available: ${typeof SettingsForms.setupInstanceManagement})`);
                         }
                         
                         // Store original form values after form is generated
                         // Add a small delay to ensure all form elements are fully populated
                         setTimeout(() => {
                             this.storeOriginalFormValues(appPanel);
-                            console.log(`[Apps] Original values stored for ${app} after form generation`);
-                            console.log(`[Apps] Stored ${Object.keys(this.originalSettings).length} original values for ${app}`);
+                            console.debug(`[Apps] Original values stored for ${app} after form generation`);
+                            console.debug(`[Apps] Stored ${Object.keys(this.originalSettings).length} original values for ${app}`);
                         }, 50);
                         
                         // Add change listener to detect modifications
@@ -170,7 +170,7 @@ const appsModule = {
         if (!form) return;
         
         const appType = form.getAttribute('data-app-type');
-        console.log(`[Apps] Skipping auto-save listeners for ${appType} - now using manual save`);
+        console.debug(`[Apps] Skipping auto-save listeners for ${appType} - now using manual save`);
         
         // Auto-save has been removed - apps now use manual save buttons
         // No longer adding change listeners or mutation observers for auto-save functionality
@@ -178,7 +178,7 @@ const appsModule = {
     
     // Auto-save settings silently in background
     autoSaveSettings: function(appType, form) {
-        console.log(`[Apps] Auto-saving settings for ${appType}`);
+        console.debug(`[Apps] Auto-saving settings for ${appType}`);
         
         // Get the app panel
         const appPanel = form.closest('.app-apps-panel') || document.getElementById(`${appType}Apps`);
@@ -191,7 +191,7 @@ const appsModule = {
         try {
             // Get settings from the form
             settings = SettingsForms.getFormSettings(appPanel, appType);
-            console.log(`[Apps] Collected settings for auto-save (${appType}):`, settings);
+            console.debug(`[Apps] Collected settings for auto-save (${appType}):`, settings);
         } catch (error) {
             console.error(`[Apps] Error collecting settings for auto-save (${appType}):`, error);
             return;
@@ -212,7 +212,7 @@ const appsModule = {
             return response.json();
         })
         .then(data => {
-            console.log(`[Apps] ${appType} settings auto-saved successfully:`, data);
+            console.debug(`[Apps] ${appType} settings auto-saved successfully:`, data);
         })
         .catch(error => {
             console.error(`[Apps] Error auto-saving ${appType} settings:`, error);
@@ -227,12 +227,12 @@ const appsModule = {
     // Check if the form has actual changes compared to original values
     hasFormChanges: function(form) {
         if (!form) {
-            console.log('[Apps] hasFormChanges: No form found');
+            console.debug('[Apps] hasFormChanges: No form found');
             return false;
         }
         
         if (!this.originalSettings || Object.keys(this.originalSettings).length === 0) {
-            console.log('[Apps] hasFormChanges: No original settings found, checking if form has any values');
+            console.debug('[Apps] hasFormChanges: No original settings found, checking if form has any values');
             // If we don't have original settings yet, check if the form has any non-default values
             // This handles the case where user makes changes before original values are stored
             const formElements = form.querySelectorAll('input, select, textarea');
@@ -245,15 +245,15 @@ const appsModule = {
                     hasNonDefaultValues = true;
                 }
             });
-            console.log(`[Apps] Form has non-default values: ${hasNonDefaultValues}`);
+            console.debug(`[Apps] Form has non-default values: ${hasNonDefaultValues}`);
             return hasNonDefaultValues;
         }
         
         let hasChanges = false;
         const formElements = form.querySelectorAll('input, select, textarea');
         
-        console.log(`[Apps] Checking ${formElements.length} form elements for changes`);
-        console.log(`[Apps] Original settings keys:`, Object.keys(this.originalSettings));
+        console.debug(`[Apps] Checking ${formElements.length} form elements for changes`);
+        console.debug(`[Apps] Original settings keys:`, Object.keys(this.originalSettings));
         
         formElements.forEach(element => {
             // Skip buttons and elements without IDs
@@ -274,28 +274,28 @@ const appsModule = {
                 }
                 
                 if (!valuesMatch) {
-                    console.log(`[Apps] Element changed: ${element.id}, Original: ${originalValue} (${typeof originalValue}), Current: ${currentValue} (${typeof currentValue})`);
+                    console.debug(`[Apps] Element changed: ${element.id}, Original: ${originalValue} (${typeof originalValue}), Current: ${currentValue} (${typeof currentValue})`);
                     hasChanges = true;
                 }
             } else {
                 // If we don't have an original value for this element, check if it has a meaningful current value
                 if (element.type === 'checkbox' && currentValue === true) {
-                    console.log(`[Apps] Checkbox ${element.id} is checked but no original value stored - considering as change`);
+                    console.debug(`[Apps] Checkbox ${element.id} is checked but no original value stored - considering as change`);
                     hasChanges = true;
                 } else if (element.type !== 'checkbox' && currentValue && currentValue.trim() !== '') {
-                    console.log(`[Apps] Element ${element.id} has value '${currentValue}' but no original value stored - considering as change`);
+                    console.debug(`[Apps] Element ${element.id} has value '${currentValue}' but no original value stored - considering as change`);
                     hasChanges = true;
                 }
             }
         });
         
-        console.log(`[Apps] hasFormChanges result: ${hasChanges}`);
+        console.debug(`[Apps] hasFormChanges result: ${hasChanges}`);
         return hasChanges;
     },
     
     // Show specific app panel and hide others
     showAppPanel: function(app) {
-        console.log(`Showing app panel for ${app}`);
+        console.debug(`Showing app panel for ${app}`);
         // Hide all app panels
         this.elements.appAppsPanels.forEach(panel => {
             panel.style.display = 'none';
@@ -311,7 +311,7 @@ const appsModule = {
             // Ensure the panel has the correct data-app-type attribute
             appPanel.setAttribute('data-app-type', app);
             
-            console.log(`App panel for ${app} is now active`);
+            console.debug(`App panel for ${app} is now active`);
         } else {
             console.error(`App panel for ${app} not found`);
         }
@@ -344,7 +344,7 @@ const appsModule = {
     saveApps: function(event) {
         if (event) event.preventDefault();
         
-        console.log('[Apps] Save button clicked');
+        console.debug('[Apps] Save button clicked');
         
         // Set a flag that we're in the middle of saving
         window._appsCurrentlySaving = true;
@@ -359,7 +359,7 @@ const appsModule = {
             if (visiblePanel && visiblePanel.id) {
                 // Extract app type from panel ID (e.g., "sonarrApps" -> "sonarr")
                 const extractedType = visiblePanel.id.replace('Apps', '');
-                console.log(`Fallback: Found visible panel with ID ${visiblePanel.id}, extracted app type: ${extractedType}`);
+                console.debug(`Fallback: Found visible panel with ID ${visiblePanel.id}, extracted app type: ${extractedType}`);
                 
                 if (extractedType) {
                     // Continue with the extracted app type
@@ -393,15 +393,15 @@ const appsModule = {
     
     // Helper function to save settings for a specific app
     saveAppSettings: function(appType, appPanel) {
-        console.log(`Saving settings for ${appType}`);
+        console.debug(`Saving settings for ${appType}`);
         
         // For Whisparr, ensure we indicate we're working with V2
         let apiVersion = "";
         if (appType === "whisparr") {
-            console.log("Saving Whisparr V2 settings");
+            console.debug("Saving Whisparr V2 settings");
             apiVersion = "V2";
         } else if (appType === "eros") {
-            console.log("Saving Eros (Whisparr V3) settings");
+            console.debug("Saving Eros (Whisparr V3) settings");
         }
         
         let settings;
@@ -411,7 +411,7 @@ const appsModule = {
             
             // Get settings from the form
             settings = SettingsForms.getFormSettings(appPanel, appType);
-            console.log(`Collected settings for ${appType}:`, settings);
+            console.debug(`Collected settings for ${appType}:`, settings);
         } catch (error) {
             console.error(`Error collecting settings for ${appType}:`, error);
             if (typeof huntarrUI !== 'undefined' && typeof huntarrUI.showNotification === 'function') {
@@ -424,7 +424,7 @@ const appsModule = {
         
         // Add specific logging for settings critical to stateful management
         if (appType === 'general') {
-            console.log('Stateful management settings being saved:', {
+            console.debug('Stateful management settings being saved:', {
                 statefulExpirationHours: settings.statefulExpirationHours,
                 api_timeout: settings.api_timeout,
                 command_wait_delay: settings.command_wait_delay,
@@ -433,12 +433,12 @@ const appsModule = {
         }
         
         // Send settings to the server
-        console.log(`Sending ${appType} settings to server...`);
+        console.debug(`Sending ${appType} settings to server...`);
         
         // Debug: Log the settings being sent, especially for general
         if (appType === 'general') {
-            console.log('General settings being sent:', settings);
-            console.log('Apprise URLs being sent:', settings.apprise_urls);
+            console.debug('General settings being sent:', settings);
+            console.debug('Apprise URLs being sent:', settings.apprise_urls);
         }
         
         HuntarrUtils.fetchWithTimeout(`./api/settings/${appType}`, {
@@ -455,7 +455,7 @@ const appsModule = {
             return response.json();
         })
         .then(data => {
-            console.log(`${appType} settings saved successfully:`, data);
+            console.debug(`${appType} settings saved successfully:`, data);
             
             // Temporarily suppress change detection
             window._appsSuppressChangeDetection = true;
@@ -508,7 +508,7 @@ const appsModule = {
         });
         
         this.originalSettings = originalValues;
-        console.log('Original form values stored:', this.originalSettings);
+        console.debug('Original form values stored:', this.originalSettings);
     },
     
     // Mark form as unchanged
@@ -524,7 +524,7 @@ const appsModule = {
         
         // Get the app type to properly handle app-specific flags
         const appType = appPanel.getAttribute('data-app-type') || '';
-        console.log(`Marking form as unchanged for app type: ${appType}`);
+        console.debug(`Marking form as unchanged for app type: ${appType}`);
         
         // Clear app-specific change flags
         if (window._hasAppChanges && typeof window._hasAppChanges === 'object') {
@@ -547,7 +547,7 @@ const appsModule = {
             
             // Explicitly handle Readarr, Lidarr, and Whisparr which seem to have issues
             if (appType === 'readarr' || appType === 'lidarr' || appType === 'whisparr' || appType === 'whisparrv2') {
-                console.log(`Special handling for ${appType} to ensure changes are cleared`);
+                console.debug(`Special handling for ${appType} to ensure changes are cleared`);
                 // Force additional global state updates
                 if (window.huntarrUI && window.huntarrUI.formChanged) {
                     window.huntarrUI.formChanged[appType] = false;
@@ -571,7 +571,7 @@ const appsDashboard = {
     
     // Initialize the dashboard
     init: function() {
-        console.log('[Apps Dashboard] Initializing...');
+        console.debug('[Apps Dashboard] Initializing...');
         this.checkAllAppStatus();
         this.loadRecentActivity();
         this.loadConfigurationSummary();
@@ -788,12 +788,12 @@ const appsDashboard = {
 
 // Global functions for dashboard actions
 function navigateToApp(app) {
-    console.log(`Navigating to ${app} app`);
+    console.debug(`Navigating to ${app} app`);
     window.location.hash = `#${app}`;
 }
 
 function refreshAppStatus() {
-    console.log('Refreshing all app status...');
+    console.debug('Refreshing all app status...');
     if (typeof appsDashboard !== 'undefined') {
         appsDashboard.checkAllAppStatus();
         appsDashboard.loadConfigurationSummary();
@@ -801,7 +801,7 @@ function refreshAppStatus() {
 }
 
 function refreshAllApps() {
-    console.log('Refreshing all apps...');
+    console.debug('Refreshing all apps...');
     refreshAppStatus();
     if (typeof appsDashboard !== 'undefined') {
         appsDashboard.loadRecentActivity();
@@ -809,13 +809,13 @@ function refreshAllApps() {
 }
 
 function globalSearch() {
-    console.log('Opening global search...');
+    console.debug('Opening global search...');
     // Implement global search functionality
     alert('Global search functionality coming soon!');
 }
 
 function systemMaintenance() {
-    console.log('Opening system maintenance...');
+    console.debug('Opening system maintenance...');
     // Implement system maintenance functionality
     alert('System maintenance functionality coming soon!');
 }

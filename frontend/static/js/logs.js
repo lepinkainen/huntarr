@@ -3,8 +3,8 @@
  * Handles all logging functionality including streaming, filtering, search, and display
  */
 
-console.log('[LOGS.JS] Script is loading and executing...');
-console.log('[LOGS.JS] About to define window.LogsModule');
+console.debug('[LOGS.JS] Script is loading and executing...');
+console.debug('[LOGS.JS] About to define window.LogsModule');
 
 window.LogsModule = {
     // Current state
@@ -25,22 +25,22 @@ window.LogsModule = {
     // Initialize the logs module
     init: function() {
         if (this.initialized) {
-            console.log('[LogsModule] Already initialized, skipping...');
+            console.debug('[LogsModule] Already initialized, skipping...');
             return;
         }
         
-        console.log('[LogsModule] Initializing logs module...');
+        console.debug('[LogsModule] Initializing logs module...');
         this.cacheElements();
         this.loadUserTimezone();
         this.setupEventListeners();
         
         // Load initial logs for the default app without resetting pagination
-        console.log('[LogsModule] Loading initial logs...');
+        console.debug('[LogsModule] Loading initial logs...');
         this.loadLogsFromAPI(this.currentLogApp);
         this.setupLogPolling(this.currentLogApp);
         
         this.initialized = true;
-        console.log('[LogsModule] Initialization complete');
+        console.debug('[LogsModule] Initialization complete');
     },
     
     // Load user's timezone setting from the backend
@@ -52,7 +52,7 @@ window.LogsModule = {
             .then(response => response.json())
             .then(settings => {
                 this.userTimezone = settings.general?.timezone || 'UTC';
-                console.log('[LogsModule] User timezone loaded:', this.userTimezone);
+                console.debug('[LogsModule] User timezone loaded:', this.userTimezone);
             })
             .catch(error => {
                 console.warn('[LogsModule] Failed to load user timezone, using UTC:', error);
@@ -264,11 +264,11 @@ window.LogsModule = {
             app = app.target.getAttribute('data-app');
         }
         if (!app || app === this.currentLogApp) {
-            console.log(`[LogsModule] handleLogOptionChange - no change needed (${app} === ${this.currentLogApp})`);
+            console.debug(`[LogsModule] handleLogOptionChange - no change needed (${app} === ${this.currentLogApp})`);
             return;
         }
         
-        console.log(`[LogsModule] handleLogOptionChange - switching from ${this.currentLogApp} to ${app}`);
+        console.debug(`[LogsModule] handleLogOptionChange - switching from ${this.currentLogApp} to ${app}`);
         
         // Update the select value
         const logAppSelect = document.getElementById('logAppSelect');
@@ -291,11 +291,11 @@ window.LogsModule = {
     // Handle app changes from external sources (like huntarrUI tab switching)
     handleAppChange: function(app) {
         if (!app || app === this.currentLogApp) {
-            console.log(`[LogsModule] handleAppChange - no change needed (${app} === ${this.currentLogApp})`);
+            console.debug(`[LogsModule] handleAppChange - no change needed (${app} === ${this.currentLogApp})`);
             return;
         }
         
-        console.log(`[LogsModule] handleAppChange - switching from ${this.currentLogApp} to ${app}`);
+        console.debug(`[LogsModule] handleAppChange - switching from ${this.currentLogApp} to ${app}`);
         
         // Update the select value
         const logAppSelect = document.getElementById('logAppSelect');
@@ -317,7 +317,7 @@ window.LogsModule = {
     
     // Connect to logs stream
     connectToLogs: function() {
-        console.log(`[LogsModule] connectToLogs() called - currentLogApp: ${this.currentLogApp}, currentPage: ${this.currentPage}`);
+        console.debug(`[LogsModule] connectToLogs() called - currentLogApp: ${this.currentLogApp}, currentPage: ${this.currentPage}`);
         console.trace('[LogsModule] connectToLogs call stack');
         
         // Disconnect any existing event sources
@@ -345,7 +345,7 @@ window.LogsModule = {
         }
         
         // Load logs for the current page (don't always reset to page 1)
-        console.log(`[LogsModule] connectEventSource - loading page ${this.currentPage} for app ${appType}`);
+        console.debug(`[LogsModule] connectEventSource - loading page ${this.currentPage} for app ${appType}`);
         this.loadLogsFromAPI(appType);
         
         // Set up polling with user's configured interval
@@ -366,7 +366,7 @@ window.LogsModule = {
             const intervalSeconds = settings.log_refresh_interval_seconds || 30;
             const intervalMs = intervalSeconds * 1000;
             
-            console.log(`[LogsModule] Setting up log polling with ${intervalSeconds} second interval`);
+            console.debug(`[LogsModule] Setting up log polling with ${intervalSeconds} second interval`);
             
             // Set up polling for new logs using the configured interval
             this.logPollingInterval = setInterval(() => {
@@ -423,10 +423,10 @@ window.LogsModule = {
                     if (!isPolling && data.total !== undefined) {
                         this.totalLogs = data.total;
                         this.totalPages = Math.max(1, Math.ceil(this.totalLogs / this.pageSize));
-                        console.log(`[LogsModule] Updated pagination: totalLogs=${this.totalLogs}, totalPages=${this.totalPages}, currentPage=${this.currentPage}`);
+                        console.debug(`[LogsModule] Updated pagination: totalLogs=${this.totalLogs}, totalPages=${this.totalPages}, currentPage=${this.currentPage}`);
                         this.updatePaginationUI();
                     } else if (isPolling) {
-                        console.log(`[LogsModule] Polling request - not updating pagination. Current: totalLogs=${this.totalLogs}, totalPages=${this.totalPages}, currentPage=${this.currentPage}`);
+                        console.debug(`[LogsModule] Polling request - not updating pagination. Current: totalLogs=${this.totalLogs}, totalPages=${this.totalPages}, currentPage=${this.currentPage}`);
                     }
                     
                     // Update connection status on successful API call (only on initial load, not polling)
@@ -505,7 +505,7 @@ window.LogsModule = {
                 
                 // Validate timestamp
                 if (!this.isValidTimestamp(timestamp)) {
-                    console.log('[LogsModule] Skipping log entry with invalid timestamp:', timestamp);
+                    console.debug('[LogsModule] Skipping log entry with invalid timestamp:', timestamp);
                     return;
                 }
                 
@@ -595,7 +595,7 @@ window.LogsModule = {
         if (this.logPollingInterval) {
             clearInterval(this.logPollingInterval);
             this.logPollingInterval = null;
-            console.log('[LogsModule] Cleared log polling interval');
+            console.debug('[LogsModule] Cleared log polling interval');
         }
         
         // Clear any remaining event sources (legacy)
@@ -605,7 +605,7 @@ window.LogsModule = {
                 try {
                     if (source.readyState !== EventSource.CLOSED) {
                         source.close();
-                        console.log(`[LogsModule] Closed event source for ${key}.`);
+                        console.debug(`[LogsModule] Closed event source for ${key}.`);
                     }
                 } catch (e) {
                     console.error(`[LogsModule] Error closing event source for ${key}:`, e);
@@ -802,7 +802,7 @@ window.LogsModule = {
     
     // Filter logs by level
     filterLogsByLevel: function(selectedLevel) {
-        console.log(`[LogsModule] Filtering logs by level: ${selectedLevel}`);
+        console.debug(`[LogsModule] Filtering logs by level: ${selectedLevel}`);
         
         // Reset to first page when changing filter
         this.currentPage = 1;
@@ -922,24 +922,24 @@ window.LogsModule = {
     
     // Handle pagination navigation
     handlePagination: function(direction) {
-        console.log(`[LogsModule] =================== PAGINATION CALL START ===================`);
-        console.log(`[LogsModule] handlePagination called - direction: ${direction}, currentPage BEFORE: ${this.currentPage}, totalPages: ${this.totalPages}`);
+        console.debug(`[LogsModule] =================== PAGINATION CALL START ===================`);
+        console.debug(`[LogsModule] handlePagination called - direction: ${direction}, currentPage BEFORE: ${this.currentPage}, totalPages: ${this.totalPages}`);
         console.trace('[LogsModule] handlePagination call stack');
         
         if (direction === 'prev' && this.currentPage > 1) {
             const oldPage = this.currentPage;
             this.currentPage--;
-            console.log(`[LogsModule] PREV: Changed from page ${oldPage} to page ${this.currentPage}`);
+            console.debug(`[LogsModule] PREV: Changed from page ${oldPage} to page ${this.currentPage}`);
             this.loadLogsFromAPI(this.currentLogApp, false);
         } else if (direction === 'next' && this.currentPage < this.totalPages) {
             const oldPage = this.currentPage;
             this.currentPage++;
-            console.log(`[LogsModule] NEXT: Changed from page ${oldPage} to page ${this.currentPage}`);
+            console.debug(`[LogsModule] NEXT: Changed from page ${oldPage} to page ${this.currentPage}`);
             this.loadLogsFromAPI(this.currentLogApp, false);
         } else {
-            console.log(`[LogsModule] Pagination blocked - direction: ${direction}, currentPage: ${this.currentPage}, totalPages: ${this.totalPages}`);
+            console.debug(`[LogsModule] Pagination blocked - direction: ${direction}, currentPage: ${this.currentPage}, totalPages: ${this.totalPages}`);
         }
-        console.log(`[LogsModule] =================== PAGINATION CALL END ===================`);
+        console.debug(`[LogsModule] =================== PAGINATION CALL END ===================`);
     },
     
     // Handle page size change
@@ -954,8 +954,8 @@ window.LogsModule = {
     
     // Update pagination UI elements
     updatePaginationUI: function() {
-        console.log(`[LogsModule] updatePaginationUI called - currentPage: ${this.currentPage}, totalPages: ${this.totalPages}`);
-        console.log(`[LogsModule] DOM elements found:`, {
+        console.debug(`[LogsModule] updatePaginationUI called - currentPage: ${this.currentPage}, totalPages: ${this.totalPages}`);
+        console.debug(`[LogsModule] DOM elements found:`, {
             logsCurrentPage: !!this.elements.logsCurrentPage,
             logsTotalPages: !!this.elements.logsTotalPages,
             logsPrevPage: !!this.elements.logsPrevPage,
@@ -964,14 +964,14 @@ window.LogsModule = {
         
         if (this.elements.logsCurrentPage) {
             this.elements.logsCurrentPage.textContent = this.currentPage;
-            console.log(`[LogsModule] Updated logsCurrentPage to: ${this.currentPage}`);
+            console.debug(`[LogsModule] Updated logsCurrentPage to: ${this.currentPage}`);
         } else {
             console.warn('[LogsModule] logsCurrentPage element not found!');
         }
         
         if (this.elements.logsTotalPages) {
             this.elements.logsTotalPages.textContent = this.totalPages;
-            console.log(`[LogsModule] Updated logsTotalPages to: ${this.totalPages}`);
+            console.debug(`[LogsModule] Updated logsTotalPages to: ${this.totalPages}`);
         } else {
             console.warn('[LogsModule] logsTotalPages element not found!');
         }
@@ -1007,12 +1007,12 @@ window.LogsModule = {
             this.clearLogSearch();
         }
         
-        console.log('[LogsModule] Reset logs to defaults: All apps, INFO level, cleared search');
+        console.debug('[LogsModule] Reset logs to defaults: All apps, INFO level, cleared search');
     }
 };
 
-console.log('[LOGS.JS] window.LogsModule defined successfully:', typeof window.LogsModule);
-console.log('[LOGS.JS] LogsModule methods available:', Object.keys(window.LogsModule));
+console.debug('[LOGS.JS] window.LogsModule defined successfully:', typeof window.LogsModule);
+console.debug('[LOGS.JS] LogsModule methods available:', Object.keys(window.LogsModule));
 
 // Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {

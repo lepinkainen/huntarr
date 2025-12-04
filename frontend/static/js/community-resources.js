@@ -36,13 +36,13 @@ function initCommunityResourcesVisibilityImmediate() {
                 huntarrSupportSection.style.display = settings.display_huntarr_support !== false ? '' : 'none';
             }
             
-            console.log('[Community] Applied cached visibility settings');
+            console.debug('[Community] Applied cached visibility settings');
             
             // Still fetch fresh settings in background to update if changed
             initCommunityResourcesVisibility();
             return;
         } catch (e) {
-            console.log('[Community] Failed to parse cached settings');
+            console.debug('[Community] Failed to parse cached settings');
         }
     }
     
@@ -66,14 +66,14 @@ function initCommunityResourcesVisibility() {
     // Check if the community hub card exists
     const communityHubCard = document.querySelector('.community-hub-card');
     if (!communityHubCard) {
-        console.log('[Community] Community hub card not found in DOM');
+        console.debug('[Community] Community hub card not found in DOM');
         return;
     }
     
     // Check if the Huntarr support section exists
     const huntarrSupportSection = document.querySelector('#huntarr-support-section');
     if (!huntarrSupportSection) {
-        console.log('[Community] Huntarr support section not found in DOM');
+        console.debug('[Community] Huntarr support section not found in DOM');
     }
     
     // Fetch general settings to determine visibility
@@ -85,7 +85,7 @@ function initCommunityResourcesVisibility() {
             return response.json();
         })
         .then(data => {
-            console.log('[Community] Loaded general settings:', data);
+            console.debug('[Community] Loaded general settings:', data);
             
             // Cache the settings for immediate use next time
             localStorage.setItem('huntarr-general-settings', JSON.stringify(data));
@@ -93,11 +93,11 @@ function initCommunityResourcesVisibility() {
             // Handle Community Resources visibility
             if (data.display_community_resources === false) {
                 // Hide the community hub card
-                console.log('[Community] Hiding community resources section');
+                console.debug('[Community] Hiding community resources section');
                 communityHubCard.style.display = 'none';
             } else {
                 // Show the community hub card (default)
-                console.log('[Community] Showing community resources section');
+                console.debug('[Community] Showing community resources section');
                 communityHubCard.style.display = '';
             }
             
@@ -105,11 +105,11 @@ function initCommunityResourcesVisibility() {
             if (huntarrSupportSection) {
                 if (data.display_huntarr_support === false) {
                     // Hide the Huntarr support section
-                    console.log('[Community] Hiding Huntarr support section');
+                    console.debug('[Community] Hiding Huntarr support section');
                     huntarrSupportSection.style.display = 'none';
                 } else {
                     // Show the Huntarr support section (default)
-                    console.log('[Community] Showing Huntarr support section');
+                    console.debug('[Community] Showing Huntarr support section');
                     huntarrSupportSection.style.display = '';
                 }
             }

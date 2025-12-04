@@ -35,12 +35,12 @@ let huntarrUI = {
     
     // Initialize the application
     init: function() {
-        console.log('[huntarrUI] Initializing UI...');
+        console.debug('[huntarrUI] Initializing UI...');
         
         // Skip initialization on login page
         const isLoginPage = document.querySelector('.login-container, #loginForm, .login-form');
         if (isLoginPage) {
-            console.log('[huntarrUI] Login page detected, skipping full initialization');
+            console.debug('[huntarrUI] Login page detected, skipping full initialization');
             return;
         }
         
@@ -68,7 +68,7 @@ let huntarrUI = {
         // Check if we need to navigate to a specific section after refresh
         const targetSection = localStorage.getItem('huntarr-target-section');
         if (targetSection) {
-            console.log(`[huntarrUI] Found target section after refresh: ${targetSection}`);
+            console.debug(`[huntarrUI] Found target section after refresh: ${targetSection}`);
             localStorage.removeItem('huntarr-target-section');
             // Navigate to the target section
             this.switchSection(targetSection);
@@ -84,16 +84,16 @@ let huntarrUI = {
         }
         
         // Check which sidebar should be shown based on current section
-        console.log(`[huntarrUI] Initialization - current section: ${this.currentSection}`);
+        console.debug(`[huntarrUI] Initialization - current section: ${this.currentSection}`);
         if (this.currentSection === 'settings' || this.currentSection === 'scheduling' || this.currentSection === 'notifications' || this.currentSection === 'backup-restore' || this.currentSection === 'user') {
-            console.log('[huntarrUI] Initialization - showing settings sidebar');
+            console.debug('[huntarrUI] Initialization - showing settings sidebar');
             this.showSettingsSidebar();
         } else if (this.currentSection === 'apps' || this.currentSection === 'sonarr' || this.currentSection === 'radarr' || this.currentSection === 'lidarr' || this.currentSection === 'readarr' || this.currentSection === 'whisparr' || this.currentSection === 'eros') {
-            console.log('[huntarrUI] Initialization - showing apps sidebar');
+            console.debug('[huntarrUI] Initialization - showing apps sidebar');
             this.showAppsSidebar();
         } else {
             // Show main sidebar by default and clear settings sidebar preference
-            console.log('[huntarrUI] Initialization - showing main sidebar (default)');
+            console.debug('[huntarrUI] Initialization - showing main sidebar (default)');
             localStorage.removeItem('huntarr-settings-sidebar');
             localStorage.removeItem('huntarr-apps-sidebar');
             this.showMainSidebar();
@@ -142,7 +142,7 @@ let huntarrUI = {
             this.showDashboard();
             // Mark as initialized after everything is set up to enable refresh on section changes
             this.isInitialized = true;
-            console.log('[huntarrUI] Initialization complete - refresh on section change enabled');
+            console.debug('[huntarrUI] Initialization complete - refresh on section change enabled');
         }, 50); // Reduced from implicit longer delay
     },
     
@@ -304,7 +304,7 @@ let huntarrUI = {
         }
         
         // Settings now use manual save - no auto-save setup
-        console.log('[huntarrUI] Settings using manual save - skipping auto-save setup');
+        console.debug('[huntarrUI] Settings using manual save - skipping auto-save setup');
         
         // Auto-save enabled - no need to warn about unsaved changes
         
@@ -329,7 +329,7 @@ let huntarrUI = {
         const settingsFormContainer = document.querySelector('#settingsSection');
         if (settingsFormContainer) {
             // Settings now use manual save - remove auto-save event listeners
-            console.log('[huntarrUI] Settings section using manual save - no auto-save listeners');
+            console.debug('[huntarrUI] Settings section using manual save - no auto-save listeners');
         }
 
         // Auto-save enabled - no need for beforeunload warnings
@@ -432,14 +432,14 @@ let huntarrUI = {
     },
     
     switchSection: function(section) {
-        console.log(`[huntarrUI] *** SWITCH SECTION CALLED *** section: ${section}, current: ${this.currentSection}`);
+        console.debug(`[huntarrUI] *** SWITCH SECTION CALLED *** section: ${section}, current: ${this.currentSection}`);
         
         // Check for unsaved changes before allowing navigation
         if (this.isInitialized && this.currentSection && this.currentSection !== section) {
             // Check for unsaved Settings changes if leaving Settings section
             if (this.currentSection === 'settings' && window.SettingsForms && typeof window.SettingsForms.checkUnsavedChanges === 'function') {
                 if (!window.SettingsForms.checkUnsavedChanges()) {
-                    console.log(`[huntarrUI] Navigation cancelled due to unsaved Settings changes`);
+                    console.debug(`[huntarrUI] Navigation cancelled due to unsaved Settings changes`);
                     return; // User chose to stay and save changes
                 }
             }
@@ -447,7 +447,7 @@ let huntarrUI = {
             // Check for unsaved Notifications changes if leaving Notifications section
             if (this.currentSection === 'notifications' && window.SettingsForms && typeof window.SettingsForms.checkUnsavedChanges === 'function') {
                 if (!window.SettingsForms.checkUnsavedChanges()) {
-                    console.log(`[huntarrUI] Navigation cancelled due to unsaved Notifications changes`);
+                    console.debug(`[huntarrUI] Navigation cancelled due to unsaved Notifications changes`);
                     return; // User chose to stay and save changes
                 }
             }
@@ -456,12 +456,12 @@ let huntarrUI = {
             const appSections = ['apps'];
             if (appSections.includes(this.currentSection) && window.SettingsForms && typeof window.SettingsForms.checkUnsavedChanges === 'function') {
                 if (!window.SettingsForms.checkUnsavedChanges()) {
-                    console.log(`[huntarrUI] Navigation cancelled due to unsaved App changes`);
+                    console.debug(`[huntarrUI] Navigation cancelled due to unsaved App changes`);
                     return; // User chose to stay and save changes
                 }
             }
             
-            console.log(`[huntarrUI] User switching from ${this.currentSection} to ${section}, refreshing page...`);
+            console.debug(`[huntarrUI] User switching from ${this.currentSection} to ${section}, refreshing page...`);
             // Store the target section in localStorage so we can navigate to it after refresh
             localStorage.setItem('huntarr-target-section', section);
             location.reload();
@@ -518,31 +518,31 @@ let huntarrUI = {
             this.showMainSidebar();
             
             // Comprehensive LogsModule debugging
-            console.log('[huntarrUI] === LOGS SECTION DEBUG START ===');
-            console.log('[huntarrUI] window object keys:', Object.keys(window).filter(k => k.includes('Log')));
-            console.log('[huntarrUI] window.LogsModule exists:', !!window.LogsModule);
-            console.log('[huntarrUI] window.LogsModule type:', typeof window.LogsModule);
+            console.debug('[huntarrUI] === LOGS SECTION DEBUG START ===');
+            console.debug('[huntarrUI] window object keys:', Object.keys(window).filter(k => k.includes('Log')));
+            console.debug('[huntarrUI] window.LogsModule exists:', !!window.LogsModule);
+            console.debug('[huntarrUI] window.LogsModule type:', typeof window.LogsModule);
             
             if (window.LogsModule) {
-                console.log('[huntarrUI] LogsModule methods:', Object.keys(window.LogsModule));
-                console.log('[huntarrUI] LogsModule.init type:', typeof window.LogsModule.init);
-                console.log('[huntarrUI] LogsModule.connectToLogs type:', typeof window.LogsModule.connectToLogs);
+                console.debug('[huntarrUI] LogsModule methods:', Object.keys(window.LogsModule));
+                console.debug('[huntarrUI] LogsModule.init type:', typeof window.LogsModule.init);
+                console.debug('[huntarrUI] LogsModule.connectToLogs type:', typeof window.LogsModule.connectToLogs);
                 
                 try {
-                    console.log('[huntarrUI] Calling LogsModule.init()...');
+                    console.debug('[huntarrUI] Calling LogsModule.init()...');
                     window.LogsModule.init();
-                    console.log('[huntarrUI] LogsModule.init() completed successfully');
+                    console.debug('[huntarrUI] LogsModule.init() completed successfully');
                     
                     // LogsModule will handle its own connection - don't interfere with pagination
-                    console.log('[huntarrUI] LogsModule initialized - letting it handle its own connections');
+                    console.debug('[huntarrUI] LogsModule initialized - letting it handle its own connections');
                 } catch (error) {
                     console.error('[huntarrUI] Error during LogsModule calls:', error);
                 }
             } else {
                 console.error('[huntarrUI] LogsModule not found - logs functionality unavailable');
-                console.log('[huntarrUI] Available window properties:', Object.keys(window).slice(0, 20));
+                console.debug('[huntarrUI] Available window properties:', Object.keys(window).slice(0, 20));
             }
-            console.log('[huntarrUI] === LOGS SECTION DEBUG END ===');
+            console.debug('[huntarrUI] === LOGS SECTION DEBUG END ===');
         } else if (section === 'hunt-manager' && document.getElementById('huntManagerSection')) {
             document.getElementById('huntManagerSection').classList.add('active');
             document.getElementById('huntManagerSection').style.display = 'block';
@@ -559,7 +559,7 @@ let huntarrUI = {
                 huntManagerModule.refresh();
             }
         } else if (section === 'apps') {
-            console.log('[huntarrUI] Apps section requested - redirecting to Sonarr by default');
+            console.debug('[huntarrUI] Apps section requested - redirecting to Sonarr by default');
             // Instead of showing apps dashboard, redirect to Sonarr
             this.switchSection('sonarr');
             window.location.hash = '#sonarr';
@@ -649,7 +649,7 @@ let huntarrUI = {
                 appsModule.init('eros');
             }
         } else if (section === 'settings' && document.getElementById('settingsSection')) {
-            console.log('[huntarrUI] Switching to settings section');
+            console.debug('[huntarrUI] Switching to settings section');
             document.getElementById('settingsSection').classList.add('active');
             document.getElementById('settingsSection').style.display = 'block';
             if (document.getElementById('settingsNav')) document.getElementById('settingsNav').classList.add('active');
@@ -657,9 +657,9 @@ let huntarrUI = {
             this.currentSection = 'settings';
             
             // Switch to Settings sidebar
-            console.log('[huntarrUI] About to call showSettingsSidebar()');
+            console.debug('[huntarrUI] About to call showSettingsSidebar()');
             this.showSettingsSidebar();
-            console.log('[huntarrUI] Called showSettingsSidebar()');
+            console.debug('[huntarrUI] Called showSettingsSidebar()');
             
             // Set localStorage to maintain Settings sidebar preference
             localStorage.setItem('huntarr-settings-sidebar', 'true');
@@ -873,7 +873,7 @@ let huntarrUI = {
         }
         
         this.currentSettingsTab = app;
-        console.log(`[huntarrUI] Switched settings tab to: ${this.currentSettingsTab}`); // Added logging
+        console.debug(`[huntarrUI] Switched settings tab to: ${this.currentSettingsTab}`); // Added logging
     },
     
     // Compatibility methods that delegate to LogsModule
@@ -1108,7 +1108,7 @@ let huntarrUI = {
         HuntarrUtils.fetchWithTimeout('./api/settings')
             .then(response => response.json())
             .then(data => {
-                console.log('Loaded settings:', data);
+                console.debug('Loaded settings:', data);
                 
                 // Store original settings for comparison
                 this.originalSettings = data;
@@ -1176,7 +1176,7 @@ let huntarrUI = {
     // Called when any setting input changes in the active tab
     markSettingsAsChanged() {
         if (!this.settingsChanged) {
-            console.log("[huntarrUI] Settings marked as changed.");
+            console.debug("[huntarrUI] Settings marked as changed.");
             this.settingsChanged = true;
             this.updateSaveResetButtonState(true); // Enable buttons
         }
@@ -1184,7 +1184,7 @@ let huntarrUI = {
 
     saveSettings: function() {
         const app = this.currentSettingsTab;
-        console.log(`[huntarrUI] saveSettings called for app: ${app}`);
+        console.debug(`[huntarrUI] saveSettings called for app: ${app}`);
         
         // Clear the unsaved changes flag BEFORE sending the request
         // This prevents the "unsaved changes" dialog from appearing
@@ -1200,7 +1200,7 @@ let huntarrUI = {
             return;
         }
 
-        console.log(`[huntarrUI] Collected settings for ${app}:`, settings);
+        console.debug(`[huntarrUI] Collected settings for ${app}:`, settings);
         
         // Check if this is general settings and if the authentication mode has changed
         const isAuthModeChanged = app === 'general' && 
@@ -1209,9 +1209,9 @@ let huntarrUI = {
             this.originalSettings.general.auth_mode !== settings.auth_mode;
             
         // Log changes to authentication settings
-        console.log(`[huntarrUI] Authentication mode changed: ${isAuthModeChanged}`);
+        console.debug(`[huntarrUI] Authentication mode changed: ${isAuthModeChanged}`);
 
-        console.log(`[huntarrUI] Sending settings payload for ${app}:`, settings);
+        console.debug(`[huntarrUI] Sending settings payload for ${app}:`, settings);
 
         // Use the correct endpoint based on app type
         const endpoint = app === 'general' ? './api/settings/general' : `./api/settings/${app}`;
@@ -1236,7 +1236,7 @@ let huntarrUI = {
             return response.json();
         })
         .then(savedConfig => {
-            console.log('[huntarrUI] Settings saved successfully. Full config received:', savedConfig);
+            console.debug('[huntarrUI] Settings saved successfully. Full config received:', savedConfig);
             
             // Only reload the page if Authentication Mode was changed
             if (isAuthModeChanged) {
@@ -1327,7 +1327,7 @@ let huntarrUI = {
 
     // Setup auto-save for settings
     setupSettingsAutoSave: function() {
-        console.log('[huntarrUI] Setting up immediate settings auto-save');
+        console.debug('[huntarrUI] Setting up immediate settings auto-save');
         
         // Add event listeners to the settings container
         const settingsContainer = document.getElementById('settingsSection');
@@ -1344,16 +1344,16 @@ let huntarrUI = {
                 if (event.target.matches('input, select, textarea')) {
                     // Special handling for settings that can take effect immediately
                     if (event.target.id === 'low_usage_mode') {
-                        console.log('[huntarrUI] Low Usage Mode toggled, applying immediately');
+                        console.debug('[huntarrUI] Low Usage Mode toggled, applying immediately');
                         this.applyLowUsageMode(event.target.checked);
                     } else if (event.target.id === 'timezone') {
-                        console.log('[huntarrUI] Timezone changed, applying immediately');
+                        console.debug('[huntarrUI] Timezone changed, applying immediately');
                         this.applyTimezoneChange(event.target.value);
                     } else if (event.target.id === 'auth_mode') {
-                        console.log('[huntarrUI] Authentication mode changed, applying immediately');
+                        console.debug('[huntarrUI] Authentication mode changed, applying immediately');
                         this.applyAuthModeChange(event.target.value);
                     } else if (event.target.id === 'check_for_updates') {
-                        console.log('[huntarrUI] Update checking toggled, applying immediately');
+                        console.debug('[huntarrUI] Update checking toggled, applying immediately');
                         this.applyUpdateCheckingChange(event.target.checked);
                     }
                     
@@ -1361,14 +1361,14 @@ let huntarrUI = {
                 }
             });
             
-            console.log('[huntarrUI] Settings auto-save listeners added');
+            console.debug('[huntarrUI] Settings auto-save listeners added');
         }
     },
 
     // Trigger immediate auto-save
     triggerSettingsAutoSave: function() {
         if (window._settingsCurrentlySaving) {
-            console.log('[huntarrUI] Settings auto-save skipped - already saving');
+            console.debug('[huntarrUI] Settings auto-save skipped - already saving');
             return;
         }
         
@@ -1377,17 +1377,17 @@ let huntarrUI = {
         const isGeneralSettings = this.currentSection === 'settings' && !app;
         
         if (!app && !isGeneralSettings) {
-            console.log('[huntarrUI] No current settings tab for auto-save');
+            console.debug('[huntarrUI] No current settings tab for auto-save');
             return;
         }
         
         if (isGeneralSettings) {
-            console.log('[huntarrUI] Triggering immediate general settings auto-save');
+            console.debug('[huntarrUI] Triggering immediate general settings auto-save');
             this.autoSaveGeneralSettings(true).catch(error => {
                 console.error('[huntarrUI] General settings auto-save failed:', error);
             });
         } else {
-            console.log(`[huntarrUI] Triggering immediate settings auto-save for: ${app}`);
+            console.debug(`[huntarrUI] Triggering immediate settings auto-save for: ${app}`);
             this.autoSaveSettings(app);
         }
     },
@@ -1395,11 +1395,11 @@ let huntarrUI = {
     // Auto-save settings function
     autoSaveSettings: function(app) {
         if (window._settingsCurrentlySaving) {
-            console.log(`[huntarrUI] Auto-save for ${app} skipped - already saving`);
+            console.debug(`[huntarrUI] Auto-save for ${app} skipped - already saving`);
             return;
         }
         
-        console.log(`[huntarrUI] Auto-saving settings for: ${app}`);
+        console.debug(`[huntarrUI] Auto-saving settings for: ${app}`);
         window._settingsCurrentlySaving = true;
         
         // Use the existing saveSettings logic but make it silent
@@ -1451,13 +1451,13 @@ let huntarrUI = {
 
         // Special handling for general settings
         if (app === 'general') {
-            console.log('[huntarrUI] Processing general settings');
-            console.log('[huntarrUI] Form:', form);
-            console.log('[huntarrUI] Form HTML (first 500 chars):', form.innerHTML.substring(0, 500));
+            console.debug('[huntarrUI] Processing general settings');
+            console.debug('[huntarrUI] Form:', form);
+            console.debug('[huntarrUI] Form HTML (first 500 chars):', form.innerHTML.substring(0, 500));
             
             // Debug: Check if apprise_urls exists anywhere
             const globalAppriseElement = document.querySelector('#apprise_urls');
-            console.log('[huntarrUI] Global apprise_urls element:', globalAppriseElement);
+            console.debug('[huntarrUI] Global apprise_urls element:', globalAppriseElement);
             
             // Get all inputs and select elements in the general form AND notifications container
             const generalInputs = form.querySelectorAll('input, select, textarea');
@@ -1479,26 +1479,26 @@ let huntarrUI = {
                     value = input.value.trim();
                 }
                 
-                console.log(`[huntarrUI] Processing input: ${key} = ${value}`);
+                console.debug(`[huntarrUI] Processing input: ${key} = ${value}`);
                 
                 // Handle special cases
                 if (key === 'apprise_urls') {
-                    console.log('[huntarrUI] Processing Apprise URLs');
-                    console.log('[huntarrUI] Raw apprise_urls value:', input.value);
+                    console.debug('[huntarrUI] Processing Apprise URLs');
+                    console.debug('[huntarrUI] Raw apprise_urls value:', input.value);
                     
                     // Split by newline and filter empty lines
                     settings.apprise_urls = input.value.split('\n')
                         .map(url => url.trim())
                         .filter(url => url.length > 0);
                     
-                    console.log('[huntarrUI] Processed apprise_urls:', settings.apprise_urls);
+                    console.debug('[huntarrUI] Processed apprise_urls:', settings.apprise_urls);
                 } else if (key && !key.includes('_instance_')) {
                     // Only include non-instance fields
                     settings[key] = value;
                 }
             });
             
-            console.log('[huntarrUI] Final general settings:', settings);
+            console.debug('[huntarrUI] Final general settings:', settings);
             return settings;
         }
         
@@ -1509,7 +1509,7 @@ let huntarrUI = {
         
         // Check if multi-instance UI elements exist (like Sonarr)
         if (instanceItems.length > 0) {
-            console.log(`[huntarrUI] Found ${instanceItems.length} instance items for ${app}. Processing multi-instance mode.`);
+            console.debug(`[huntarrUI] Found ${instanceItems.length} instance items for ${app}. Processing multi-instance mode.`);
             // Multi-instance logic (current Sonarr logic)
             instanceItems.forEach((item, index) => {
                 const instanceId = item.dataset.instanceId; // Gets the data-instance-id
@@ -1530,7 +1530,7 @@ let huntarrUI = {
                 }
             });
         } else {
-            console.log(`[huntarrUI] No instance items found for ${app}. Processing single-instance mode.`);
+            console.debug(`[huntarrUI] No instance items found for ${app}. Processing single-instance mode.`);
             // Single-instance logic (for Radarr, Lidarr, etc.)
             // Look for the standard IDs used in their forms
             const nameInput = form.querySelector(`#${app}_instance_name`); // Check for a specific name field
@@ -1551,7 +1551,7 @@ let huntarrUI = {
             }
         }
 
-        console.log(`[huntarrUI] Processed instances for ${app}:`, settings.instances);
+        console.debug(`[huntarrUI] Processed instances for ${app}:`, settings.instances);
 
         // Now collect any OTHER settings NOT part of the instance structure
         const allInputs = form.querySelectorAll('input, select');
@@ -1612,13 +1612,13 @@ let huntarrUI = {
             }
         });
 
-        console.log(`[huntarrUI] Final collected settings for ${app}:`, settings);
+        console.debug(`[huntarrUI] Final collected settings for ${app}:`, settings);
         return settings;
     },
 
     // Test notification functionality
     testNotification: function() {
-        console.log('[huntarrUI] Testing notification...');
+        console.debug('[huntarrUI] Testing notification...');
         
         const statusElement = document.getElementById('testNotificationStatus');
         const buttonElement = document.getElementById('testNotificationBtn');
@@ -1650,7 +1650,7 @@ let huntarrUI = {
             })
             .then(response => response.json())
             .then(data => {
-                console.log('[huntarrUI] Test notification response:', data);
+                console.debug('[huntarrUI] Test notification response:', data);
                 
                 if (data.success) {
                     statusElement.innerHTML = '<span style="color: #10b981;">✓ Test notification sent successfully!</span>';
@@ -1681,7 +1681,7 @@ let huntarrUI = {
 
     // Auto-save general settings (used by test notification and auto-save)
     autoSaveGeneralSettings: function(silent = false) {
-        console.log('[huntarrUI] Auto-saving general settings...');
+        console.debug('[huntarrUI] Auto-saving general settings...');
         
         return new Promise((resolve, reject) => {
             // Find the general settings form using the correct selectors
@@ -1692,18 +1692,18 @@ let huntarrUI = {
             
             if (!generalForm) {
                 console.error('[huntarrUI] Could not find general settings form for auto-save');
-                console.log('[huntarrUI] Available forms:', document.querySelectorAll('.app-settings-panel, #settingsSection, [id*="general"], [id*="General"]'));
+                console.debug('[huntarrUI] Available forms:', document.querySelectorAll('.app-settings-panel, #settingsSection, [id*="general"], [id*="General"]'));
                 reject(new Error('Could not find general settings form'));
                 return;
             }
             
-            console.log('[huntarrUI] Found general form:', generalForm);
+            console.debug('[huntarrUI] Found general form:', generalForm);
             
             // Get settings from the form using the correct app parameter
             let settings = {};
             try {
                 settings = this.getFormSettings('general');
-                console.log('[huntarrUI] Auto-save collected settings:', settings);
+                console.debug('[huntarrUI] Auto-save collected settings:', settings);
             } catch (error) {
                 console.error('[huntarrUI] Error collecting settings for auto-save:', error);
                 reject(error);
@@ -1721,7 +1721,7 @@ let huntarrUI = {
             .then(response => response.json())
             .then(data => {
                 if (data.success !== false) {  // API returns all settings on success, not just success:true
-                    console.log('[huntarrUI] Auto-save successful');
+                    console.debug('[huntarrUI] Auto-save successful');
                     resolve();
                 } else {
                     console.error('[huntarrUI] Auto-save failed:', data);
@@ -1737,13 +1737,13 @@ let huntarrUI = {
 
     // Handle instance management events
     setupInstanceEventHandlers: function() {
-        console.log("DEBUG: setupInstanceEventHandlers called"); // Added logging
+        console.debug("DEBUG: setupInstanceEventHandlers called"); // Added logging
         const settingsPanels = document.querySelectorAll('.app-settings-panel');
         
         settingsPanels.forEach(panel => {
-            console.log(`DEBUG: Adding listeners to panel '${panel.id}'`); // Added logging
+            console.debug(`DEBUG: Adding listeners to panel '${panel.id}'`); // Added logging
             panel.addEventListener('addInstance', (e) => {
-                console.log(`DEBUG: addInstance event listener fired for panel '${panel.id}'. Event detail:`, e.detail);
+                console.debug(`DEBUG: addInstance event listener fired for panel '${panel.id}'. Event detail:`, e.detail);
                 this.addAppInstance(e.detail.appName);
             });
             
@@ -1759,7 +1759,7 @@ let huntarrUI = {
     
     // Add a new instance to the app
     addAppInstance: function(appName) {
-        console.log(`DEBUG: addAppInstance called for app '${appName}'`);
+        console.debug(`DEBUG: addAppInstance called for app '${appName}'`);
         const container = document.getElementById(`${appName}Settings`);
         if (!container) return;
         
@@ -1823,7 +1823,7 @@ let huntarrUI = {
     
     // Test connection for a specific instance
     testInstanceConnection: function(appName, instanceId, url, apiKey) {
-        console.log(`Testing connection for ${appName} instance ${instanceId} with URL: ${url}`);
+        console.debug(`Testing connection for ${appName} instance ${instanceId} with URL: ${url}`);
         
         // Make sure instanceId is treated as a number
         instanceId = parseInt(instanceId, 10);
@@ -1879,7 +1879,7 @@ let huntarrUI = {
             return response.json();
         })
         .then(data => {
-            console.log(`Connection test response data for ${appName} instance ${instanceId}:`, data);
+            console.debug(`Connection test response data for ${appName} instance ${instanceId}:`, data);
             if (data.success) {
                 statusSpan.textContent = data.message || 'Connected';
                 statusSpan.className = 'connection-status success';
@@ -2050,7 +2050,7 @@ let huntarrUI = {
     
     // Check if local access bypass is enabled and update UI accordingly
     checkLocalAccessBypassStatus: function() {
-        console.log("Checking local access bypass status...");
+        console.debug("Checking local access bypass status...");
         HuntarrUtils.fetchWithTimeout('./api/get_local_access_bypass_status') // Corrected URL
             .then(response => {
                 if (!response.ok) {
@@ -2065,7 +2065,7 @@ let huntarrUI = {
             })
             .then(data => {
                 if (data && typeof data.isEnabled === 'boolean') {
-                    console.log("Local access bypass status received:", data.isEnabled);
+                    console.debug("Local access bypass status received:", data.isEnabled);
                     this.updateUIForLocalAccessBypass(data.isEnabled);
                 } else {
                     // Handle cases where response is JSON but not the expected format
@@ -2083,7 +2083,7 @@ let huntarrUI = {
     
     // Update UI elements visibility based on local access bypass status
     updateUIForLocalAccessBypass: function(isEnabled) {
-        console.log("Updating UI for local access bypass:", isEnabled);
+        console.debug("Updating UI for local access bypass:", isEnabled);
         
         // Get the user info container in topbar (username and logout button)
         const userInfoContainer = document.getElementById('userInfoContainer');
@@ -2093,12 +2093,12 @@ let huntarrUI = {
         
         // Set display style explicitly based on local access bypass setting
         if (isEnabled === true) {
-            console.log("Local access bypass is ENABLED - hiding user elements");
+            console.debug("Local access bypass is ENABLED - hiding user elements");
             
             // Hide user info in topbar
             if (userInfoContainer) {
                 userInfoContainer.style.display = 'none';
-                console.log("  • Hidden userInfoContainer");
+                console.debug("  • Hidden userInfoContainer");
             } else {
                 console.warn("  ⚠ userInfoContainer not found");
             }
@@ -2107,17 +2107,17 @@ let huntarrUI = {
             if (userNav) {
                 userNav.style.display = '';
                 userNav.style.removeProperty('display'); // Remove any !important styles
-                console.log("  • User nav always visible (regardless of auth mode)");
+                console.debug("  • User nav always visible (regardless of auth mode)");
             } else {
                 console.warn("  ⚠ userNav not found");
             }
         } else {
-            console.log("Local access bypass is DISABLED - showing user elements");
+            console.debug("Local access bypass is DISABLED - showing user elements");
             
             // Show user info in topbar
             if (userInfoContainer) {
                 userInfoContainer.style.display = '';
-                console.log("  • Showing userInfoContainer");
+                console.debug("  • Showing userInfoContainer");
             } else {
                 console.warn("  ⚠ userInfoContainer not found");
             }
@@ -2125,7 +2125,7 @@ let huntarrUI = {
             // Show user nav in sidebar
             if (userNav) {
                 userNav.style.display = '';
-                console.log("  • Showing userNav");
+                console.debug("  • Showing userNav");
             } else {
                 console.warn("  ⚠ userNav not found");
             }
@@ -2134,7 +2134,7 @@ let huntarrUI = {
     
     logout: function(e) { // Added logout function
         e.preventDefault(); // Prevent default link behavior
-        console.log('[huntarrUI] Logging out...');
+        console.debug('[huntarrUI] Logging out...');
         HuntarrUtils.fetchWithTimeout('./logout', { // Use the correct endpoint defined in Flask
             method: 'POST',
             headers: {
@@ -2144,7 +2144,7 @@ let huntarrUI = {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('[huntarrUI] Logout successful, redirecting to login.');
+                console.debug('[huntarrUI] Logout successful, redirecting to login.');
                 window.location.href = './login'; // Redirect to login page
             } else {
                 console.error('[huntarrUI] Logout failed:', data.message);
@@ -2175,11 +2175,11 @@ let huntarrUI = {
                 const cacheAge = Date.now() - (parsedStats.timestamp || 0);
                 // Use cache if less than 5 minutes old
                 if (cacheAge < 300000) {
-                    console.log('[huntarrUI] Using cached stats for immediate display');
+                    console.debug('[huntarrUI] Using cached stats for immediate display');
                     this.updateStatsDisplay(parsedStats.stats, true); // true = from cache
                 }
             } catch (e) {
-                console.log('[huntarrUI] Failed to parse cached stats');
+                console.debug('[huntarrUI] Failed to parse cached stats');
             }
         }
         
@@ -2240,7 +2240,7 @@ let huntarrUI = {
         const isLowUsageMode = this.isLowUsageModeEnabled();
         
         
-        console.log(`[huntarrUI] updateStatsDisplay - Low usage mode: ${isLowUsageMode}, from cache: ${isFromCache}`);
+        console.debug(`[huntarrUI] updateStatsDisplay - Low usage mode: ${isLowUsageMode}, from cache: ${isFromCache}`);
         
         apps.forEach(app => {
             if (stats[app]) {
@@ -2411,7 +2411,7 @@ let huntarrUI = {
                 return response.json().catch(() => ({}));
             })
             .then(data => {
-                console.log('Stats reset response:', data);
+                console.debug('Stats reset response:', data);
             })
             .catch(error => {
                 console.warn('Error communicating with server for stats reset:', error);
@@ -2460,7 +2460,7 @@ let huntarrUI = {
 
     // Update home connection status
     updateHomeConnectionStatus: function() {
-        console.log('[huntarrUI] Updating home connection statuses...');
+        console.debug('[huntarrUI] Updating home connection statuses...');
         // This function should ideally call checkAppConnection for all relevant apps
         // or use the stored configuredApps status if checkAppConnection updates it.
         this.checkAppConnections(); // Re-check all connections after a save might be simplest
@@ -2476,7 +2476,7 @@ let huntarrUI = {
         // Max retry attempts - increased for better reliability
         const maxAttempts = 5;
         
-        console.log(`[StatefulInfo] Loading stateful info (attempt ${attempts + 1}, skipCache: ${skipCache})`);
+        console.debug(`[StatefulInfo] Loading stateful info (attempt ${attempts + 1}, skipCache: ${skipCache})`);
         
         // Update UI to show loading state instead of N/A on first attempt
         if (attempts === 0) {
@@ -2493,7 +2493,7 @@ let huntarrUI = {
                 
                 // Use cache if it's less than 5 minutes old while waiting for fresh data
                 if (cacheAge < 300000) {
-                    console.log('[StatefulInfo] Using cached data while fetching fresh data');
+                    console.debug('[StatefulInfo] Using cached data while fetching fresh data');
                     
                     // Display cached data
                     if (initialStateEl && parsedData.created_at_ts) {
@@ -2554,7 +2554,7 @@ let huntarrUI = {
                         // If this is the first state load attempt and no timestamp exists,
                         // it might be because the state file hasn't been created yet
                         if (attempts < maxAttempts) {
-                            console.log(`[StatefulInfo] No initial state timestamp, will retry (${attempts + 1}/${maxAttempts})`);
+                            console.debug(`[StatefulInfo] No initial state timestamp, will retry (${attempts + 1}/${maxAttempts})`);
                             setTimeout(() => {
                                 this.loadStatefulInfo(attempts + 1);
                             }, 500); // Longer delay for better chance of success
@@ -2591,7 +2591,7 @@ let huntarrUI = {
                 // Store the data for future reference
                 this._cachedStatefulData = data;
                 
-                console.log('[StatefulInfo] Successfully loaded and displayed stateful data');
+                console.debug('[StatefulInfo] Successfully loaded and displayed stateful data');
             } else {
                 throw new Error(data.message || 'Failed to load stateful info');
             }
@@ -2602,13 +2602,13 @@ let huntarrUI = {
             // Retry if we haven't reached max attempts with exponential backoff
             if (attempts < maxAttempts) {
                 const delay = Math.min(2000, 300 * Math.pow(2, attempts)); // Exponential backoff with max 2000ms
-                console.log(`[StatefulInfo] Retrying in ${delay}ms (attempt ${attempts + 1}/${maxAttempts})`);
+                console.debug(`[StatefulInfo] Retrying in ${delay}ms (attempt ${attempts + 1}/${maxAttempts})`);
                 setTimeout(() => {
                     // Double-check if still on the same page before retrying
                     if (document.getElementById('stateful_management_hours')) {
                         this.loadStatefulInfo(attempts + 1);
                     } else {
-                        console.log(`[StatefulInfo] Stateful info retry cancelled; user navigated away.`);
+                        console.debug(`[StatefulInfo] Stateful info retry cancelled; user navigated away.`);
                     }
                 }, delay);
                 return;
@@ -2618,7 +2618,7 @@ let huntarrUI = {
             const cachedStatefulData = localStorage.getItem('huntarr-stateful-data');
             if (cachedStatefulData) {
                 try {
-                    console.log('[StatefulInfo] Using cached data as fallback after failed fetch');
+                    console.debug('[StatefulInfo] Using cached data as fallback after failed fetch');
                     const parsedData = JSON.parse(cachedStatefulData);
                     
                     if (initialStateEl && parsedData.created_at_ts) {
@@ -2673,7 +2673,7 @@ let huntarrUI = {
         // Get the user's configured timezone from settings or default to UTC
         const userTimezone = this.getUserTimezone();
         
-        console.log(`[formatDateNicely] Formatting date ${date.toISOString()} for timezone: ${userTimezone}`);
+        console.debug(`[formatDateNicely] Formatting date ${date.toISOString()} for timezone: ${userTimezone}`);
         
         const options = { 
             weekday: 'short',
@@ -2689,7 +2689,7 @@ let huntarrUI = {
         let formattedDate;
         try {
             formattedDate = date.toLocaleDateString(undefined, options);
-            console.log(`[formatDateNicely] Formatted result: ${formattedDate}`);
+            console.debug(`[formatDateNicely] Formatted result: ${formattedDate}`);
         } catch (error) {
             console.error(`[formatDateNicely] Error formatting date with timezone ${userTimezone}:`, error);
             // Fallback to UTC if timezone is invalid
@@ -2755,13 +2755,13 @@ let huntarrUI = {
             timezone = defaultTimezone;
         }
         
-        console.log(`[getUserTimezone] Using timezone: ${timezone}`);
+        console.debug(`[getUserTimezone] Using timezone: ${timezone}`);
         return timezone;
     },
     
     // Reset stateful management - clear all processed IDs
     resetStatefulManagement: function() {
-        console.log("Reset stateful management function called");
+        console.debug("Reset stateful management function called");
         
         // Show a loading indicator or disable the button
         const resetBtn = document.getElementById('reset_stateful_btn');
@@ -2769,13 +2769,13 @@ let huntarrUI = {
             resetBtn.disabled = true;
             const originalText = resetBtn.innerHTML;
             resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
-            console.log("Reset button found and disabled:", resetBtn);
+            console.debug("Reset button found and disabled:", resetBtn);
         } else {
             console.error("Reset button not found in the DOM!");
         }
         
         // Add debug logging
-        console.log("Sending reset request to /api/stateful/reset");
+        console.debug("Sending reset request to /api/stateful/reset");
         
         HuntarrUtils.fetchWithTimeout('./api/stateful/reset', {
             method: 'POST',
@@ -2788,14 +2788,14 @@ let huntarrUI = {
             cache: 'no-cache' // Add cache control to prevent caching
         })
         .then(response => {
-            console.log("Reset response received:", response.status, response.statusText);
+            console.debug("Reset response received:", response.status, response.statusText);
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log("Reset response data:", data);
+            console.debug("Reset response data:", data);
             
             if (data.success) {
                 this.showNotification('Stateful management reset successfully', 'success');
@@ -2860,7 +2860,7 @@ let huntarrUI = {
         })
         .then(data => {
             if (data.success) {
-                console.log('[huntarrUI] Stateful expiration updated successfully:', data);
+                console.debug('[huntarrUI] Stateful expiration updated successfully:', data);
                 
                 // Get updated info to show proper dates
                 this.loadStatefulInfo();
@@ -2891,7 +2891,7 @@ let huntarrUI = {
             return;
         }
         
-        console.log(`[huntarrUI] Directly updating stateful expiration to ${hours} hours`);
+        console.debug(`[huntarrUI] Directly updating stateful expiration to ${hours} hours`);
         
         // Make a direct API call to update the stateful expiration
         HuntarrUtils.fetchWithTimeout('./api/stateful/update-expiration', {
@@ -2908,7 +2908,7 @@ let huntarrUI = {
             return response.json();
         })
         .then(data => {
-            console.log('[huntarrUI] Stateful expiration updated successfully:', data);
+            console.debug('[huntarrUI] Stateful expiration updated successfully:', data);
             // Update the expiration date display
             const expiresDateEl = document.getElementById('stateful_expires_date');
             if (expiresDateEl && data.expires_date) {
@@ -2964,7 +2964,7 @@ let huntarrUI = {
     
     // Apply Low Usage Mode effects based on setting
     applyLowUsageMode: function(enabled) {
-        console.log(`[huntarrUI] Setting Low Usage Mode: ${enabled ? 'Enabled' : 'Disabled'}`);
+        console.debug(`[huntarrUI] Setting Low Usage Mode: ${enabled ? 'Enabled' : 'Disabled'}`);
         
         // Store the previous state to detect changes
         const wasEnabled = document.body.classList.contains('low-usage-mode');
@@ -2981,14 +2981,14 @@ let huntarrUI = {
         
         // If low usage mode state changed and we have stats data, update the display
         if (wasEnabled !== enabled && window.mediaStats) {
-            console.log(`[huntarrUI] Low usage mode changed from ${wasEnabled} to ${enabled}, updating stats display`);
+            console.debug(`[huntarrUI] Low usage mode changed from ${wasEnabled} to ${enabled}, updating stats display`);
             this.updateStatsDisplay(window.mediaStats);
         }
     },
 
     // Apply timezone change immediately
     applyTimezoneChange: function(timezone) {
-        console.log(`[huntarrUI] Applying timezone change to: ${timezone}`);
+        console.debug(`[huntarrUI] Applying timezone change to: ${timezone}`);
         
         // Call the backend to apply timezone immediately
         fetch('./api/settings/apply-timezone', {
@@ -3001,7 +3001,7 @@ let huntarrUI = {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('[huntarrUI] Timezone applied successfully');
+                console.debug('[huntarrUI] Timezone applied successfully');
                 // Settings auto-save notification removed per user request
                 
                 // Refresh any time displays that might be affected
@@ -3019,7 +3019,7 @@ let huntarrUI = {
 
     // Apply authentication mode change immediately
     applyAuthModeChange: function(authMode) {
-        console.log(`[huntarrUI] Authentication mode changed to: ${authMode}`);
+        console.debug(`[huntarrUI] Authentication mode changed to: ${authMode}`);
         
         // Show notification about the change
         const modeNames = {
@@ -3036,37 +3036,37 @@ let huntarrUI = {
 
     // Apply update checking change immediately
     applyUpdateCheckingChange: function(enabled) {
-        console.log(`[huntarrUI] Update checking ${enabled ? 'enabled' : 'disabled'}`);
+        console.debug(`[huntarrUI] Update checking ${enabled ? 'enabled' : 'disabled'}`);
         // Settings auto-save notification removed per user request
     },
 
     // Refresh time displays after timezone change
     refreshTimeDisplays: function() {
-        console.log('[huntarrUI] Refreshing all time displays for timezone change');
+        console.debug('[huntarrUI] Refreshing all time displays for timezone change');
         
         // 1. Refresh logs module timezone cache and reload logs
         if (window.LogsModule) {
-            console.log('[huntarrUI] Refreshing LogsModule timezone');
+            console.debug('[huntarrUI] Refreshing LogsModule timezone');
             window.LogsModule.userTimezone = null; // Clear cache
             window.LogsModule.loadUserTimezone(); // Reload timezone
             
             // Force reload current logs to show new timezone
             if (window.LogsModule.currentLogApp) {
-                console.log('[huntarrUI] Reloading logs with new timezone');
+                console.debug('[huntarrUI] Reloading logs with new timezone');
                 window.LogsModule.loadLogsFromAPI(window.LogsModule.currentLogApp);
             }
         }
         
         // 2. Refresh cycle countdown timers
         if (window.CycleCountdown) {
-            console.log('[huntarrUI] Refreshing CycleCountdown timers');
+            console.debug('[huntarrUI] Refreshing CycleCountdown timers');
             // Force refresh cycle data to get updated timestamps
             window.CycleCountdown.refreshAllData();
         }
         
         // 3. Refresh scheduler timezone display if on scheduling page
         if (this.currentSection === 'scheduling' || this.currentSection === 'schedules') {
-            console.log('[huntarrUI] Refreshing scheduling timezone display');
+            console.debug('[huntarrUI] Refreshing scheduling timezone display');
             if (typeof loadServerTimezone === 'function') {
                 loadServerTimezone(); // Reload server timezone display
             }
@@ -3074,7 +3074,7 @@ let huntarrUI = {
         
         // 4. Refresh hunt manager if it's currently visible (timestamps in hunt entries)
         if (this.currentSection === 'hunt-manager' && window.huntManagerModule) {
-            console.log('[huntarrUI] Refreshing hunt manager data');
+            console.debug('[huntarrUI] Refreshing hunt manager data');
             if (typeof window.huntManagerModule.refresh === 'function') {
                 window.huntManagerModule.refresh();
             }
@@ -3086,7 +3086,7 @@ let huntarrUI = {
             const timezoneSelect = document.getElementById('timezone');
             if (timezoneSelect && timezoneSelect.value) {
                 this.originalSettings.general.timezone = timezoneSelect.value;
-                console.log('[huntarrUI] Updated cached timezone setting to:', timezoneSelect.value);
+                console.debug('[huntarrUI] Updated cached timezone setting to:', timezoneSelect.value);
             }
         }
         
@@ -3094,12 +3094,12 @@ let huntarrUI = {
         const timeElements = document.querySelectorAll('[data-time], .time-display, .timestamp');
         timeElements.forEach(element => {
             if (element.dataset.refreshTime) {
-                console.log('[huntarrUI] Refreshing custom time display element');
+                console.debug('[huntarrUI] Refreshing custom time display element');
                 // Custom refresh logic could go here
             }
         });
         
-        console.log('[huntarrUI] Time display refresh completed');
+        console.debug('[huntarrUI] Time display refresh completed');
     },
     
     // Reset the app cycle for a specific app
@@ -3128,7 +3128,7 @@ let huntarrUI = {
         })
         .then(data => {
             this.showNotification(`Successfully reset ${this.capitalizeFirst(app)} cycle`, 'success');
-            console.log(`[huntarrUI] Reset ${app} cycle response:`, data);
+            console.debug(`[huntarrUI] Reset ${app} cycle response:`, data);
             
             // Re-enable the button with original text
             button.disabled = false;
@@ -3157,7 +3157,7 @@ let huntarrUI = {
         // 3. Final determination based on reliable sources (no indicator checking needed)
         const isEnabled = hasLowUsageClass || standaloneModuleEnabled;
         
-        console.log(`[huntarrUI] Low usage mode detection - CSS class: ${hasLowUsageClass}, Module: ${standaloneModuleEnabled}, Final: ${isEnabled}`);
+        console.debug(`[huntarrUI] Low usage mode detection - CSS class: ${hasLowUsageClass}, Module: ${standaloneModuleEnabled}, Final: ${isEnabled}`);
         
         return isEnabled;
     },
@@ -3167,7 +3167,7 @@ let huntarrUI = {
         const dashboardGrid = document.querySelector('.dashboard-grid');
         if (dashboardGrid) {
             dashboardGrid.style.opacity = '1';
-            console.log('[huntarrUI] Dashboard made visible after initialization');
+            console.debug('[huntarrUI] Dashboard made visible after initialization');
         } else {
             console.warn('[huntarrUI] Dashboard grid not found');
         }
@@ -3244,14 +3244,14 @@ let huntarrUI = {
         let visibleCount = 0;
         let totalCount = allLogEntries.length;
         
-        console.log(`[huntarrUI] Filtering logs by level: ${selectedLevel}, total entries: ${totalCount}`);
+        console.debug(`[huntarrUI] Filtering logs by level: ${selectedLevel}, total entries: ${totalCount}`);
         
         // Debug: Log first few badge texts to see what we're working with
         allLogEntries.forEach((entry, index) => {
             if (index < 5) { // Log first 5 entries for debugging
                 const levelBadge = entry.querySelector('.log-level-badge, .log-level, .log-level-error, .log-level-warning, .log-level-info, .log-level-debug');
                 if (levelBadge) {
-                    console.log(`[huntarrUI] Entry ${index}: Badge text = "${levelBadge.textContent.trim()}", Classes = ${levelBadge.className}`);
+                    console.debug(`[huntarrUI] Entry ${index}: Badge text = "${levelBadge.textContent.trim()}", Classes = ${levelBadge.className}`);
                 }
             }
         });
@@ -3309,7 +3309,7 @@ let huntarrUI = {
                                 entryLevel = 'debug';
                             } else {
                                 // Log unmapped badge text for debugging
-                                console.log(`[huntarrUI] Unmapped badge text: "${badgeText}" - hiding entry`);
+                                console.debug(`[huntarrUI] Unmapped badge text: "${badgeText}" - hiding entry`);
                                 entryLevel = null; // Set to null to indicate unmapped
                             }
                     }
@@ -3342,7 +3342,7 @@ let huntarrUI = {
             }, 100);
         }
         
-        console.log(`[huntarrUI] Filtered logs by level '${selectedLevel}': showing ${visibleCount}/${totalCount} entries`);
+        console.debug(`[huntarrUI] Filtered logs by level '${selectedLevel}': showing ${visibleCount}/${totalCount} entries`);
     },
     
     // Helper method to detect JSON fragments that shouldn't be displayed as log entries
@@ -3445,7 +3445,7 @@ let huntarrUI = {
         const hoursInput = document.getElementById(`${appType}-state-management-hours-${instanceIndex}`);
         const customHours = parseInt(hoursInput?.value) || 168;
         
-        console.log(`[huntarrUI] Loading state info for ${appType}/${instanceName} (index ${instanceIndex})`);
+        console.debug(`[huntarrUI] Loading state info for ${appType}/${instanceName} (index ${instanceIndex})`);
         
         // Load state information for this specific instance using per-instance API
         HuntarrUtils.fetchWithTimeout(`./api/stateful/summary?app_type=${appType}&instance_name=${encodeURIComponent(instanceName)}`, {
@@ -3453,7 +3453,7 @@ let huntarrUI = {
         })
         .then(response => response.json())
         .then(summaryData => {
-            console.log(`[huntarrUI] State data for ${appType}/${instanceName}:`, summaryData);
+            console.debug(`[huntarrUI] State data for ${appType}/${instanceName}:`, summaryData);
             this.updateInstanceStateDisplay(appType, instanceIndex, summaryData, instanceName, customHours);
         })
         .catch(error => {
@@ -3488,7 +3488,7 @@ let huntarrUI = {
 
     // Refresh state management timezone displays when timezone changes
     refreshStateManagementTimezone: function() {
-        console.log('[huntarrUI] Refreshing state management timezone displays due to settings change');
+        console.debug('[huntarrUI] Refreshing state management timezone displays due to settings change');
         
         try {
             // Simply reload the displays - the backend will use the new timezone automatically
@@ -3501,7 +3501,7 @@ let huntarrUI = {
 
     // Reload state management displays after timezone change
     reloadStateManagementDisplays: function() {
-        console.log('[huntarrUI] Reloading state management displays after timezone change');
+        console.debug('[huntarrUI] Reloading state management displays after timezone change');
         
         // Refresh all visible state management displays
         const supportedApps = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros'];
@@ -3524,7 +3524,7 @@ let huntarrUI = {
                         if (instanceNameElement) {
                             const instanceName = instanceNameElement.value || 'Default';
                             
-                            console.log(`[huntarrUI] Reloading state management for ${appType} instance ${instanceIndex} (${instanceName})`);
+                            console.debug(`[huntarrUI] Reloading state management for ${appType} instance ${instanceIndex} (${instanceName})`);
                             
                             // Fetch fresh state management data
                             this.loadStateManagementForInstance(appType, instanceIndex, instanceName);
@@ -3534,7 +3534,7 @@ let huntarrUI = {
             }
         });
         
-        console.log('[huntarrUI] State management timezone refresh completed');
+        console.debug('[huntarrUI] State management timezone refresh completed');
     },
 
     // Load state management data for a specific instance
@@ -3547,7 +3547,7 @@ let huntarrUI = {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log(`[huntarrUI] Received updated state management data for ${appType}/${instanceName}:`, data);
+                console.debug(`[huntarrUI] Received updated state management data for ${appType}/${instanceName}:`, data);
                 
                 // Update the display with the new timezone-converted data
                 this.updateInstanceStateDisplay(appType, instanceIndex, data, instanceName, data.expiration_hours);
@@ -3576,7 +3576,7 @@ let huntarrUI = {
         if (settingsSidebar) settingsSidebar.style.display = 'none';
         if (appsSidebar) appsSidebar.style.display = 'none';
 
-        console.log('[huntarrUI] Main sidebar shown');
+        console.debug('[huntarrUI] Main sidebar shown');
 
         // Clear Settings sidebar preference when showing main sidebar
         localStorage.removeItem('huntarr-settings-sidebar');
@@ -3795,8 +3795,8 @@ let huntarrUI = {
         fetch('./api/settings')
             .then(response => response.json())
             .then(settings => {
-                console.log('[huntarrUI] Loaded settings:', settings);
-                console.log('[huntarrUI] General settings:', settings.general);
+                console.debug('[huntarrUI] Loaded settings:', settings);
+                console.debug('[huntarrUI] General settings:', settings.general);
                 
                 // Generate the general settings form - pass only the general settings
                 if (typeof SettingsForms !== 'undefined' && SettingsForms.generateGeneralForm) {
@@ -3813,7 +3813,7 @@ let huntarrUI = {
     },
 
     initializeNotifications: function() {
-        console.log('[huntarrUI] initializeNotifications called');
+        console.debug('[huntarrUI] initializeNotifications called');
         
         // Check if notifications are already initialized
         const notificationsContainer = document.getElementById('notificationsContainer');
@@ -3822,32 +3822,32 @@ let huntarrUI = {
             return;
         }
         
-        console.log('[huntarrUI] notificationsContainer found:', notificationsContainer);
-        console.log('[huntarrUI] Current container content:', notificationsContainer.innerHTML.trim());
+        console.debug('[huntarrUI] notificationsContainer found:', notificationsContainer);
+        console.debug('[huntarrUI] Current container content:', notificationsContainer.innerHTML.trim());
         
         // Check if notifications are actually initialized (ignore HTML comments)
         const currentContent = notificationsContainer.innerHTML.trim();
         if (currentContent !== '' && !currentContent.includes('<!-- Notifications content will be loaded here -->')) {
-            console.log('[huntarrUI] Notifications already initialized, skipping');
+            console.debug('[huntarrUI] Notifications already initialized, skipping');
             return; // Already initialized
         }
 
-        console.log('[huntarrUI] Loading notifications settings from API...');
+        console.debug('[huntarrUI] Loading notifications settings from API...');
         
         // Load settings from API and generate the notifications form
         fetch('./api/settings')
             .then(response => response.json())
             .then(settings => {
-                console.log('[huntarrUI] Loaded settings for notifications:', settings);
-                console.log('[huntarrUI] General settings:', settings.general);
-                console.log('[huntarrUI] SettingsForms available:', typeof SettingsForms !== 'undefined');
-                console.log('[huntarrUI] generateNotificationsForm available:', typeof SettingsForms !== 'undefined' && SettingsForms.generateNotificationsForm);
+                console.debug('[huntarrUI] Loaded settings for notifications:', settings);
+                console.debug('[huntarrUI] General settings:', settings.general);
+                console.debug('[huntarrUI] SettingsForms available:', typeof SettingsForms !== 'undefined');
+                console.debug('[huntarrUI] generateNotificationsForm available:', typeof SettingsForms !== 'undefined' && SettingsForms.generateNotificationsForm);
                 
                 // Generate the notifications form - pass the general settings which contain notification settings
                 if (typeof SettingsForms !== 'undefined' && SettingsForms.generateNotificationsForm) {
-                    console.log('[huntarrUI] Calling SettingsForms.generateNotificationsForm...');
+                    console.debug('[huntarrUI] Calling SettingsForms.generateNotificationsForm...');
                     SettingsForms.generateNotificationsForm(notificationsContainer, settings.general || {});
-                    console.log('[huntarrUI] Notifications form generated successfully');
+                    console.debug('[huntarrUI] Notifications form generated successfully');
                 } else {
                     console.error('[huntarrUI] SettingsForms.generateNotificationsForm not available');
                     notificationsContainer.innerHTML = '<p>Error: Notifications forms not loaded</p>';
@@ -3860,7 +3860,7 @@ let huntarrUI = {
     },
 
     initializeBackupRestore: function() {
-        console.log('[huntarrUI] initializeBackupRestore called');
+        console.debug('[huntarrUI] initializeBackupRestore called');
         
         // Initialize backup/restore functionality
         if (typeof BackupRestore !== 'undefined') {
@@ -3871,16 +3871,16 @@ let huntarrUI = {
     },
 
     initializeUser: function() {
-        console.log('[huntarrUI] initializeUser called');
+        console.debug('[huntarrUI] initializeUser called');
         
         // Check if UserModule is available and initialize it
         if (typeof UserModule !== 'undefined') {
             if (!window.userModule) {
-                console.log('[huntarrUI] Creating UserModule instance...');
+                console.debug('[huntarrUI] Creating UserModule instance...');
                 window.userModule = new UserModule();
-                console.log('[huntarrUI] UserModule initialized successfully');
+                console.debug('[huntarrUI] UserModule initialized successfully');
             } else {
-                console.log('[huntarrUI] UserModule already exists');
+                console.debug('[huntarrUI] UserModule already exists');
             }
         } else {
             console.error('[huntarrUI] UserModule not available - user.js may not be loaded');
@@ -3916,7 +3916,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize UserModule when available
     if (typeof UserModule !== 'undefined') {
-        console.log('[huntarrUI] UserModule available, initializing...');
+        console.debug('[huntarrUI] UserModule available, initializing...');
         window.userModule = new UserModule();
     }
 });

@@ -10,7 +10,7 @@
         elements: {},
 
         init: function() {
-            console.log('[Readarr Module] Initializing...');
+            console.debug('[Readarr Module] Initializing...');
             this.cacheElements();
             this.setupEventListeners();
         },

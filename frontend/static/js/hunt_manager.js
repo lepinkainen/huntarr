@@ -91,7 +91,7 @@ const huntManagerModule = {
                 const itemId = link.dataset.itemId;
                 const title = link.textContent; // Use the text content as the title
                 
-                console.log('Hunt item clicked:', { appType, instanceName, itemId, title });
+                console.debug('Hunt item clicked:', { appType, instanceName, itemId, title });
                 
                 // Only process clicks for Sonarr (other apps have URL issues)
                 if (appType === 'sonarr' && instanceName) {
@@ -100,10 +100,10 @@ const huntManagerModule = {
                     // Fallback to Apps section for Sonarr if no instance name
                     window.huntarrUI.switchSection('apps');
                     window.location.hash = '#apps';
-                    console.log(`Navigated to apps section for ${appType}`);
+                    console.debug(`Navigated to apps section for ${appType}`);
                 } else {
                     // For non-Sonarr apps, show a helpful message
-                    console.log(`Clicking disabled for ${appType} - only Sonarr links work properly`);
+                    console.debug(`Clicking disabled for ${appType} - only Sonarr links work properly`);
                 }
             }
         });
@@ -130,7 +130,7 @@ const huntManagerModule = {
         .then(response => response.json())
         .then(data => {
             if (response.ok) {
-                console.log(`Cleared hunt history for ${this.currentApp}`);
+                console.debug(`Cleared hunt history for ${this.currentApp}`);
                 // Reload the hunt history
                 this.loadHuntHistory();
                 // Show success notification
@@ -259,7 +259,7 @@ const huntManagerModule = {
             `Click to open in ${entry.app_type} (${entry.instance_name})` : 
             `${entry.app_type} (${entry.instance_name || 'Default'})`;
         
-        console.log('Creating hunt item link with data:', {
+        console.debug('Creating hunt item link with data:', {
             app_type: entry.app_type,
             instance_name: entry.instance_name,
             media_id: entry.media_id,
@@ -387,7 +387,7 @@ const huntManagerModule = {
                         // Remove leading/trailing hyphens
                         .replace(/^-|-$/g, '');
                     
-                    console.log('Sonarr slug generation:', {
+                    console.debug('Sonarr slug generation:', {
                         originalTitle: title,
                         extractedSeriesTitle: seriesTitle,
                         generatedSlug: slug
@@ -451,14 +451,14 @@ const huntManagerModule = {
             }
             
             const settingsData = await response.json();
-            console.log('Raw settings data:', settingsData);
+            console.debug('Raw settings data:', settingsData);
             
             // Check if this is a settings object with instances array
             if (settingsData && settingsData.instances && Array.isArray(settingsData.instances)) {
                 const instance = settingsData.instances.find(inst => inst.name === instanceName);
                 
                 if (instance) {
-                    console.log('Found instance:', instance);
+                    console.debug('Found instance:', instance);
                     return {
                         api_url: instance.api_url || instance.url
                     };
@@ -466,7 +466,7 @@ const huntManagerModule = {
             }
             // Fallback for legacy single-instance settings
             else if (settingsData && settingsData.api_url && instanceName === 'Default') {
-                console.log('Using legacy single-instance settings');
+                console.debug('Using legacy single-instance settings');
                 return {
                     api_url: settingsData.api_url
                 };
@@ -482,11 +482,11 @@ const huntManagerModule = {
     
     // Open external app instance with direct linking (7.7.5 logic)
     openAppInstance: function(appType, instanceName, itemId = null, title = null) {
-        console.log(`Opening ${appType} instance: ${instanceName} with itemId: ${itemId}, title: ${title}`);
+        console.debug(`Opening ${appType} instance: ${instanceName} with itemId: ${itemId}, title: ${title}`);
         
         this.getInstanceSettings(appType, instanceName)
             .then(instanceSettings => {
-                console.log('Instance settings retrieved:', instanceSettings);
+                console.debug('Instance settings retrieved:', instanceSettings);
                 
                 if (instanceSettings && instanceSettings.api_url) {
                     let targetUrl;
@@ -494,7 +494,7 @@ const huntManagerModule = {
                     // If we have item details, try to create a direct link for all supported apps
                     if (itemId && title && ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros'].includes(appType.toLowerCase())) {
                         targetUrl = this.generateDirectLink(appType, instanceSettings.api_url, itemId, title);
-                        console.log('Generated direct link:', targetUrl);
+                        console.debug('Generated direct link:', targetUrl);
                     }
                     
                     // Fallback to base URL if direct link creation fails
@@ -507,13 +507,13 @@ const huntManagerModule = {
                         }
                         
                         targetUrl = baseUrl;
-                        console.log('Using fallback base URL:', targetUrl);
+                        console.debug('Using fallback base URL:', targetUrl);
                     }
                     
                     // Open the external instance in a new tab
-                    console.log(`About to open: ${targetUrl}`);
+                    console.debug(`About to open: ${targetUrl}`);
                     window.open(targetUrl, '_blank');
-                    console.log(`Opened ${appType} instance ${instanceName} at ${targetUrl}`);
+                    console.debug(`Opened ${appType} instance ${instanceName} at ${targetUrl}`);
                 } else {
                     console.warn(`Could not find URL for ${appType} instance: ${instanceName}`);
                     console.warn('Instance settings:', instanceSettings);

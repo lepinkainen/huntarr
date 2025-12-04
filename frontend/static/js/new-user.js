@@ -7,7 +7,7 @@
 (function() {
     // Wait for the DOM to be fully loaded
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('User settings page loaded');
+        console.debug('User settings page loaded');
         
         // Initialize user settings functionality
         initUserPage();

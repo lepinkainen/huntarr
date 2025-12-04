@@ -10,7 +10,7 @@
         elements: {},
 
         init: function() {
-            console.log('[Radarr Module] Initializing...');
+            console.debug('[Radarr Module] Initializing...');
             this.cacheElements();
             this.setupEventListeners();
         },

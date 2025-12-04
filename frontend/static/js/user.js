@@ -407,11 +407,11 @@ class UserModule {
     }
 
     startPlexPolling() {
-        console.log('startPlexPinChecking called with PIN ID:', this.currentPlexPinId);
+        console.debug('startPlexPinChecking called with PIN ID:', this.currentPlexPinId);
         
         // Clear any existing interval
         if (this.plexPollingInterval) {
-            console.log('Clearing existing interval');
+            console.debug('Clearing existing interval');
             clearInterval(this.plexPollingInterval);
             this.plexPollingInterval = null;
         }
@@ -425,22 +425,22 @@ class UserModule {
         this.setPlexLinkStatus('waiting', '<i class="fas fa-hourglass-half"></i> Checking authentication status...');
         
         this.plexPollingInterval = setInterval(() => {
-            console.log('Checking PIN status for:', this.currentPlexPinId);
+            console.debug('Checking PIN status for:', this.currentPlexPinId);
             
             fetch(`./api/auth/plex/check/${this.currentPlexPinId}`)
                 .then(response => {
-                    console.log('PIN check response status:', response.status);
+                    console.debug('PIN check response status:', response.status);
                     return response.json();
                 })
                 .then(data => {
-                    console.log('PIN check data:', data);
+                    console.debug('PIN check data:', data);
                     if (data.success && data.claimed) {
-                        console.log('PIN claimed, linking account');
+                        console.debug('PIN claimed, linking account');
                         this.setPlexLinkStatus('success', '<i class="fas fa-link"></i> Plex account successfully linked!');
                         this.stopPlexLinking(); // Stop checking immediately
                         this.linkWithPlexToken(data.token); // This will also call stopPlexLinking in finally
                     } else if (data.success && !data.claimed) {
-                        console.log('PIN not yet claimed, continuing to check');
+                        console.debug('PIN not yet claimed, continuing to check');
                         this.setPlexLinkStatus('waiting', '<i class="fas fa-hourglass-half"></i> Waiting for Plex authentication to complete...');
                     } else {
                         console.error('PIN check failed:', data);
@@ -458,7 +458,7 @@ class UserModule {
         // Stop checking after 10 minutes
         setTimeout(() => {
             if (this.plexPollingInterval) {
-                console.log('PIN check timeout reached');
+                console.debug('PIN check timeout reached');
                 this.stopPlexLinking();
                 this.setPlexLinkStatus('error', '<i class="fas fa-clock"></i> Authentication timeout: PIN expired after 10 minutes. Please try linking your account again.');
             }
@@ -466,7 +466,7 @@ class UserModule {
     }
     
     async linkWithPlexToken(token) {
-        console.log('Linking with Plex token');
+        console.debug('Linking with Plex token');
         this.setPlexLinkStatus('waiting', '<i class="fas fa-spinner spinner"></i> Finalizing account link...');
         
         try {
@@ -502,17 +502,17 @@ class UserModule {
             this.setPlexLinkStatus('error', '<i class="fas fa-exclamation-triangle"></i> Network error: Unable to complete account linking. Please check your connection and try again.');
         } finally {
             // Always stop the PIN checking interval when linking completes (success or failure)
-            console.log('linkWithPlexToken completed, stopping PIN checking');
+            console.debug('linkWithPlexToken completed, stopping PIN checking');
             this.stopPlexLinking();
         }
     }
     
     stopPlexLinking() {
-        console.log('stopPlexLinking called');
+        console.debug('stopPlexLinking called');
         if (this.plexPollingInterval) {
             clearInterval(this.plexPollingInterval);
             this.plexPollingInterval = null;
-            console.log('Cleared PIN check interval');
+            console.debug('Cleared PIN check interval');
         }
         this.currentPlexPinId = null;
     }
@@ -524,7 +524,7 @@ class UserModule {
         const userMode = localStorage.getItem('huntarr-plex-user-mode');
         
         if (plexLinking === 'true' && plexPinId && userMode === 'true') {
-            console.log('Detected return from Plex authentication, PIN ID:', plexPinId);
+            console.debug('Detected return from Plex authentication, PIN ID:', plexPinId);
             
             // Clear the flags
             localStorage.removeItem('huntarr-plex-linking');
@@ -543,7 +543,7 @@ class UserModule {
             this.currentPlexPinId = plexPinId;
             this.setPlexLinkStatus('waiting', '<i class="fas fa-spinner spinner"></i> Completing Plex authentication and linking your account...');
             
-            console.log('Starting PIN checking for returned user');
+            console.debug('Starting PIN checking for returned user');
             this.startPlexPolling();
         }
     }
@@ -657,7 +657,7 @@ class UserModule {
         
         flagsToClean.forEach(flag => {
             if (localStorage.getItem(flag)) {
-                console.log(`[UserModule] Cleaning up stale localStorage flag: ${flag}`);
+                console.debug(`[UserModule] Cleaning up stale localStorage flag: ${flag}`);
                 localStorage.removeItem(flag);
             }
         });
@@ -667,7 +667,7 @@ class UserModule {
         if (plexLinkingTimestamp) {
             const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
             if (parseInt(plexLinkingTimestamp) < tenMinutesAgo) {
-                console.log('[UserModule] Cleaning up stale Plex linking flags (older than 10 minutes)');
+                console.debug('[UserModule] Cleaning up stale Plex linking flags (older than 10 minutes)');
                 localStorage.removeItem('huntarr-plex-linking');
                 localStorage.removeItem('huntarr-plex-pin-id');
                 localStorage.removeItem('huntarr-plex-user-mode');

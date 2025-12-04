@@ -12,11 +12,11 @@ const BackupRestore = {
 
     initialize: function() {
         if (this.initialized) {
-            console.log('[BackupRestore] Already initialized');
+            console.debug('[BackupRestore] Already initialized');
             return;
         }
 
-        console.log('[BackupRestore] Initializing backup/restore functionality');
+        console.debug('[BackupRestore] Initializing backup/restore functionality');
         
         this.bindEvents();
         this.loadSettings();
@@ -24,7 +24,7 @@ const BackupRestore = {
         this.updateNextBackupTime();
         
         this.initialized = true;
-        console.log('[BackupRestore] Initialization complete');
+        console.debug('[BackupRestore] Initialization complete');
     },
 
     bindEvents: function() {
@@ -97,7 +97,7 @@ const BackupRestore = {
     },
 
     loadSettings: function() {
-        console.log('[BackupRestore] Loading backup settings');
+        console.debug('[BackupRestore] Loading backup settings');
         
         fetch('./api/backup/settings')
             .then(response => response.json())
@@ -125,7 +125,7 @@ const BackupRestore = {
     },
 
     saveSettings: function() {
-        console.log('[BackupRestore] Saving backup settings', this.backupSettings);
+        console.debug('[BackupRestore] Saving backup settings', this.backupSettings);
         
         fetch('./api/backup/settings', {
             method: 'POST',
@@ -137,7 +137,7 @@ const BackupRestore = {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('[BackupRestore] Settings saved successfully');
+                console.debug('[BackupRestore] Settings saved successfully');
                 this.showSuccess('Backup settings saved');
             } else {
                 throw new Error(data.error || 'Failed to save settings');
@@ -150,7 +150,7 @@ const BackupRestore = {
     },
 
     loadBackupList: function() {
-        console.log('[BackupRestore] Loading backup list');
+        console.debug('[BackupRestore] Loading backup list');
         
         const listContainer = document.getElementById('backup-list-container');
         const restoreSelect = document.getElementById('restore-backup-select');
@@ -261,7 +261,7 @@ const BackupRestore = {
     },
 
     createManualBackup: function() {
-        console.log('[BackupRestore] Creating manual backup');
+        console.debug('[BackupRestore] Creating manual backup');
         
         const createBtn = document.getElementById('create-backup-btn');
         const progressContainer = document.getElementById('backup-progress');
@@ -378,7 +378,7 @@ const BackupRestore = {
             return;
         }
 
-        console.log('[BackupRestore] Restoring backup:', backupId);
+        console.debug('[BackupRestore] Restoring backup:', backupId);
         
         const restoreBtn = document.getElementById('restore-backup-btn');
         if (restoreBtn) {
@@ -453,7 +453,7 @@ const BackupRestore = {
             return;
         }
 
-        console.log('[BackupRestore] Deleting database');
+        console.debug('[BackupRestore] Deleting database');
         
         const deleteBtn = document.getElementById('delete-database-btn');
         if (deleteBtn) {
@@ -497,7 +497,7 @@ const BackupRestore = {
             return;
         }
 
-        console.log('[BackupRestore] Deleting backup:', backupId);
+        console.debug('[BackupRestore] Deleting backup:', backupId);
 
         fetch('./api/backup/delete', {
             method: 'POST',
@@ -602,5 +602,5 @@ const BackupRestore = {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     // Don't auto-initialize - let the main UI handle it
-    console.log('[BackupRestore] Module loaded');
+    console.debug('[BackupRestore] Module loaded');
 });

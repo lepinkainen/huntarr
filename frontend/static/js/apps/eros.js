@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
  * This function is now called by new-main.js when the Eros settings tab is shown.
  */
 function setupErosForm() {
-    console.log("[eros.js] Setting up Eros form...");
+    console.debug("[eros.js] Setting up Eros form...");
     const panel = document.getElementById('erosSettings'); 
     if (!panel) {
         console.warn("[eros.js] Eros settings panel not found.");
@@ -29,15 +29,15 @@ function setupErosForm() {
     
     // Check if event listener is already attached (prevents duplicate handlers)
     if (!testErosButton || testErosButton.dataset.listenerAttached === 'true') {
-         console.log("[eros.js] Test button not found or listener already attached.");
+         console.debug("[eros.js] Test button not found or listener already attached.");
          return;
     }
-     console.log("[eros.js] Setting up Eros form listeners.");
+     console.debug("[eros.js] Setting up Eros form listeners.");
      testErosButton.dataset.listenerAttached = 'true'; // Mark as attached
     
     // Add event listener for connection test
     testErosButton.addEventListener('click', function() {
-        console.log("[eros.js] Testing Eros connection...");
+        console.debug("[eros.js] Testing Eros connection...");
         
         // Temporarily suppress change detection to prevent the unsaved changes dialog
         window._suppressUnsavedChangesDialog = true;

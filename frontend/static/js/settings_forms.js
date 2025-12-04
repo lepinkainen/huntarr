@@ -194,7 +194,7 @@ const SettingsForms = {
           ? "block"
           : "none"
       }; border-top: 1px solid rgba(90, 109, 137, 0.2); padding-top: 15px; margin-top: 15px;">
-                            <label for="sonarr-air-date-delay-${index}"><a href="https://github.com/plexguide/Huntarr.io/issues/700" class="info-icon" title="Delay searching for episodes after their air date to allow better releases to appear" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i></a>Air Date Search Delay:</label>
+                            <label for="sonarr-air-date-delay-${index}">Air Date Search Delay:</label>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <input type="number" id="sonarr-air-date-delay-${index}" name="air_date_delay_days" min="0" max="30" value="${
         instance.air_date_delay_days || 0
@@ -313,7 +313,7 @@ const SettingsForms = {
             <div class="settings-group" id="sonarr-custom-tags">
                 <h3>Custom Tags</h3>
                 <div class="setting-item">
-                    <label for="sonarr_tag_processed_items"><a href="https://github.com/plexguide/Huntarr.io/issues/382" class="info-icon" title="Learn more about tagging processed items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Tag Processed Items:</label>
+                    <label for="sonarr_tag_processed_items">Tag Processed Items:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="sonarr_tag_processed_items" name="tag_processed_items" ${
                           settings.tag_processed_items !== false
@@ -327,7 +327,7 @@ const SettingsForms = {
                 <div class="setting-item" id="sonarr-custom-tag-fields" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="sonarr_custom_tag_missing"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to missing items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Missing Items Tag:</label>
+                    <label for="sonarr_custom_tag_missing">Missing Items Tag:</label>
                     <input type="text" id="sonarr_custom_tag_missing" name="custom_tag_missing" maxlength="25" value="${
                       settings.custom_tags?.missing || "huntarr-missing"
                     }" placeholder="huntarr-missing">
@@ -336,7 +336,7 @@ const SettingsForms = {
                 <div class="setting-item" id="sonarr-custom-tag-fields-2" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="sonarr_custom_tag_upgrade"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to upgraded items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Upgrade Items Tag:</label>
+                    <label for="sonarr_custom_tag_upgrade">Upgrade Items Tag:</label>
                     <input type="text" id="sonarr_custom_tag_upgrade" name="custom_tag_upgrade" maxlength="25" value="${
                       settings.custom_tags?.upgrade || "huntarr-upgrade"
                     }" placeholder="huntarr-upgrade">
@@ -345,7 +345,7 @@ const SettingsForms = {
                 <div class="setting-item" id="sonarr-custom-tag-fields-3" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="sonarr_custom_tag_shows_missing"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to shows mode missing items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Shows Missing Tag:</label>
+                    <label for="sonarr_custom_tag_shows_missing">Shows Missing Tag:</label>
                     <input type="text" id="sonarr_custom_tag_shows_missing" name="custom_tag_shows_missing" maxlength="25" value="${
                       settings.custom_tags?.shows_missing ||
                       "huntarr-shows-missing"
@@ -569,7 +569,7 @@ const SettingsForms = {
     // Restore the original suppression state after a brief delay to allow form to fully render
     setTimeout(() => {
       window._appsSuppressChangeDetection = wasSuppressionActive;
-      console.log(
+      console.debug(
         `[SettingsForms] Restored change detection suppression state: ${wasSuppressionActive}`
       );
     }, 100);
@@ -623,7 +623,7 @@ const SettingsForms = {
         instanceIndex === 0 ? "Default" : `Instance ${instanceIndex + 1}`;
     }
 
-    console.log(
+    console.debug(
       `[SettingsForms] Resetting state for ${appType}/${instanceName} (index ${instanceIndex})`
     );
 
@@ -664,7 +664,7 @@ const SettingsForms = {
             resetTimeElement.textContent = "Reloading...";
           }
 
-          console.log(
+          console.debug(
             `[SettingsForms] Successfully reset state for ${appType} instance ${instanceIndex}`
           );
         } else {
@@ -875,7 +875,7 @@ const SettingsForms = {
                         
                         <!-- Release Date Delay Setting -->
                         <div class="setting-item" style="border-top: 1px solid rgba(90, 109, 137, 0.2); padding-top: 15px; margin-top: 15px;">
-                            <label for="radarr-release-date-delay-${index}"><a href="https://github.com/plexguide/Huntarr.io/issues/693" class="info-icon" title="Delay searching for movies after their release date to allow better releases to appear" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i></a>Release Date Search Delay:</label>
+                            <label for="radarr-release-date-delay-${index}">Release Date Search Delay:</label>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <input type="number" id="radarr-release-date-delay-${index}" name="release_date_delay_days" min="0" max="365" value="${instance.release_date_delay_days || 0}" style="width: 80px; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); background-color: #374151; color: #d1d5db;">
                                 <span style="color: #9ca3af; font-size: 14px;">days</span>
@@ -1005,7 +1005,7 @@ const SettingsForms = {
             <div class="settings-group" id="radarr-custom-tags">
                 <h3>Custom Tags</h3>
                 <div class="setting-item">
-                    <label for="radarr_tag_processed_items"><a href="https://github.com/plexguide/Huntarr.io/issues/382" class="info-icon" title="Learn more about tagging processed items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Tag Processed Items:</label>
+                    <label for="radarr_tag_processed_items">Tag Processed Items:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="radarr_tag_processed_items" name="tag_processed_items" ${
                           settings.tag_processed_items !== false
@@ -1019,7 +1019,7 @@ const SettingsForms = {
                 <div class="setting-item" id="radarr-custom-tag-fields" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="radarr_custom_tag_missing"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to missing movies" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Missing Movies Tag:</label>
+                    <label for="radarr_custom_tag_missing">Missing Movies Tag:</label>
                     <input type="text" id="radarr_custom_tag_missing" name="custom_tag_missing" maxlength="25" value="${
                       settings.custom_tags?.missing || "huntarr-missing"
                     }" placeholder="huntarr-missing">
@@ -1028,7 +1028,7 @@ const SettingsForms = {
                 <div class="setting-item" id="radarr-custom-tag-fields-2" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="radarr_custom_tag_upgrade"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to upgraded movies" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Upgrade Movies Tag:</label>
+                    <label for="radarr_custom_tag_upgrade">Upgrade Movies Tag:</label>
                     <input type="text" id="radarr_custom_tag_upgrade" name="custom_tag_upgrade" maxlength="25" value="${
                       settings.custom_tags?.upgrade || "huntarr-upgrade"
                     }" placeholder="huntarr-upgrade">
@@ -1225,7 +1225,7 @@ const SettingsForms = {
     // Restore the original suppression state after a brief delay to allow form to fully render
     setTimeout(() => {
       window._appsSuppressChangeDetection = wasSuppressionActive;
-      console.log(
+      console.debug(
         `[SettingsForms] Restored change detection suppression state for Radarr: ${wasSuppressionActive}`
       );
     }, 100);
@@ -1486,7 +1486,7 @@ const SettingsForms = {
             <div class="settings-group" id="lidarr-custom-tags">
                 <h3>Custom Tags</h3>
                 <div class="setting-item">
-                    <label for="lidarr_tag_processed_items"><a href="https://github.com/plexguide/Huntarr.io/issues/382" class="info-icon" title="Learn more about tagging processed items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Tag Processed Items:</label>
+                    <label for="lidarr_tag_processed_items">Tag Processed Items:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="lidarr_tag_processed_items" name="tag_processed_items" ${
                           settings.tag_processed_items !== false
@@ -1500,7 +1500,7 @@ const SettingsForms = {
                 <div class="setting-item" id="lidarr-custom-tag-fields" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="lidarr_custom_tag_missing"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to missing items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Missing Albums Tag:</label>
+                    <label for="lidarr_custom_tag_missing">Missing Albums Tag:</label>
                     <input type="text" id="lidarr_custom_tag_missing" name="custom_tag_missing" maxlength="25" value="${
                       settings.custom_tags?.missing || "huntarr-missing"
                     }" placeholder="huntarr-missing">
@@ -1509,7 +1509,7 @@ const SettingsForms = {
                 <div class="setting-item" id="lidarr-custom-tag-fields-2" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="lidarr_custom_tag_upgrade"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to upgraded items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Upgrade Albums Tag:</label>
+                    <label for="lidarr_custom_tag_upgrade">Upgrade Albums Tag:</label>
                     <input type="text" id="lidarr_custom_tag_upgrade" name="custom_tag_upgrade" maxlength="25" value="${
                       settings.custom_tags?.upgrade || "huntarr-upgrade"
                     }" placeholder="huntarr-upgrade">
@@ -1585,7 +1585,7 @@ const SettingsForms = {
     // Restore the original suppression state after a brief delay to allow form to fully render
     setTimeout(() => {
       window._appsSuppressChangeDetection = wasSuppressionActive;
-      console.log(
+      console.debug(
         `[SettingsForms] Restored change detection suppression state for Lidarr: ${wasSuppressionActive}`
       );
     }, 100);
@@ -1837,7 +1837,7 @@ const SettingsForms = {
             <div class="settings-group" id="readarr-custom-tags">
                 <h3>Custom Tags</h3>
                 <div class="setting-item">
-                    <label for="readarr_tag_processed_items"><a href="https://github.com/plexguide/Huntarr.io/issues/382" class="info-icon" title="Learn more about tagging processed items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Tag Processed Items:</label>
+                    <label for="readarr_tag_processed_items">Tag Processed Items:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="readarr_tag_processed_items" name="tag_processed_items" ${
                           settings.tag_processed_items !== false
@@ -1851,7 +1851,7 @@ const SettingsForms = {
                 <div class="setting-item" id="readarr-custom-tag-fields" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="readarr_custom_tag_missing"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to missing items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Missing Books Tag:</label>
+                    <label for="readarr_custom_tag_missing">Missing Books Tag:</label>
                     <input type="text" id="readarr_custom_tag_missing" name="custom_tag_missing" maxlength="25" value="${
                       settings.custom_tags?.missing || "huntarr-missing"
                     }" placeholder="huntarr-missing">
@@ -1860,7 +1860,7 @@ const SettingsForms = {
                 <div class="setting-item" id="readarr-custom-tag-fields-2" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="readarr_custom_tag_upgrade"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to upgraded items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Upgrade Books Tag:</label>
+                    <label for="readarr_custom_tag_upgrade">Upgrade Books Tag:</label>
                     <input type="text" id="readarr_custom_tag_upgrade" name="custom_tag_upgrade" maxlength="25" value="${
                       settings.custom_tags?.upgrade || "huntarr-upgrade"
                     }" placeholder="huntarr-upgrade">
@@ -2179,7 +2179,7 @@ const SettingsForms = {
             <div class="settings-group" id="whisparr-custom-tags">
                 <h3>Custom Tags</h3>
                 <div class="setting-item">
-                    <label for="whisparr_tag_processed_items"><a href="https://github.com/plexguide/Huntarr.io/issues/382" class="info-icon" title="Learn more about tagging processed items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Tag Processed Items:</label>
+                    <label for="whisparr_tag_processed_items">Tag Processed Items:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="whisparr_tag_processed_items" name="tag_processed_items" ${
                           settings.tag_processed_items !== false
@@ -2193,7 +2193,7 @@ const SettingsForms = {
                 <div class="setting-item" id="whisparr-custom-tag-fields" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="whisparr_custom_tag_missing"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to missing items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Missing Movies Tag:</label>
+                    <label for="whisparr_custom_tag_missing">Missing Movies Tag:</label>
                     <input type="text" id="whisparr_custom_tag_missing" name="custom_tag_missing" maxlength="25" value="${
                       settings.custom_tags?.missing || "huntarr-missing"
                     }" placeholder="huntarr-missing">
@@ -2202,7 +2202,7 @@ const SettingsForms = {
                 <div class="setting-item" id="whisparr-custom-tag-fields-2" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="whisparr_custom_tag_upgrade"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to upgraded items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Upgrade Movies Tag:</label>
+                    <label for="whisparr_custom_tag_upgrade">Upgrade Movies Tag:</label>
                     <input type="text" id="whisparr_custom_tag_upgrade" name="custom_tag_upgrade" maxlength="25" value="${
                       settings.custom_tags?.upgrade || "huntarr-upgrade"
                     }" placeholder="huntarr-upgrade">
@@ -2365,7 +2365,7 @@ const SettingsForms = {
     // Restore the original suppression state after a brief delay to allow form to fully render
     setTimeout(() => {
       window._appsSuppressChangeDetection = wasSuppressionActive;
-      console.log(
+      console.debug(
         `[SettingsForms] Restored change detection suppression state for Whisparr: ${wasSuppressionActive}`
       );
     }, 100);
@@ -2629,7 +2629,7 @@ const SettingsForms = {
             <div class="settings-group" id="eros-custom-tags">
                 <h3>Custom Tags</h3>
                 <div class="setting-item">
-                    <label for="eros_tag_processed_items"><a href="https://github.com/plexguide/Huntarr.io/issues/382" class="info-icon" title="Learn more about tagging processed items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Tag Processed Items:</label>
+                    <label for="eros_tag_processed_items">Tag Processed Items:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="eros_tag_processed_items" name="tag_processed_items" ${
                           settings.tag_processed_items !== false
@@ -2643,7 +2643,7 @@ const SettingsForms = {
                 <div class="setting-item" id="eros-custom-tag-fields" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="eros_custom_tag_missing"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to missing items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Missing Movies Tag:</label>
+                    <label for="eros_custom_tag_missing">Missing Movies Tag:</label>
                     <input type="text" id="eros_custom_tag_missing" name="custom_tag_missing" maxlength="25" value="${
                       settings.custom_tags?.missing || "huntarr-missing"
                     }" placeholder="huntarr-missing">
@@ -2652,7 +2652,7 @@ const SettingsForms = {
                 <div class="setting-item" id="eros-custom-tag-fields-2" style="display: ${
                   settings.tag_processed_items !== false ? "block" : "none"
                 };">
-                    <label for="eros_custom_tag_upgrade"><a href="https://github.com/plexguide/Huntarr.io/issues/579" class="info-icon" title="Customize the tag applied to upgraded items" target="_blank" rel="noopener"><i class="fas fa-info-circle"></i></a>Upgrade Movies Tag:</label>
+                    <label for="eros_custom_tag_upgrade">Upgrade Movies Tag:</label>
                     <input type="text" id="eros_custom_tag_upgrade" name="custom_tag_upgrade" maxlength="25" value="${
                       settings.custom_tags?.upgrade || "huntarr-upgrade"
                     }" placeholder="huntarr-upgrade">
@@ -2815,7 +2815,7 @@ const SettingsForms = {
     // Restore the original suppression state after a brief delay to allow form to fully render
     setTimeout(() => {
       window._appsSuppressChangeDetection = wasSuppressionActive;
-      console.log(
+      console.debug(
         `[SettingsForms] Restored change detection suppression state for Eros: ${wasSuppressionActive}`
       );
     }, 100);
@@ -2823,7 +2823,7 @@ const SettingsForms = {
 
   // Set up manual save functionality for Settings
   setupSettingsManualSave: function (container, originalSettings = {}) {
-    console.log(
+    console.debug(
       "[SettingsForms] Setting up manual save for Settings with original settings:",
       originalSettings
     );
@@ -2846,7 +2846,7 @@ const SettingsForms = {
     saveButton.style.color = "#9ca3af";
     saveButton.style.borderColor = "#4b5563";
     saveButton.style.cursor = "not-allowed";
-    console.log(
+    console.debug(
       "[SettingsForms] Settings save button initialized as disabled (grey)"
     );
 
@@ -2854,7 +2854,7 @@ const SettingsForms = {
     const updateSaveButtonState = (changesDetected) => {
       hasChanges = changesDetected;
       window.settingsUnsavedChanges = changesDetected;
-      console.log(
+      console.debug(
         `[SettingsForms] Updating settings save button state: hasChanges=${hasChanges}, global unsaved=${window.settingsUnsavedChanges}`
       );
 
@@ -2865,7 +2865,7 @@ const SettingsForms = {
         saveButton.style.color = "#ffffff";
         saveButton.style.borderColor = "#dc2626";
         saveButton.style.cursor = "pointer";
-        console.log("[SettingsForms] Settings save button enabled (red)");
+        console.debug("[SettingsForms] Settings save button enabled (red)");
 
         // Add beforeunload warning for page refresh
         SettingsForms.addUnsavedChangesWarning();
@@ -2876,7 +2876,7 @@ const SettingsForms = {
         saveButton.style.color = "#9ca3af";
         saveButton.style.borderColor = "#4b5563";
         saveButton.style.cursor = "not-allowed";
-        console.log("[SettingsForms] Settings save button disabled (grey)");
+        console.debug("[SettingsForms] Settings save button disabled (grey)");
 
         // Remove beforeunload warning when no changes
         SettingsForms.removeUnsavedChangesWarning();
@@ -2916,12 +2916,12 @@ const SettingsForms = {
           currentValue = input.value.trim();
         }
 
-        console.log(
+        console.debug(
           `[SettingsForms] Checking settings ${key}: original=${originalValue}, current=${currentValue}`
         );
 
         if (originalValue !== currentValue) {
-          console.log(
+          console.debug(
             `[SettingsForms] Settings change detected in ${key}: ${originalValue} -> ${currentValue}`
           );
           formChanged = true;
@@ -2941,12 +2941,12 @@ const SettingsForms = {
           JSON.stringify(originalUrls.sort()) !==
           JSON.stringify(currentUrls.sort())
         ) {
-          console.log("[SettingsForms] Settings apprise_urls change detected");
+          console.debug("[SettingsForms] Settings apprise_urls change detected");
           formChanged = true;
         }
       }
 
-      console.log(
+      console.debug(
         `[SettingsForms] Settings change detection result: ${formChanged}`
       );
       updateSaveButtonState(formChanged);
@@ -2969,7 +2969,7 @@ const SettingsForms = {
     saveButton.addEventListener("click", () => {
       if (!hasChanges) return;
 
-      console.log("[SettingsForms] Manual save triggered for Settings");
+      console.debug("[SettingsForms] Manual save triggered for Settings");
 
       // Show saving state
       saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -2980,7 +2980,7 @@ const SettingsForms = {
         window.huntarrUI
           .autoSaveGeneralSettings(true)
           .then(() => {
-            console.log("[SettingsForms] Settings manual save successful");
+            console.debug("[SettingsForms] Settings manual save successful");
 
             // Reset button state and clear unsaved changes warning
             saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
@@ -3008,7 +3008,7 @@ const SettingsForms = {
     // Initial change detection - ensure form is fully loaded before checking
     // Use a longer timeout to ensure all form elements are properly initialized
     setTimeout(() => {
-      console.log(
+      console.debug(
         "[SettingsForms] Running initial change detection for Settings"
       );
       detectChanges();
@@ -3017,7 +3017,7 @@ const SettingsForms = {
 
   // Set up manual save functionality for Notifications
   setupNotificationsManualSave: function (container, originalSettings = {}) {
-    console.log(
+    console.debug(
       "[SettingsForms] Setting up manual save for Notifications with original settings:",
       originalSettings
     );
@@ -3044,7 +3044,7 @@ const SettingsForms = {
     saveButton.style.color = "#9ca3af";
     saveButton.style.borderColor = "#4b5563";
     saveButton.style.cursor = "not-allowed";
-    console.log(
+    console.debug(
       "[SettingsForms] Notifications save button initialized as disabled (grey)"
     );
 
@@ -3052,7 +3052,7 @@ const SettingsForms = {
     const updateSaveButtonState = (changesDetected) => {
       hasChanges = changesDetected;
       window.notificationsUnsavedChanges = changesDetected;
-      console.log(
+      console.debug(
         `[SettingsForms] Updating notifications save button state: hasChanges=${hasChanges}, global unsaved=${window.notificationsUnsavedChanges}`
       );
 
@@ -3063,7 +3063,7 @@ const SettingsForms = {
         saveButton.style.color = "#ffffff";
         saveButton.style.borderColor = "#dc2626";
         saveButton.style.cursor = "pointer";
-        console.log("[SettingsForms] Notifications save button enabled (red)");
+        console.debug("[SettingsForms] Notifications save button enabled (red)");
 
         // Add beforeunload warning for page refresh
         SettingsForms.addUnsavedChangesWarning();
@@ -3074,7 +3074,7 @@ const SettingsForms = {
         saveButton.style.color = "#9ca3af";
         saveButton.style.borderColor = "#4b5563";
         saveButton.style.cursor = "not-allowed";
-        console.log(
+        console.debug(
           "[SettingsForms] Notifications save button disabled (grey)"
         );
 
@@ -3087,7 +3087,7 @@ const SettingsForms = {
     const detectChanges = () => {
       // Skip change detection if still in initial setup phase
       if (suppressInitialDetection) {
-        console.log(
+        console.debug(
           "[SettingsForms] Notifications change detection suppressed during initial setup"
         );
         return;
@@ -3126,12 +3126,12 @@ const SettingsForms = {
           currentValue = input.value.trim();
         }
 
-        console.log(
+        console.debug(
           `[SettingsForms] Checking notifications ${key}: original=${originalValue}, current=${currentValue}`
         );
 
         if (originalValue !== currentValue) {
-          console.log(
+          console.debug(
             `[SettingsForms] Notifications change detected in ${key}: ${originalValue} -> ${currentValue}`
           );
           formChanged = true;
@@ -3151,14 +3151,14 @@ const SettingsForms = {
           JSON.stringify(originalUrls.sort()) !==
           JSON.stringify(currentUrls.sort())
         ) {
-          console.log(
+          console.debug(
             "[SettingsForms] Notifications apprise_urls change detected"
           );
           formChanged = true;
         }
       }
 
-      console.log(
+      console.debug(
         `[SettingsForms] Notifications change detection result: ${formChanged}`
       );
       updateSaveButtonState(formChanged);
@@ -3181,7 +3181,7 @@ const SettingsForms = {
     saveButton.addEventListener("click", () => {
       if (!hasChanges) return;
 
-      console.log("[SettingsForms] Manual save triggered for Notifications");
+      console.debug("[SettingsForms] Manual save triggered for Notifications");
 
       // Show saving state
       saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -3192,7 +3192,7 @@ const SettingsForms = {
         window.huntarrUI
           .autoSaveGeneralSettings(true)
           .then(() => {
-            console.log("[SettingsForms] Notifications manual save successful");
+            console.debug("[SettingsForms] Notifications manual save successful");
 
             // Reset button state and clear unsaved changes warning
             saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
@@ -3220,7 +3220,7 @@ const SettingsForms = {
     // Initial setup - capture actual form state as baseline
     // Use a longer timeout to ensure all form elements are properly initialized
     setTimeout(() => {
-      console.log(
+      console.debug(
         "[SettingsForms] Capturing actual form state as notifications baseline"
       );
 
@@ -3258,7 +3258,7 @@ const SettingsForms = {
 
       // Enable change detection now that baseline is captured
       suppressInitialDetection = false;
-      console.log(
+      console.debug(
         "[SettingsForms] Notifications baseline captured, change detection enabled"
       );
     }, 500);
@@ -3266,7 +3266,7 @@ const SettingsForms = {
 
   // Set up manual save functionality for App instances (Sonarr, Radarr, etc.)
   setupAppManualSave: function (container, appType, originalSettings = {}) {
-    console.log(
+    console.debug(
       `[SettingsForms] Setting up manual save for ${appType} with original settings:`,
       originalSettings
     );
@@ -3324,7 +3324,7 @@ const SettingsForms = {
     const detectChanges = () => {
       // Skip change detection if still in initial setup phase
       if (suppressInitialDetection) {
-        console.log(
+        console.debug(
           `[SettingsForms] ${appType} change detection suppressed during initial setup`
         );
         return;
@@ -3339,7 +3339,7 @@ const SettingsForms = {
         normalizedSettings.originalInstanceCount || 0;
 
       if (currentInstanceCount !== originalInstanceCount) {
-        console.log(
+        console.debug(
           `[SettingsForms] ${appType} instance count changed: ${originalInstanceCount} -> ${currentInstanceCount}`
         );
         formChanged = true;
@@ -3380,14 +3380,14 @@ const SettingsForms = {
         }
 
         if (originalValue !== currentValue) {
-          console.log(
+          console.debug(
             `[SettingsForms] ${appType} change detected in ${key}: ${originalValue} -> ${currentValue}`
           );
           formChanged = true;
         }
       });
 
-      console.log(
+      console.debug(
         `[SettingsForms] ${appType} change detection result: ${formChanged}`
       );
       updateSaveButtonState(formChanged);
@@ -3423,7 +3423,7 @@ const SettingsForms = {
     saveButton.addEventListener("click", () => {
       if (!hasChanges) return;
 
-      console.log(`[SettingsForms] Manual save triggered for ${appType}`);
+      console.debug(`[SettingsForms] Manual save triggered for ${appType}`);
 
       // Show saving state
       saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -3433,7 +3433,7 @@ const SettingsForms = {
       let settings;
       try {
         settings = SettingsForms.getFormSettings(container, appType);
-        console.log(`[SettingsForms] Collected ${appType} settings:`, settings);
+        console.debug(`[SettingsForms] Collected ${appType} settings:`, settings);
       } catch (error) {
         console.error(
           `[SettingsForms] Error collecting ${appType} settings:`,
@@ -3461,7 +3461,7 @@ const SettingsForms = {
           return response.json();
         })
         .then((data) => {
-          console.log(
+          console.debug(
             `[SettingsForms] ${appType} settings saved successfully:`,
             data
           );
@@ -3542,7 +3542,7 @@ const SettingsForms = {
 
     // Initial setup - capture actual form state as baseline
     setTimeout(() => {
-      console.log(
+      console.debug(
         `[SettingsForms] Capturing actual form state as ${appType} baseline`
       );
 
@@ -3559,7 +3559,7 @@ const SettingsForms = {
 
       // Enable change detection now that baseline is captured
       suppressInitialDetection = false;
-      console.log(
+      console.debug(
         `[SettingsForms] ${appType} baseline captured, change detection enabled`
       );
     }, 500);
@@ -3583,13 +3583,13 @@ const SettingsForms = {
       "eros",
     ];
     if (manualSaveApps.includes(appType)) {
-      console.log(
+      console.debug(
         `[SettingsForms] Skipping auto-save setup for ${appType} - using manual save`
       );
       return;
     }
 
-    console.log(
+    console.debug(
       `[SettingsForms] Setting up auto-save for app type: ${appType}`
     );
 
@@ -3599,7 +3599,7 @@ const SettingsForms = {
     inputs.forEach((input) => {
       // Add change event listener for auto-save
       input.addEventListener("change", () => {
-        console.log(
+        console.debug(
           `[SettingsForms] Auto-save triggered for ${appType} by ${
             input.id || input.name || "unnamed input"
           }`
@@ -3607,7 +3607,7 @@ const SettingsForms = {
 
         // Settings now use manual save - no auto-save
         if (appType === "general") {
-          console.log(
+          console.debug(
             `[SettingsForms] Settings use manual save - skipping auto-save for ${appType}`
           );
         } else {
@@ -3628,12 +3628,12 @@ const SettingsForms = {
           // Debounce to avoid too many saves
           clearTimeout(timeout);
           timeout = setTimeout(() => {
-            console.log(
+            console.debug(
               `[SettingsForms] Auto-save triggered by input for ${appType}`
             );
 
             if (appType === "general") {
-              console.log(
+              console.debug(
                 `[SettingsForms] Settings use manual save - skipping auto-save for input in ${appType}`
               );
             }
@@ -3642,7 +3642,7 @@ const SettingsForms = {
       }
     });
 
-    console.log(
+    console.debug(
       `[SettingsForms] Auto-save set up for ${inputs.length} inputs in ${appType} form`
     );
   },
@@ -3703,16 +3703,16 @@ const SettingsForms = {
 
     // For the general settings form, collect settings including advanced settings
     if (appType === "general") {
-      console.log("Processing general settings");
-      console.log("Container:", container);
-      console.log(
+      console.debug("Processing general settings");
+      console.debug("Container:", container);
+      console.debug(
         "Container HTML (first 500 chars):",
         container.innerHTML.substring(0, 500)
       );
 
       // Debug: Check if apprise_urls exists anywhere
       const globalAppriseElement = document.querySelector("#apprise_urls");
-      console.log("Global apprise_urls element:", globalAppriseElement);
+      console.debug("Global apprise_urls element:", globalAppriseElement);
 
       settings.instances = [];
       settings.timezone = getInputValue("#timezone", "UTC");
@@ -3763,7 +3763,7 @@ const SettingsForms = {
         }
 
         if (!element) {
-          console.log(
+          console.debug(
             `Notification element ${id} not found in either container`
           );
           return defaultValue;
@@ -3795,14 +3795,14 @@ const SettingsForms = {
       if (!appriseUrlsElement) {
         appriseUrlsElement = container.querySelector("#apprise_urls");
       }
-      console.log("Apprise URLs element found:", appriseUrlsElement);
+      console.debug("Apprise URLs element found:", appriseUrlsElement);
       const appriseUrlsText = appriseUrlsElement?.value || "";
-      console.log("Apprise URLs raw text:", appriseUrlsText);
+      console.debug("Apprise URLs raw text:", appriseUrlsText);
       settings.apprise_urls = appriseUrlsText
         .split("\n")
         .map((url) => url.trim())
         .filter((url) => url.length > 0);
-      console.log("Apprise URLs processed:", settings.apprise_urls);
+      console.debug("Apprise URLs processed:", settings.apprise_urls);
 
       settings.notify_on_missing = getNotificationInputValue(
         "#notify_on_missing",
@@ -4237,7 +4237,7 @@ const SettingsForms = {
       }
     }
 
-    console.log("Collected settings for", appType, settings);
+    console.debug("Collected settings for", appType, settings);
     return settings;
   },
 
@@ -4990,10 +4990,10 @@ const SettingsForms = {
     if (timezoneSelect) {
       // Add timezone change event listener
       timezoneSelect.addEventListener("change", function () {
-        console.log("[SettingsForms] Timezone changed to:", this.value);
+        console.debug("[SettingsForms] Timezone changed to:", this.value);
 
         // Settings now use manual save - timezone change detected but not auto-saved
-        console.log("[SettingsForms] Timezone changed - manual save required");
+        console.debug("[SettingsForms] Timezone changed - manual save required");
       });
     }
 
@@ -5037,7 +5037,7 @@ const SettingsForms = {
 
   // Setup instance management - test connection buttons and add/remove instance buttons
   setupInstanceManagement: function (container, appType, initialCount) {
-    console.log(
+    console.debug(
       `Setting up instance management for ${appType} with ${initialCount} instances`
     );
 
@@ -5099,12 +5099,12 @@ const SettingsForms = {
               apiKeyInput &&
               apiKeyInput.value.trim().length > 20
             ) {
-              console.log(
+              console.debug(
                 `[Initial Check] Running connection check for ${appType} instance ${instanceIndex}`
               );
               SettingsForms.checkConnectionStatus(appType, instanceIndex);
             } else {
-              console.log(
+              console.debug(
                 `[Initial Check] Skipping connection check for ${appType} instance ${instanceIndex} - insufficient data`
               );
               // Set appropriate status message
@@ -5716,7 +5716,7 @@ const SettingsForms = {
     statusElement.textContent = "Testing connection...";
     statusElement.style.color = "#888";
 
-    console.log(
+    console.debug(
       `Testing connection for ${app} - URL: ${url}, API Key: ${apiKey.substring(
         0,
         5
@@ -5763,7 +5763,7 @@ const SettingsForms = {
         return response.json();
       })
       .then((data) => {
-        console.log(`Test connection response:`, data);
+        console.debug(`Test connection response:`, data);
 
         // Reset button
         buttonElement.disabled = false;
@@ -5817,14 +5817,14 @@ const SettingsForms = {
 
   // Helper method to reset unsaved changes suppression flags
   _resetSuppressionFlags: function () {
-    console.log("[ConnectionStatus] Resetting all suppression flags");
+    console.debug("[ConnectionStatus] Resetting all suppression flags");
     // Reset all suppression flags
     if (window.huntarrUI) {
       window.huntarrUI.suppressUnsavedChangesCheck = false;
     }
     window._suppressUnsavedChangesDialog = false;
     window._appsSuppressChangeDetection = false;
-    console.log("[ConnectionStatus] All suppression flags reset");
+    console.debug("[ConnectionStatus] All suppression flags reset");
   },
 
   // Check connection status for an instance
@@ -5852,7 +5852,7 @@ const SettingsForms = {
       `${app}-status-${instanceIndex}`
     );
 
-    console.log(
+    console.debug(
       `[ConnectionStatus] Suppressing change detection for ${app} instance ${instanceIndex}`
     );
 
@@ -5900,7 +5900,7 @@ const SettingsForms = {
       statusElement.style.color = "#888";
     }
 
-    console.log(
+    console.debug(
       `Checking connection status for ${app} instance ${instanceIndex}`
     );
 
@@ -5931,7 +5931,7 @@ const SettingsForms = {
     apiKey,
     statusElement
   ) {
-    console.log(
+    console.debug(
       `[ConnectionStatus] Testing connection for ${app} instance ${instanceIndex}`
     );
 
@@ -5968,7 +5968,7 @@ const SettingsForms = {
       })
       .then((data) => {
         clearTimeout(backupTimeoutId); // Clear the backup timeout since we got a response
-        console.log(
+        console.debug(
           `[ConnectionStatus] Connection test response for ${app} instance ${instanceIndex}:`,
           data
         );
@@ -5992,11 +5992,11 @@ const SettingsForms = {
         }
 
         // Reset suppression flags after updating status with longer delay
-        console.log(
+        console.debug(
           `[ConnectionStatus] Resetting suppression flags for ${app} instance ${instanceIndex} in 2 seconds`
         );
         setTimeout(() => {
-          console.log(
+          console.debug(
             `[ConnectionStatus] Suppression flags reset for ${app} instance ${instanceIndex}`
           );
           this._resetSuppressionFlags();
@@ -6016,11 +6016,11 @@ const SettingsForms = {
         }
 
         // Reset suppression flags after updating status with longer delay
-        console.log(
+        console.debug(
           `[ConnectionStatus] Resetting suppression flags for ${app} instance ${instanceIndex} in 2 seconds (error case)`
         );
         setTimeout(() => {
-          console.log(
+          console.debug(
             `[ConnectionStatus] Suppression flags reset for ${app} instance ${instanceIndex} (error case)`
           );
           this._resetSuppressionFlags();
@@ -6231,7 +6231,7 @@ const SettingsForms = {
         const statusSpan = container.querySelector("#testNotificationStatus");
 
         // Note: Settings must be saved manually before testing
-        console.log(
+        console.debug(
           "[SettingsForms] Test notification - ensure settings are saved first"
         );
 
@@ -6288,31 +6288,31 @@ const SettingsForms = {
 
   // Refresh Apps section to reflect setting changes
   refreshAppsSection: function () {
-    console.log("[SettingsForms] Refreshing Apps section");
+    console.debug("[SettingsForms] Refreshing Apps section");
 
     // Check if Apps module is available and refresh the currently selected app
     if (window.Apps && window.Apps.loadAppSettings) {
       // Get the currently selected app
       const appSelect = document.getElementById("appsAppSelect");
       if (appSelect && appSelect.value) {
-        console.log(
+        console.debug(
           "[SettingsForms] Refreshing currently selected app:",
           appSelect.value
         );
         window.Apps.loadAppSettings(appSelect.value);
       } else {
-        console.log(
+        console.debug(
           "[SettingsForms] No app currently selected in Apps section"
         );
       }
     } else {
-      console.log("[SettingsForms] Apps module not available for refresh");
+      console.debug("[SettingsForms] Apps module not available for refresh");
     }
   },
 
   // Unsaved changes warning system for Settings
   addUnsavedChangesWarning: function () {
-    console.log("[SettingsForms] Adding unsaved changes warning");
+    console.debug("[SettingsForms] Adding unsaved changes warning");
 
     // Add beforeunload event listener for page refresh warning
     if (!window.huntarrBeforeUnloadListener) {
@@ -6340,7 +6340,7 @@ const SettingsForms = {
   },
 
   removeUnsavedChangesWarning: function () {
-    console.log("[SettingsForms] Removing unsaved changes warning");
+    console.debug("[SettingsForms] Removing unsaved changes warning");
 
     // Only remove if all sections have no unsaved changes
     if (
@@ -6375,13 +6375,13 @@ const SettingsForms = {
 
       if (userChoice) {
         // User chose to stay and save
-        console.log(
+        console.debug(
           "[SettingsForms] User chose to stay and save Settings changes"
         );
         return false;
       } else {
         // User chose to leave and lose changes
-        console.log(
+        console.debug(
           "[SettingsForms] User chose to leave and lose Settings changes"
         );
         window.settingsUnsavedChanges = false;
@@ -6399,13 +6399,13 @@ const SettingsForms = {
 
       if (userChoice) {
         // User chose to stay and save
-        console.log(
+        console.debug(
           "[SettingsForms] User chose to stay and save Notifications changes"
         );
         return false;
       } else {
         // User chose to leave and lose changes
-        console.log(
+        console.debug(
           "[SettingsForms] User chose to leave and lose Notifications changes"
         );
         window.notificationsUnsavedChanges = false;
@@ -6436,13 +6436,13 @@ const SettingsForms = {
 
         if (userChoice) {
           // User chose to stay and save
-          console.log(
+          console.debug(
             `[SettingsForms] User chose to stay and save ${appDisplayName} changes`
           );
           return false;
         } else {
           // User chose to leave and lose changes
-          console.log(
+          console.debug(
             `[SettingsForms] User chose to leave and lose ${appDisplayName} changes`
           );
           window[unsavedChangesVar] = false;

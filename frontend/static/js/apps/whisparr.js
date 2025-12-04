@@ -29,10 +29,10 @@ function setupWhisparrForm() {
 
     // Check if elements exist and if listener already attached to prevent duplicates
     if (!testWhisparrButton || testWhisparrButton.dataset.listenerAttached === 'true') {
-         console.log("[whisparr.js] Test button not found or listener already attached.");
+         console.debug("[whisparr.js] Test button not found or listener already attached.");
         return;
     }
-     console.log("[whisparr.js] Setting up Whisparr form listeners.");
+     console.debug("[whisparr.js] Setting up Whisparr form listeners.");
      testWhisparrButton.dataset.listenerAttached = 'true'; // Mark as attached
 
     // Test connection button
@@ -128,7 +128,7 @@ function setupWhisparrForm() {
         if (typeof huntarrUI !== 'undefined' && huntarrUI.settingsChanged !== wasSettingsChanged) {
             setTimeout(() => {
                 huntarrUI.settingsChanged = wasSettingsChanged;
-                console.log("[whisparr.js] Restored settingsChanged state after version check");
+                console.debug("[whisparr.js] Restored settingsChanged state after version check");
                 
                 // If there are no actual changes, update the save button state
                 if (!wasSettingsChanged && typeof huntarrUI.updateSaveResetButtonState === 'function') {

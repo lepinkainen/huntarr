@@ -30,7 +30,7 @@
         },
 
         init: function() {
-            console.log('[Lidarr Module] Initializing...');
+            console.debug('[Lidarr Module] Initializing...');
             // Cache elements specific to the Lidarr settings form
             this.elements = {
                 apiUrlInput: document.getElementById('lidarr_api_url'),
