@@ -129,7 +129,7 @@ fetch('./api/endpoint');
 /* ❌ BROKEN - Inline component CSS gets overridden */
 <!-- In component template -->
 <style>
-.app-stats-card.swaparr .stats-numbers {
+.app-stats-card .stats-numbers {
     grid-template-columns: 1fr !important;
 }
 </style>
@@ -137,7 +137,7 @@ fetch('./api/endpoint');
 /* ✅ FIXED - Add to external CSS file */
 /* File: frontend/static/css/responsive-fix.css */
 @media (max-width: 768px) {
-    .app-stats-card.swaparr .stats-numbers {
+    .app-stats-card .stats-numbers {
         display: grid !important;
         grid-template-columns: 1fr !important;
         /* Debug border for testing */
@@ -161,7 +161,7 @@ fetch('./api/endpoint');
 // ✅ FIXED - GitHub documentation with anchors
 <label><a href="https://plexguide.github.io/Huntarr.io/apps/radarr.html#instances" class="info-icon">
 <label><a href="https://plexguide.github.io/Huntarr.io/apps/radarr.html#skip-future-movies" class="info-icon">
-<label><a href="https://plexguide.github.io/Huntarr.io/apps/swaparr.html#enable-swaparr" class="info-icon">
+<label><a href="https://plexguide.github.io/Huntarr.io/apps/sonarr.html#instances" class="info-icon">
 ```
 **Pattern:** `https://plexguide.github.io/Huntarr.io/apps/[app-name].html#[anchor]`
 **Requirements:**
@@ -607,7 +607,7 @@ grep -r "href.*plexguide.github.io" frontend/ --include="*.js" | grep -v "plexgu
 
 **Changes:**
 - Removed broken links to non-existent logs.html and history.html
-- Updated features page to reflect actual functionality (Swaparr, Search Automation)
+- Updated features page to reflect actual functionality (Search Automation)
 - Completely rewrote FAQ with real-world Docker problems and practical solutions
 - Added prominent community help section on homepage with proper user flow
 
