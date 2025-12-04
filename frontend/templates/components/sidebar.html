@@ -52,6 +52,9 @@
         </div>
 
     </nav>
+    <div class="sidebar-version">
+        <span class="sidebar-version-text">v...</span>
+    </div>
 </div>
 
 <!-- Apps Sidebar -->
@@ -119,6 +122,9 @@
             </a>
         </div>
     </nav>
+    <div class="sidebar-version">
+        <span class="sidebar-version-text">v...</span>
+    </div>
 </div>
 
 <!-- Settings Sidebar -->
@@ -182,6 +188,9 @@
             </a>
         </div>
     </nav>
+    <div class="sidebar-version">
+        <span class="sidebar-version-text">v...</span>
+    </div>
 </div>
 
 <style>
@@ -680,6 +689,25 @@
         .nav-item.active .app-icon-img {
             transform: scale(1.02);
         }
+
+        .sidebar-version {
+            display: none;
+        }
+    }
+
+    /* Sidebar version footer */
+    .sidebar-version {
+        margin-top: auto;
+        padding: 12px 16px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.35);
+        text-align: center;
+        border-top: 1px solid rgba(90, 109, 137, 0.1);
+    }
+
+    .sidebar-version-text {
+        font-family: monospace;
+        letter-spacing: 0.5px;
     }
 </style>
 
@@ -751,4 +779,18 @@
 
     // Update active when hash changes
     window.addEventListener('hashchange', setActiveNavItem);
+
+    // Load version from version.txt and update all sidebar version elements
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('./version.txt')
+            .then(response => response.ok ? response.text() : Promise.reject('Failed to load'))
+            .then(version => {
+                document.querySelectorAll('.sidebar-version-text')
+                    .forEach(el => el.textContent = 'v' + version.trim());
+            })
+            .catch(() => {
+                document.querySelectorAll('.sidebar-version-text')
+                    .forEach(el => el.textContent = '');
+            });
+    });
 </script>

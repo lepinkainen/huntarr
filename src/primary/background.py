@@ -448,11 +448,11 @@ def app_specific_loop(app_type: str) -> None:
 
                 try:
                     # Look up the instance in the configured instances
-                    if configured_instances and app_type in configured_instances:
-                        for instance_details in configured_instances[app_type]:
-                            if instance_details.get("instance_name") == instance_name:
-                                instance_hours = instance_details.get("state_management_hours", 168)
-                                instance_mode = instance_details.get("state_management_mode", "custom")
+                    if instances_to_process:
+                        for inst in instances_to_process:
+                            if inst.get("instance_name") == instance_name:
+                                instance_hours = inst.get("state_management_hours", 168)
+                                instance_mode = inst.get("state_management_mode", "custom")
                                 instance_enabled = (instance_mode != "disabled")
                                 break
                 except Exception as e:

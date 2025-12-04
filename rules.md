@@ -43,7 +43,7 @@ if (this.currentSection === 'settings' || this.currentSection === 'scheduling' |
 } else if (this.currentSection === 'apps' || this.currentSection === 'sonarr' ||
            this.currentSection === 'radarr' || this.currentSection === 'lidarr' ||
            this.currentSection === 'readarr' || this.currentSection === 'whisparr' ||
-           this.currentSection === 'eros' || this.currentSection === 'prowlarr') {
+           this.currentSection === 'eros') {
     this.showAppsSidebar();
 } else {
     this.showMainSidebar();
