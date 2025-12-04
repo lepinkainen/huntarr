@@ -350,13 +350,21 @@ class BackupManager:
                     else:
                         raise Exception(f"Restored database {db_name} failed integrity check")
             
+            # Clear settings cache to ensure migrations run on restored data
+            try:
+                from src.primary.settings_manager import clear_settings_cache
+                clear_settings_cache()
+                logger.info("Settings cache cleared after restore - migrations will run on next load")
+            except Exception as cache_error:
+                logger.warning(f"Failed to clear settings cache after restore: {cache_error}")
+
             logger.info(f"Backup restored successfully: {backup_id}")
             return {
                 'backup_id': backup_id,
                 'restored_databases': restored_databases,
                 'timestamp': datetime.now().isoformat()
             }
-            
+
         except Exception as e:
             logger.error(f"Error restoring backup: {e}")
             raise

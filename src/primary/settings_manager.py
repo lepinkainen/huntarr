@@ -40,6 +40,12 @@ def clear_cache(app_name=None):
         settings_logger.debug("Clearing entire settings cache")
         settings_cache = {}
 
+# Alias for external modules to use a more explicit name
+def clear_settings_cache():
+    """Clear all cached settings to force fresh load from database with migrations."""
+    clear_cache()
+    settings_logger.info("Settings cache cleared - migrations will run on next load")
+
 def get_default_config_path(app_name: str) -> pathlib.Path:
     """Get the path to the default config file for a specific app."""
     return pathlib.Path(DEFAULT_CONFIGS_DIR) / f"{app_name}.json"

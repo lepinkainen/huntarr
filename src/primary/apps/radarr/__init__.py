@@ -25,9 +25,11 @@ def get_configured_instances():
     # Check if instances are configured
     if "instances" in settings and isinstance(settings["instances"], list) and settings["instances"]:
         for instance in settings["instances"]:
-            if instance.get("enabled", True) and instance.get("api_url") and instance.get("api_key"):
+            # Check for api_url OR address (backward compatibility with old backups)
+            url = instance.get("api_url") or instance.get("address", "")
+            if instance.get("enabled", True) and url and instance.get("api_key"):
                 # Get URL and key with auto-correction
-                api_url = instance.get("api_url", "").strip()
+                api_url = url.strip()
                 api_key = instance.get("api_key", "").strip()
 
                 # Enhanced URL validation - ensure URL has proper scheme
@@ -54,8 +56,8 @@ def get_configured_instances():
                 
                 instances.append(instance_settings)
     else:
-        # Fallback to legacy single-instance config
-        api_url = settings.get("api_url", "").strip()
+        # Fallback to legacy single-instance config (check api_url OR address for backward compatibility)
+        api_url = (settings.get("api_url") or settings.get("address", "")).strip()
         api_key = settings.get("api_key", "").strip()
         
         # Ensure URL has proper scheme for legacy config too
