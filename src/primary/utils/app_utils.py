@@ -14,7 +14,7 @@ def get_ip_address():
             hostname = socket.gethostname()
             ip = socket.gethostbyname(hostname)
             return ip
-        except:
+        except (socket.error, socket.herror, socket.gaierror, socket.timeout):
             return "localhost"
 
 def _get_user_timezone():

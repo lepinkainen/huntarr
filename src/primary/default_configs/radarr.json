@@ -14,7 +14,7 @@
   "instances": [
     {
       "name": "Default",
-      "address": "http://localhost:7878",
+      "api_url": "http://localhost:7878",
       "api_key": "",
       "api_timeout": 120,
       "state_management_mode": "custom",

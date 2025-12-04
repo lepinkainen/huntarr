@@ -120,8 +120,8 @@ class HuntarrDatabase:
             try:
                 if self.db_path.exists():
                     self.db_path.unlink()
-            except:
-                pass
+            except OSError:
+                pass  # Ignore if file can't be deleted
 
     def _check_database_integrity(self) -> bool:
         """Check if database integrity is intact"""
@@ -2076,9 +2076,9 @@ class LogsDatabase:
             try:
                 if self.db_path.exists():
                     self.db_path.unlink()
-            except:
-                pass
-    
+            except OSError:
+                pass  # Ignore if file can't be deleted
+
     def ensure_logs_database_exists(self):
         """Create logs database and tables if they don't exist"""
         try:

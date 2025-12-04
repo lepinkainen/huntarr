@@ -260,7 +260,7 @@ def is_admin():
     """Check if the script is running with administrator privileges"""
     try:
         return ctypes.windll.shell32.IsUserAnAdmin() != 0
-    except:
+    except (AttributeError, OSError):
         return False
 
 def install_service():
@@ -397,8 +397,8 @@ def install_service():
             # Clean up the batch file
             try:
                 os.unlink(batch_file)
-            except:
-                pass
+            except OSError:
+                pass  # Ignore if temp file can't be deleted
                 
             # Check for errors
             if result.returncode != 0:

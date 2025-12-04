@@ -2,99 +2,60 @@
 """
 Readarr-specific API functions
 Handles all communication with the Readarr API
+
+This module has been refactored to use the base API client, tag manager,
+and pagination helpers to eliminate code duplication across *arr apps.
 """
 
 import requests
 import json
 import time
-import datetime
-from typing import List, Dict, Any, Optional, Union
-# Correct the import path
-from src.primary.utils.logger import get_logger
-# Import load_settings
-from src.primary.settings_manager import load_settings, get_ssl_verify_setting
-import importlib
 import random
+from typing import List, Dict, Any, Optional, Union
+
+# Import base modules for shared functionality
+from src.primary.apps.base.api_client import ArrAPIClient
+from src.primary.apps.base.tag_manager import TagManager
+from src.primary.apps.base.pagination import PaginationHelper, readarr_monitored_filter
+from src.primary.utils.logger import get_logger
+from src.primary.settings_manager import load_settings, get_ssl_verify_setting
 
 # Get app-specific logger
 logger = get_logger("readarr")
 
-# Use a session for better performance
-session = requests.Session()
+# Initialize base client, tag manager, and pagination helper (Readarr uses API v1)
+_api_client = ArrAPIClient("readarr", api_version="v1", logger=logger)
+_tag_manager = TagManager(_api_client, entity_type="author")
+_pagination_helper = PaginationHelper(_api_client)
+
+# Keep session reference for backward compatibility with direct requests
+session = _api_client.session
 
 # Default API timeout in seconds - used as fallback only
 API_TIMEOUT = 30
 
 def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
-    """Check the connection to Readarr API."""
-    try:
-        # Ensure api_url is properly formatted
-        if not api_url:
-            logger.error("API URL is empty or not set")
-            return False
-            
-        # Make sure api_url has a scheme
-        if not (api_url.startswith('http://') or api_url.startswith('https://')):
-            logger.error(f"Invalid URL format: {api_url} - URL must start with http:// or https://")
-            return False
-            
-        # Ensure URL doesn't end with a slash before adding the endpoint
-        base_url = api_url.rstrip('/')
-        full_url = f"{base_url}/api/v1/system/status"
-        
-        # Add User-Agent header to identify Huntarr
-        headers = {
-            "X-Api-Key": api_key,
-            "User-Agent": "Huntarr/1.0 (https://huntarr.io)"
-        }
-        
-        response = requests.get(full_url, headers=headers, timeout=api_timeout)
-        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
-        logger.debug("Successfully connected to Readarr.")
-        return True
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to Readarr: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"An unexpected error occurred during Readarr connection check: {e}")
-        return False
+    """
+    Check the connection to Readarr API.
+
+    This is a thin wrapper around ArrAPIClient.check_connection().
+    """
+    return _api_client.check_connection(api_url, api_key, api_timeout)
 
 def get_download_queue_size(api_url: str = None, api_key: str = None, timeout: int = 30) -> int:
     """
     Get the current size of the download queue.
-    
-    Args:
-        api_url: Optional API URL (if not provided, will be fetched from settings)
-        api_key: Optional API key (if not provided, will be fetched from settings)
-        timeout: Timeout in seconds for the request
-    
-    Returns:
-        The number of items in the download queue, or 0 if the request failed
+
+    When api_url and api_key are provided, uses ArrAPIClient.get_download_queue_size().
+    Otherwise falls back to arr_request for legacy compatibility.
     """
     try:
-        # If API URL and key are provided, use them directly
         if api_url and api_key:
-            # Clean up API URL
-            api_url = api_url.rstrip('/')
-            url = f"{api_url}/api/v1/queue"
-            
-            # Headers
-            headers = {
-                "X-Api-Key": api_key,
-                "Content-Type": "application/json"
-            }
-            
-            # Make the request
-            response = session.get(url, headers=headers, timeout=timeout)
-            response.raise_for_status()
-            
-            # Parse JSON response
-            data = response.json()
-            if "totalRecords" in data:
-                return data["totalRecords"]
-            return 0
+            # Use the base API client
+            result = _api_client.get_download_queue_size(api_url, api_key, timeout)
+            return result if result >= 0 else 0
         else:
-            # Use the arr_request function if API URL and key aren't provided
+            # Legacy path: use arr_request which fetches settings automatically
             response = arr_request("queue", count_api=False)
             if response and "totalRecords" in response:
                 return response["totalRecords"]
@@ -594,151 +555,33 @@ def search_books(api_url: str, api_key: str, book_ids: List[int], api_timeout: i
 def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> Optional[int]:
     """
     Get existing tag ID or create a new tag in Readarr.
-    
-    Args:
-        api_url: The base URL of the Readarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        tag_label: The label/name of the tag to create or find
-        
-    Returns:
-        The tag ID if successful, None otherwise
+
+    This is a thin wrapper around TagManager.get_or_create_tag().
     """
-    try:
-        # First, check if the tag already exists
-        response = arr_request("tag", api_url=api_url, api_key=api_key, api_timeout=api_timeout, count_api=False)
-        if response:
-            for tag in response:
-                if tag.get('label') == tag_label:
-                    tag_id = tag.get('id')
-                    logger.debug(f"Found existing tag '{tag_label}' with ID: {tag_id}")
-                    return tag_id
-        
-        # Tag doesn't exist, create it
-        tag_data = {"label": tag_label}
-        response = arr_request("tag", method="POST", data=tag_data, api_url=api_url, api_key=api_key, api_timeout=api_timeout, count_api=False)
-        if response and 'id' in response:
-            tag_id = response['id']
-            logger.info(f"Created new tag '{tag_label}' with ID: {tag_id}")
-            return tag_id
-        else:
-            logger.error(f"Failed to create tag '{tag_label}'. Response: {response}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Error managing tag '{tag_label}': {e}")
-        return None
+    return _tag_manager.get_or_create_tag(api_url, api_key, api_timeout, tag_label)
+
 
 def add_tag_to_author(api_url: str, api_key: str, api_timeout: int, author_id: int, tag_id: int) -> bool:
     """
     Add a tag to an author in Readarr.
-    
-    Args:
-        api_url: The base URL of the Readarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        author_id: The ID of the author to tag
-        tag_id: The ID of the tag to add
-        
-    Returns:
-        True if successful, False otherwise
+
+    This is a thin wrapper around TagManager.add_tag_to_entity().
     """
-    try:
-        # First get the current author data
-        author_data = arr_request(f"author/{author_id}", api_url=api_url, api_key=api_key, api_timeout=api_timeout, count_api=False)
-        if not author_data:
-            logger.error(f"Failed to get author data for ID: {author_id}")
-            return False
-        
-        # Check if the tag is already present
-        current_tags = author_data.get('tags', [])
-        if tag_id in current_tags:
-            logger.debug(f"Tag {tag_id} already exists on author {author_id}")
-            return True
-        
-        # Add the new tag to the list
-        current_tags.append(tag_id)
-        author_data['tags'] = current_tags
-        
-        # Update the author with the new tags
-        response = arr_request(f"author/{author_id}", method="PUT", data=author_data, api_url=api_url, api_key=api_key, api_timeout=api_timeout, count_api=False)
-        if response:
-            logger.debug(f"Successfully added tag {tag_id} to author {author_id}")
-            return True
-        else:
-            logger.error(f"Failed to update author {author_id} with tag {tag_id}")
-            return False
-            
-    except Exception as e:
-        logger.error(f"Error adding tag {tag_id} to author {author_id}: {e}")
-        return False
+    return _tag_manager.add_tag_to_entity(api_url, api_key, api_timeout, author_id, tag_id)
+
 
 def tag_processed_author(api_url: str, api_key: str, api_timeout: int, author_id: int, tag_label: str = "huntarr-missing") -> bool:
     """
     Tag an author in Readarr with the specified tag.
-    
-    Args:
-        api_url: The base URL of the Readarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        author_id: The ID of the author to tag
-        tag_label: The tag to apply (huntarr-missing, huntarr-upgraded)
-        
-    Returns:
-        True if the tagging was successful, False otherwise
+
+    This is a thin wrapper around TagManager.tag_processed_entity().
     """
-    try:
-        # Get or create the tag
-        tag_id = get_or_create_tag(api_url, api_key, api_timeout, tag_label)
-        if tag_id is None:
-            logger.error(f"Failed to get or create tag '{tag_label}' in Readarr")
-            return False
-            
-        # Add the tag to the author
-        success = add_tag_to_author(api_url, api_key, api_timeout, author_id, tag_id)
-        if success:
-            logger.debug(f"Successfully tagged Readarr author {author_id} with '{tag_label}'")
-            return True
-        else:
-            logger.error(f"Failed to add tag '{tag_label}' to Readarr author {author_id}")
-            return False
-            
-    except Exception as e:
-        logger.error(f"Error tagging Readarr author {author_id} with '{tag_label}': {e}")
-        return False
+    return _tag_manager.tag_processed_entity(api_url, api_key, api_timeout, author_id, tag_label)
 
 def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> Optional[List[Dict]]:
     """
     Get all quality profiles configured in Readarr.
 
-    Args:
-        api_url: The base URL of the Readarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-
-    Returns:
-        A list of quality profile objects, or None if the request failed.
-        Each profile contains: id, name, upgradeAllowed, cutoff, items, etc.
+    This is a thin wrapper around ArrAPIClient.get_quality_profiles().
     """
-    try:
-        logger.debug("Fetching quality profiles from Readarr...")
-        
-        # Use the qualityProfile endpoint - this doesn't count toward API limits since it's configuration data
-        # Note: Readarr uses API v1, not v3 like Sonarr/Radarr
-        profiles = arr_request("qualityProfile", api_url=api_url, api_key=api_key, api_timeout=api_timeout, count_api=False)
-        
-        if profiles is None:
-            logger.error("Failed to retrieve quality profiles from Readarr API.")
-            return None
-        
-        logger.debug(f"Found {len(profiles)} quality profiles in Readarr")
-        
-        # Log profile names for debugging
-        profile_names = [profile.get('name', 'Unknown') for profile in profiles]
-        logger.debug(f"Quality profiles: {', '.join(profile_names)}")
-        
-        return profiles
-        
-    except Exception as e:
-        logger.error(f"Error retrieving quality profiles: {str(e)}")
-        return None
+    return _api_client.get_quality_profiles(api_url, api_key, api_timeout)

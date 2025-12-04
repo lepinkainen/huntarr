@@ -160,6 +160,15 @@ def load_settings(app_type, use_cache=True):
             settings_logger.info("Migrating Lidarr hunt_missing_mode from 'artist' to 'album' (Huntarr 7.5.0+)")
             current_settings["hunt_missing_mode"] = "album"
             updated = True
+
+    # Apply Radarr migration (address -> api_url) for config consistency
+    if app_type == "radarr":
+        instances = current_settings.get("instances", [])
+        for instance in instances:
+            if "address" in instance and "api_url" not in instance:
+                settings_logger.info(f"Migrating Radarr instance '{instance.get('name', 'Unknown')}' from 'address' to 'api_url'")
+                instance["api_url"] = instance.pop("address")
+                updated = True
     
     # If keys were added, save the updated settings
     if updated:

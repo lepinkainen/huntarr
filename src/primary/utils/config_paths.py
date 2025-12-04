@@ -64,8 +64,8 @@ except Exception as e:
         with open(desktop_log, "a") as f:
             f.write(f"\nUsing temporary config directory: {CONFIG_DIR}\n")
             f.write(f"Original error accessing primary config: {str(e)}\n")
-    except:
-        pass
+    except OSError:
+        pass  # Silently ignore if we can't write to desktop
 
 # Create standard directories - only the ones we actually use
 LOG_DIR = CONFIG_PATH / "logs"

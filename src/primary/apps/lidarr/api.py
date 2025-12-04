@@ -2,33 +2,35 @@
 """
 Lidarr-specific API functions
 Handles all communication with the Lidarr API (v1)
+
+This module has been refactored to use the base API client, tag manager,
+and pagination helpers to eliminate code duplication across *arr apps.
 """
 
 import requests
 import json
 import sys
 import time
-import datetime
 import traceback
-import logging
 from typing import List, Dict, Any, Optional, Union
+
+# Import base modules for shared functionality
+from src.primary.apps.base.api_client import ArrAPIClient
+from src.primary.apps.base.tag_manager import TagManager
+from src.primary.apps.base.pagination import PaginationHelper, lidarr_monitored_filter
 from src.primary.utils.logger import get_logger, debug_log
-from src.primary import settings_manager
+from src.primary.settings_manager import get_ssl_verify_setting
 
 # Get logger for the Lidarr app
 lidarr_logger = get_logger("lidarr")
 
-# Use a session for better performance
-session = requests.Session()
+# Initialize base client, tag manager, and pagination helper (Lidarr uses API v1)
+_api_client = ArrAPIClient("lidarr", api_version="v1", logger=lidarr_logger)
+_tag_manager = TagManager(_api_client, entity_type="artist")
+_pagination_helper = PaginationHelper(_api_client)
 
-def get_ssl_verify_setting() -> bool:
-    """Get SSL verification setting from general configuration."""
-    try:
-        general_settings = settings_manager.load_settings("general")
-        return general_settings.get("ssl_verify", True)  # Default to True for security
-    except Exception as e:
-        lidarr_logger.warning(f"Error getting SSL verify setting: {e}. Using default (True).")
-        return True
+# Keep session reference for backward compatibility with direct requests
+session = _api_client.session
 
 def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None, params: Dict = None, count_api: bool = True) -> Any:
     """
@@ -171,34 +173,12 @@ def get_system_status(api_url: str, api_key: str, api_timeout: int, verify_ssl: 
         return {}
 
 def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
-    """Checks connection by fetching system status."""
-    if not api_url:
-        lidarr_logger.error("API URL is empty or not set")
-        return False
-    if not api_key:
-        lidarr_logger.error("API Key is empty or not set")
-        return False
+    """
+    Check connection to the Lidarr API by fetching system status.
 
-    try:
-        # Use a shorter timeout for a quick connection check
-        quick_timeout = min(api_timeout, 15) 
-        
-        # Get SSL verification setting
-        verify_ssl = get_ssl_verify_setting()
-        
-        status = get_system_status(api_url, api_key, quick_timeout, verify_ssl)
-        if status and isinstance(status, dict) and 'version' in status:
-             # Log success only if debug is enabled to avoid clutter
-             lidarr_logger.debug(f"Connection check successful for {api_url}. Version: {status.get('version')}")
-             return True
-        else:
-             # Log details if the status response was unexpected
-             lidarr_logger.warning(f"Connection check for {api_url} returned unexpected status: {str(status)[:200]}")
-             return False
-    except Exception as e:
-        # Error should have been logged by arr_request, just indicate failure
-        lidarr_logger.error(f"Connection check failed for {api_url}: {str(e)}")
-        return False
+    This is a thin wrapper around ArrAPIClient.check_connection().
+    """
+    return _api_client.check_connection(api_url, api_key, api_timeout)
 
 def get_artists(api_url: str, api_key: str, api_timeout: int, artist_id: Optional[int] = None) -> Union[List, Dict, None]:
     """Get artist information from Lidarr."""
@@ -261,17 +241,12 @@ def get_queue(api_url: str, api_key: str, api_timeout: int) -> List:
     return all_records
 
 def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int:
-    """Get the current size of the Lidarr download queue."""
-    params = {"pageSize": 1} # Only need 1 record to get totalRecords
-    response = arr_request(api_url, api_key, api_timeout, "queue", params=params, count_api=False)
-    
-    if response and isinstance(response, dict) and 'totalRecords' in response:
-        queue_size = response.get('totalRecords', 0)
-        lidarr_logger.debug(f"Lidarr download queue size: {queue_size}")
-        return queue_size
-    else:
-        lidarr_logger.error("Error getting Lidarr download queue size.")
-        return -1 # Indicate error
+    """
+    Get the current size of the Lidarr download queue.
+
+    This is a thin wrapper around ArrAPIClient.get_download_queue_size().
+    """
+    return _api_client.get_download_queue_size(api_url, api_key, api_timeout)
 
 def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
     """Get missing albums from Lidarr, handling pagination."""
@@ -519,118 +494,28 @@ def get_artist_by_id(api_url: str, api_key: str, api_timeout: int, artist_id: in
 def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> Optional[int]:
     """
     Get existing tag ID or create a new tag in Lidarr.
-    
-    Args:
-        api_url: The base URL of the Lidarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        tag_label: The label/name of the tag to create or find
-        
-    Returns:
-        The tag ID if successful, None otherwise
+
+    This is a thin wrapper around TagManager.get_or_create_tag().
     """
-    try:
-        # First, check if the tag already exists
-        response = arr_request(api_url, api_key, api_timeout, "tag", count_api=False)
-        if response:
-            for tag in response:
-                if tag.get('label') == tag_label:
-                    tag_id = tag.get('id')
-                    lidarr_logger.debug(f"Found existing tag '{tag_label}' with ID: {tag_id}")
-                    return tag_id
-        
-        # Tag doesn't exist, create it
-        tag_data = {"label": tag_label}
-        response = arr_request(api_url, api_key, api_timeout, "tag", method="POST", data=tag_data, count_api=False)
-        if response and 'id' in response:
-            tag_id = response['id']
-            lidarr_logger.info(f"Created new tag '{tag_label}' with ID: {tag_id}")
-            return tag_id
-        else:
-            lidarr_logger.error(f"Failed to create tag '{tag_label}'. Response: {response}")
-            return None
-            
-    except Exception as e:
-        lidarr_logger.error(f"Error managing tag '{tag_label}': {e}")
-        return None
+    return _tag_manager.get_or_create_tag(api_url, api_key, api_timeout, tag_label)
+
 
 def add_tag_to_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int, tag_id: int) -> bool:
     """
     Add a tag to an artist in Lidarr.
-    
-    Args:
-        api_url: The base URL of the Lidarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        artist_id: The ID of the artist to tag
-        tag_id: The ID of the tag to add
-        
-    Returns:
-        True if successful, False otherwise
+
+    This is a thin wrapper around TagManager.add_tag_to_entity().
     """
-    try:
-        # First get the current artist data
-        artist_data = arr_request(api_url, api_key, api_timeout, f"artist/{artist_id}", count_api=False)
-        if not artist_data:
-            lidarr_logger.error(f"Failed to get artist data for ID: {artist_id}")
-            return False
-        
-        # Check if the tag is already present
-        current_tags = artist_data.get('tags', [])
-        if tag_id in current_tags:
-            lidarr_logger.debug(f"Tag {tag_id} already exists on artist {artist_id}")
-            return True
-        
-        # Add the new tag to the list
-        current_tags.append(tag_id)
-        artist_data['tags'] = current_tags
-        
-        # Update the artist with the new tags
-        response = arr_request(api_url, api_key, api_timeout, f"artist/{artist_id}", method="PUT", data=artist_data, count_api=False)
-        if response:
-            lidarr_logger.debug(f"Successfully added tag {tag_id} to artist {artist_id}")
-            return True
-        else:
-            lidarr_logger.error(f"Failed to update artist {artist_id} with tag {tag_id}")
-            return False
-            
-    except Exception as e:
-        lidarr_logger.error(f"Error adding tag {tag_id} to artist {artist_id}: {e}")
-        return False
+    return _tag_manager.add_tag_to_entity(api_url, api_key, api_timeout, artist_id, tag_id)
+
 
 def tag_processed_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int, tag_label: str = "huntarr-missing") -> bool:
     """
     Tag an artist in Lidarr with the specified tag.
-    
-    Args:
-        api_url: The base URL of the Lidarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        artist_id: The ID of the artist to tag
-        tag_label: The tag to apply (huntarr-missing, huntarr-upgraded)
-        
-    Returns:
-        True if the tagging was successful, False otherwise
+
+    This is a thin wrapper around TagManager.tag_processed_entity().
     """
-    try:
-        # Get or create the tag
-        tag_id = get_or_create_tag(api_url, api_key, api_timeout, tag_label)
-        if tag_id is None:
-            lidarr_logger.error(f"Failed to get or create tag '{tag_label}' in Lidarr")
-            return False
-            
-        # Add the tag to the artist
-        success = add_tag_to_artist(api_url, api_key, api_timeout, artist_id, tag_id)
-        if success:
-            lidarr_logger.debug(f"Successfully tagged Lidarr artist {artist_id} with '{tag_label}'")
-            return True
-        else:
-            lidarr_logger.error(f"Failed to add tag '{tag_label}' to Lidarr artist {artist_id}")
-            return False
-            
-    except Exception as e:
-        lidarr_logger.error(f"Error tagging Lidarr artist {artist_id} with '{tag_label}': {e}")
-        return False
+    return _tag_manager.tag_processed_entity(api_url, api_key, api_timeout, artist_id, tag_label)
 
 def get_missing_albums_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> List[Dict[str, Any]]:
     """
@@ -844,34 +729,6 @@ def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> Option
     """
     Get all quality profiles configured in Lidarr.
 
-    Args:
-        api_url: The base URL of the Lidarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-
-    Returns:
-        A list of quality profile objects, or None if the request failed.
-        Each profile contains: id, name, upgradeAllowed, cutoff, items, etc.
+    This is a thin wrapper around ArrAPIClient.get_quality_profiles().
     """
-    try:
-        lidarr_logger.debug("Fetching quality profiles from Lidarr...")
-        
-        # Use the qualityProfile endpoint - this doesn't count toward API limits since it's configuration data
-        # Note: Lidarr uses API v1, not v3 like Sonarr/Radarr
-        profiles = arr_request(api_url, api_key, api_timeout, "qualityProfile", count_api=False)
-        
-        if profiles is None:
-            lidarr_logger.error("Failed to retrieve quality profiles from Lidarr API.")
-            return None
-        
-        lidarr_logger.debug(f"Found {len(profiles)} quality profiles in Lidarr")
-        
-        # Log profile names for debugging
-        profile_names = [profile.get('name', 'Unknown') for profile in profiles]
-        lidarr_logger.debug(f"Quality profiles: {', '.join(profile_names)}")
-        
-        return profiles
-        
-    except Exception as e:
-        lidarr_logger.error(f"Error retrieving quality profiles: {str(e)}")
-        return None
+    return _api_client.get_quality_profiles(api_url, api_key, api_timeout)

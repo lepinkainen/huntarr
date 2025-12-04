@@ -55,9 +55,9 @@ def health_check():
         try:
             import main
             is_shutting_down = main.is_shutting_down()
-        except:
+        except (ImportError, AttributeError):
             is_shutting_down = stop_event.is_set()
-        
+
         if is_shutting_down:
             return jsonify({
                 "status": "shutting_down",
@@ -99,9 +99,9 @@ def readiness_check():
         try:
             import main
             is_shutting_down = main.is_shutting_down()
-        except:
+        except (ImportError, AttributeError):
             is_shutting_down = stop_event.is_set()
-        
+
         if is_shutting_down:
             return jsonify({
                 "ready": False,

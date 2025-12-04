@@ -3,29 +3,40 @@
 Eros-specific API functions
 Handles all communication with the Eros API
 
+This module has been refactored to use the base API client, tag manager,
+and pagination helpers to eliminate code duplication across *arr apps.
 Exclusively uses the Eros API v3
 """
 
 import requests
 import json
 import time
-import datetime
-import traceback
-import sys
 from typing import List, Dict, Any, Optional, Union
+
+# Import base modules for shared functionality
+from src.primary.apps.base.api_client import ArrAPIClient
+from src.primary.apps.base.tag_manager import TagManager
+from src.primary.apps.base.pagination import PaginationHelper, radarr_monitored_filter
 from src.primary.utils.logger import get_logger
 from src.primary.settings_manager import get_ssl_verify_setting
 
 # Get logger for the Eros app
 eros_logger = get_logger("eros")
 
-# Use a session for better performance
-session = requests.Session()
+# Initialize base client, tag manager, and pagination helper (Eros uses API v3 like Radarr)
+_api_client = ArrAPIClient("eros", api_version="v3", logger=eros_logger)
+_tag_manager = TagManager(_api_client, entity_type="movie")
+_pagination_helper = PaginationHelper(_api_client)
+
+# Keep session reference for backward compatibility with direct requests
+session = _api_client.session
 
 def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None, count_api: bool = True) -> Any:
     """
     Make a request to the Eros API.
-    
+
+    This is a thin wrapper around ArrAPIClient.request() for backward compatibility.
+
     Args:
         api_url: The base URL of the Eros API
         api_key: The API key for authentication
@@ -33,113 +44,21 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
         endpoint: The API endpoint to call
         method: HTTP method (GET, POST, PUT, DELETE)
         data: Optional data payload for POST/PUT requests
-    
+        count_api: Whether to count this request toward the hourly API cap
+
     Returns:
         The parsed JSON response or None if the request failed
     """
-    try:
-        if not api_url or not api_key:
-            eros_logger.error("No URL or API key provided")
-            return None
-        
-        # Ensure api_url has a scheme
-        if not (api_url.startswith('http://') or api_url.startswith('https://')):
-            eros_logger.error(f"Invalid URL format: {api_url} - URL must start with http:// or https://")
-            return None
-            
-        # Construct the full URL properly
-        full_url = f"{api_url.rstrip('/')}/api/v3/{endpoint.lstrip('/')}"
-        
-    
-        
-        # Set up headers with User-Agent to identify Huntarr
-        headers = {
-            "X-Api-Key": api_key,
-            "Content-Type": "application/json",
-            "User-Agent": "Huntarr/1.0 (https://huntarr.io)"
-        }
-        
-        # Get SSL verification setting
-        verify_ssl = get_ssl_verify_setting()
-        
-        if not verify_ssl:
-            eros_logger.debug("SSL verification disabled by user setting")
-        
-        try:
-            if method.upper() == "GET":
-                response = session.get(full_url, headers=headers, timeout=api_timeout, verify=verify_ssl)
-            elif method.upper() == "POST":
-                response = session.post(full_url, headers=headers, json=data, timeout=api_timeout, verify=verify_ssl)
-            elif method.upper() == "PUT":
-                response = session.put(full_url, headers=headers, json=data, timeout=api_timeout, verify=verify_ssl)
-            elif method.upper() == "DELETE":
-                response = session.delete(full_url, headers=headers, timeout=api_timeout, verify=verify_ssl)
-            else:
-                eros_logger.error(f"Unsupported HTTP method: {method}")
-                return None
-            
-            # Check if the request was successful
-            try:
-                response.raise_for_status()
-                
-                # Increment API counter only if count_api is True and request was successful
-                if count_api:
-                    try:
-                        from src.primary.stats_manager import increment_hourly_cap
-                        increment_hourly_cap("eros")
-                    except Exception as e:
-                        eros_logger.warning(f"Failed to increment API counter for eros: {e}")
-                        
-            except requests.exceptions.HTTPError as e:
-                eros_logger.error(f"Error during {method} request to {endpoint}: {e}, Status Code: {response.status_code}")
-                eros_logger.debug(f"Response content: {response.text[:200]}")
-                return None
-            
-            # Try to parse JSON response
-            try:
-                if response.text:
-                    result = response.json()
-                    eros_logger.debug(f"Response from {response.url}: Status {response.status_code}, JSON parsed successfully")
-                    return result
-                else:
-                    eros_logger.debug(f"Response from {response.url}: Status {response.status_code}, Empty response")
-                    return {}
-            except json.JSONDecodeError:
-                eros_logger.error(f"Invalid JSON response from API: {response.text[:200]}")
-                return None
-            
-        except requests.exceptions.RequestException as e:
-            eros_logger.error(f"Request failed: {e}")
-            return None
-    except Exception as e:
-        eros_logger.error(f"Unexpected error during API request: {e}")
-        return None
+    return _api_client.request(api_url, api_key, api_timeout, endpoint, method, data, count_api=count_api)
+
 
 def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int:
     """
-    Get the current size of the download queue.
+    Get the current size of the Eros download queue.
 
-    Args:
-        api_url: The base URL of the Eros API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-
-    Returns:
-        The number of items in the download queue, or -1 if the request failed
+    This is a thin wrapper around ArrAPIClient.get_download_queue_size().
     """
-    response = arr_request(api_url, api_key, api_timeout, "queue", count_api=False)
-    
-    if response is None:
-        return -1
-    
-    # V3 API returns a list directly
-    if isinstance(response, list):
-        return len(response)
-    # Fallback to records format if needed
-    elif isinstance(response, dict) and "records" in response:
-        return len(response["records"])
-    else:
-        return -1
+    return _api_client.get_download_queue_size(api_url, api_key, api_timeout)
 
 def get_items_with_missing(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, search_mode: str = "movie") -> List[Dict[str, Any]]:
     """
@@ -449,189 +368,44 @@ def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id:
 
 def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
     """
-    Check the connection to Whisparr V3 API.
-    
-    Args:
-        api_url: The base URL of the Whisparr V3 API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        
-    Returns:
-        True if the connection is successful, False otherwise
+    Check the connection to Eros API.
+
+    This is a thin wrapper around ArrAPIClient.check_connection().
     """
-    try:
-        eros_logger.debug(f"Checking connection to Whisparr V3 instance at {api_url}")
-        
-        endpoint = "system/status"
-        response = arr_request(api_url, api_key, api_timeout, endpoint, count_api=False)
-        
-        if response is not None:
-            # Get the version information if available
-            version = response.get("version", "unknown")
-            
-            # Simply check if we received a valid response - Whisparr V3 is in development
-            # so the version number might be in various formats
-            if version and isinstance(version, str):
-                eros_logger.debug(f"Successfully connected to Whisparr V3 API, reported version: {version}")
-                return True
-            else:
-                eros_logger.warning(f"Connected to server but found unexpected version format: {version}")
-                return False
-        else:
-            eros_logger.error("Failed to connect to Whisparr V3 API")
-            return False
-            
-    except Exception as e:
-        eros_logger.error(f"Error checking connection to Whisparr V3 API: {str(e)}")
-        return False
+    return _api_client.check_connection(api_url, api_key, api_timeout)
+
 
 def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> Optional[int]:
     """
     Get existing tag ID or create a new tag in Eros.
-    
-    Args:
-        api_url: The base URL of the Eros API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        tag_label: The label/name of the tag to create or find
-        
-    Returns:
-        The tag ID if successful, None otherwise
+
+    This is a thin wrapper around TagManager.get_or_create_tag().
     """
-    try:
-        # First, check if the tag already exists
-        response = arr_request(api_url, api_key, api_timeout, "tag", count_api=False)
-        if response:
-            for tag in response:
-                if tag.get('label') == tag_label:
-                    tag_id = tag.get('id')
-                    eros_logger.debug(f"Found existing tag '{tag_label}' with ID: {tag_id}")
-                    return tag_id
-        
-        # Tag doesn't exist, create it
-        tag_data = {"label": tag_label}
-        response = arr_request(api_url, api_key, api_timeout, "tag", method="POST", data=tag_data, count_api=False)
-        if response and 'id' in response:
-            tag_id = response['id']
-            eros_logger.info(f"Created new tag '{tag_label}' with ID: {tag_id}")
-            return tag_id
-        else:
-            eros_logger.error(f"Failed to create tag '{tag_label}'. Response: {response}")
-            return None
-            
-    except Exception as e:
-        eros_logger.error(f"Error managing tag '{tag_label}': {e}")
-        return None
+    return _tag_manager.get_or_create_tag(api_url, api_key, api_timeout, tag_label)
+
 
 def add_tag_to_movie(api_url: str, api_key: str, api_timeout: int, movie_id: int, tag_id: int) -> bool:
     """
     Add a tag to a movie in Eros.
-    
-    Args:
-        api_url: The base URL of the Eros API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        movie_id: The ID of the movie to tag
-        tag_id: The ID of the tag to add
-        
-    Returns:
-        True if successful, False otherwise
+
+    This is a thin wrapper around TagManager.add_tag_to_entity().
     """
-    try:
-        # First get the current movie data
-        movie_data = arr_request(api_url, api_key, api_timeout, f"movie/{movie_id}", count_api=False)
-        if not movie_data:
-            eros_logger.error(f"Failed to get movie data for ID: {movie_id}")
-            return False
-        
-        # Check if the tag is already present
-        current_tags = movie_data.get('tags', [])
-        if tag_id in current_tags:
-            eros_logger.debug(f"Tag {tag_id} already exists on movie {movie_id}")
-            return True
-        
-        # Add the new tag to the list
-        current_tags.append(tag_id)
-        movie_data['tags'] = current_tags
-        
-        # Update the movie with the new tags
-        response = arr_request(api_url, api_key, api_timeout, f"movie/{movie_id}", method="PUT", data=movie_data, count_api=False)
-        if response:
-            eros_logger.debug(f"Successfully added tag {tag_id} to movie {movie_id}")
-            return True
-        else:
-            eros_logger.error(f"Failed to update movie {movie_id} with tag {tag_id}")
-            return False
-            
-    except Exception as e:
-        eros_logger.error(f"Error adding tag {tag_id} to movie {movie_id}: {e}")
-        return False
+    return _tag_manager.add_tag_to_entity(api_url, api_key, api_timeout, movie_id, tag_id)
+
 
 def tag_processed_movie(api_url: str, api_key: str, api_timeout: int, movie_id: int, tag_label: str = "huntarr-missing") -> bool:
     """
     Tag a movie in Eros with the specified tag.
-    
-    Args:
-        api_url: The base URL of the Eros API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        movie_id: The ID of the movie to tag
-        tag_label: The tag to apply (huntarr-missing, huntarr-upgraded)
-        
-    Returns:
-        True if the tagging was successful, False otherwise
+
+    This is a thin wrapper around TagManager.tag_processed_entity().
     """
-    try:
-        # Get or create the tag
-        tag_id = get_or_create_tag(api_url, api_key, api_timeout, tag_label)
-        if tag_id is None:
-            eros_logger.error(f"Failed to get or create tag '{tag_label}' in Eros")
-            return False
-            
-        # Add the tag to the movie
-        success = add_tag_to_movie(api_url, api_key, api_timeout, movie_id, tag_id)
-        if success:
-            eros_logger.debug(f"Successfully tagged Eros movie {movie_id} with '{tag_label}'")
-            return True
-        else:
-            eros_logger.error(f"Failed to add tag '{tag_label}' to Eros movie {movie_id}")
-            return False
-            
-    except Exception as e:
-        eros_logger.error(f"Error tagging Eros movie {movie_id} with '{tag_label}': {e}")
-        return False
+    return _tag_manager.tag_processed_entity(api_url, api_key, api_timeout, movie_id, tag_label)
+
 
 def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> Optional[List[Dict]]:
     """
     Get all quality profiles configured in Eros.
 
-    Args:
-        api_url: The base URL of the Eros API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-
-    Returns:
-        A list of quality profile objects, or None if the request failed.
-        Each profile contains: id, name, upgradeAllowed, cutoff, items, etc.
+    This is a thin wrapper around ArrAPIClient.get_quality_profiles().
     """
-    try:
-        eros_logger.debug("Fetching quality profiles from Eros...")
-        
-        # Use the qualityProfile endpoint - this doesn't count toward API limits since it's configuration data
-        profiles = arr_request(api_url, api_key, api_timeout, "qualityProfile", count_api=False)
-        
-        if profiles is None:
-            eros_logger.error("Failed to retrieve quality profiles from Eros API.")
-            return None
-        
-        eros_logger.debug(f"Found {len(profiles)} quality profiles in Eros")
-        
-        # Log profile names for debugging
-        profile_names = [profile.get('name', 'Unknown') for profile in profiles]
-        eros_logger.debug(f"Quality profiles: {', '.join(profile_names)}")
-        
-        return profiles
-        
-    except Exception as e:
-        eros_logger.error(f"Error retrieving quality profiles: {str(e)}")
-        return None
+    return _api_client.get_quality_profiles(api_url, api_key, api_timeout)

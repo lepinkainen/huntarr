@@ -2,29 +2,39 @@
 """
 Sonarr-specific API functions
 Handles all communication with the Sonarr API
+
+This module has been refactored to use the base API client, tag manager,
+and pagination helpers to eliminate code duplication across *arr apps.
 """
 
 import requests
 import json
-import sys
 import time
-import datetime
-import traceback
-from typing import List, Dict, Any, Optional, Union, Callable
-# Correct the import path
+from typing import List, Dict, Any, Optional, Union
+
+# Import base modules for shared functionality
+from src.primary.apps.base.api_client import ArrAPIClient
+from src.primary.apps.base.tag_manager import TagManager
+from src.primary.apps.base.pagination import PaginationHelper, sonarr_monitored_filter
 from src.primary.utils.logger import get_logger
-from src.primary.settings_manager import get_ssl_verify_setting
 
 # Get logger for the Sonarr app
 sonarr_logger = get_logger("sonarr")
 
-# Use a session for better performance
-session = requests.Session()
+# Initialize base client, tag manager, and pagination helper
+_api_client = ArrAPIClient("sonarr", api_version="v3", logger=sonarr_logger)
+_tag_manager = TagManager(_api_client, entity_type="series")
+_pagination_helper = PaginationHelper(_api_client)
+
+# Keep session reference for backward compatibility with direct requests
+session = _api_client.session
 
 def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None, count_api: bool = True) -> Any:
     """
     Make a request to the Sonarr API.
-    
+
+    This is a thin wrapper around ArrAPIClient.request() for backward compatibility.
+
     Args:
         api_url: The base URL of the Sonarr API
         api_key: The API key for authentication
@@ -32,135 +42,29 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
         endpoint: The API endpoint to call
         method: HTTP method (GET, POST, PUT, DELETE)
         data: Optional data payload for POST/PUT requests
-    
+        count_api: Whether to count this request toward the hourly API cap
+
     Returns:
         The parsed JSON response or None if the request failed
     """
-    try:
-        if not api_url or not api_key:
-            sonarr_logger.error("No URL or API key provided")
-            return None
-        
-        # Ensure api_url has a scheme
-        if not (api_url.startswith('http://') or api_url.startswith('https://')):
-            sonarr_logger.error(f"Invalid URL format: {api_url} - URL must start with http:// or https://")
-            return None
-            
-        # Construct the full URL properly
-        full_url = f"{api_url.rstrip('/')}/api/v3/{endpoint.lstrip('/')}"
-        
-        # Set up headers with User-Agent to identify Huntarr
-        headers = {
-            "X-Api-Key": api_key,
-            "Content-Type": "application/json",
-            "User-Agent": "Huntarr/1.0 (https://huntarr.io)"
-        }
-        
-        # Get SSL verification setting
-        verify_ssl = get_ssl_verify_setting()
-        
-        if not verify_ssl:
-            sonarr_logger.debug("SSL verification disabled by user setting")
-        
-        try:
-            if method.upper() == "GET":
-                response = session.get(full_url, headers=headers, timeout=api_timeout, verify=verify_ssl)
-            elif method.upper() == "POST":
-                response = session.post(full_url, headers=headers, json=data, timeout=api_timeout, verify=verify_ssl)
-            elif method.upper() == "PUT":
-                response = session.put(full_url, headers=headers, json=data, timeout=api_timeout, verify=verify_ssl)
-            elif method.upper() == "DELETE":
-                response = session.delete(full_url, headers=headers, timeout=api_timeout, verify=verify_ssl)
-            else:
-                sonarr_logger.error(f"Unsupported HTTP method: {method}")
-                return None
-            
-            # Check for successful response
-            response.raise_for_status()
-            
-            # Increment API counter only if count_api is True and request was successful
-            if count_api:
-                try:
-                    from src.primary.stats_manager import increment_hourly_cap
-                    increment_hourly_cap("sonarr")
-                except Exception as e:
-                    sonarr_logger.warning(f"Failed to increment API counter for sonarr: {e}")
-            
-            # Check if there's any content before trying to parse JSON
-            if response.content:
-                try:
-                    return response.json()
-                except json.JSONDecodeError as jde:
-                    # Log detailed information about the malformed response
-                    sonarr_logger.error(f"Error decoding JSON response from {endpoint}: {str(jde)}")
-                    sonarr_logger.error(f"Response status code: {response.status_code}")
-                    sonarr_logger.error(f"Response content (first 200 chars): {response.content[:200]}")
-                    return None
-            else:
-                sonarr_logger.debug(f"Empty response content from {endpoint}, returning empty dict")
-                return {}
-                
-        except requests.exceptions.RequestException as e:
-            # Add detailed error logging
-            error_details = str(e)
-            if hasattr(e, 'response') and e.response is not None:
-                error_details += f", Status Code: {e.response.status_code}"
-                if e.response.content:
-                    error_details += f", Content: {e.response.content[:200]}"
-            
-            sonarr_logger.error(f"Error during {method} request to {endpoint}: {error_details}")
-            return None
-    except Exception as e:
-        # Catch all exceptions and log them with traceback
-        error_msg = f"CRITICAL ERROR in arr_request: {str(e)}"
-        sonarr_logger.error(error_msg)
-        sonarr_logger.error(f"Full traceback: {traceback.format_exc()}")
-        print(error_msg, file=sys.stderr)
-        print(traceback.format_exc(), file=sys.stderr)
-        return None
+    return _api_client.request(api_url, api_key, api_timeout, endpoint, method, data, count_api=count_api)
 
 def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
-    """Checks connection by fetching system status."""
-    if not api_url:
-        sonarr_logger.error("API URL is empty or not set")
-        return False
-    if not api_key:
-        sonarr_logger.error("API Key is empty or not set")
-        return False
+    """
+    Check connection to the Sonarr API by fetching system status.
 
-    try:
-        # Use a shorter timeout for a quick connection check
-        quick_timeout = min(api_timeout, 15) 
-        status = get_system_status(api_url, api_key, quick_timeout)
-        if status and isinstance(status, dict) and 'version' in status:
-             # Log success only if debug is enabled to avoid clutter
-             sonarr_logger.debug(f"Connection check successful for {api_url}. Version: {status.get('version')}")
-             return True
-        else:
-             # Log details if the status response was unexpected
-             sonarr_logger.warning(f"Connection check for {api_url} returned unexpected status: {str(status)[:200]}")
-             return False
-    except Exception as e:
-        # Error should have been logged by arr_request, just indicate failure
-        sonarr_logger.error(f"Connection check failed for {api_url}")
-        return False
+    This is a thin wrapper around ArrAPIClient.check_connection().
+    """
+    return _api_client.check_connection(api_url, api_key, api_timeout)
+
 
 def get_system_status(api_url: str, api_key: str, api_timeout: int) -> Dict:
     """
     Get Sonarr system status.
-    
-    Args:
-        api_url: The base URL of the Sonarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-    
-    Returns:
-        System status information or empty dict if request failed
+
+    This is a thin wrapper around ArrAPIClient.get_system_status().
     """
-    response = arr_request(api_url, api_key, api_timeout, "system/status", count_api=False)
-    if response:
-        return response
-    return {}
+    return _api_client.get_system_status(api_url, api_key, api_timeout)
 
 def get_series(api_url: str, api_key: str, api_timeout: int, series_id: Optional[int] = None) -> Union[List, Dict, None]:
     """
@@ -820,52 +724,12 @@ def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id:
         return None
 
 def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int:
-    """Get the current size of the Sonarr download queue."""
-    retries = 2  # Number of retry attempts
-    retry_delay = 3  # Delay between retries in seconds
-    
-    for attempt in range(retries + 1):
-        try:
-            endpoint = f"{api_url}/api/v3/queue?page=1&pageSize=1" # Just get total count, don't need records
-            response = requests.get(endpoint, headers={"X-Api-Key": api_key}, params={"includeSeries": "false"}, timeout=api_timeout)
-            response.raise_for_status()
-            
-            if not response.content:
-                sonarr_logger.warning(f"Empty response when getting queue size (attempt {attempt+1}/{retries+1})")
-                if attempt < retries:
-                    time.sleep(retry_delay)
-                    continue
-                return -1
-                
-            try:
-                queue_data = response.json()
-                queue_size = queue_data.get('totalRecords', 0)
-                sonarr_logger.debug(f"Sonarr download queue size: {queue_size}")
-                return queue_size
-            except json.JSONDecodeError as jde:
-                sonarr_logger.error(f"Failed to decode queue JSON (attempt {attempt+1}/{retries+1}): {jde}")
-                if attempt < retries:
-                    time.sleep(retry_delay)
-                    continue
-                return -1
-                
-        except requests.exceptions.RequestException as e:
-            sonarr_logger.error(f"Error getting Sonarr download queue size (attempt {attempt+1}/{retries+1}): {e}")
-            if attempt < retries:
-                sonarr_logger.info(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-                continue
-            return -1  # Return -1 to indicate an error
-        except Exception as e:
-            sonarr_logger.error(f"Unexpected error getting queue size (attempt {attempt+1}/{retries+1}): {e}")
-            if attempt < retries:
-                time.sleep(retry_delay)
-                continue
-            return -1
-            
-    # If we get here, all retries failed
-    sonarr_logger.error(f"All {retries+1} attempts to get download queue size failed")
-    return -1
+    """
+    Get the current size of the Sonarr download queue.
+
+    This is a thin wrapper around ArrAPIClient.get_download_queue_size().
+    """
+    return _api_client.get_download_queue_size(api_url, api_key, api_timeout)
 
 def refresh_series(api_url: str, api_key: str, api_timeout: int, series_id: int) -> Optional[Union[int, str]]:
     """Refresh functionality has been removed as it was a performance bottleneck.
@@ -1181,150 +1045,34 @@ def get_series_with_missing_episodes(api_url: str, api_key: str, api_timeout: in
 def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> Optional[int]:
     """
     Get existing tag ID or create a new tag in Sonarr.
-    
-    Args:
-        api_url: The base URL of the Sonarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        tag_label: The label/name of the tag to create or find
-        
-    Returns:
-        The tag ID if successful, None otherwise
+
+    This is a thin wrapper around TagManager.get_or_create_tag().
     """
-    try:
-        # First, check if the tag already exists
-        response = arr_request(api_url, api_key, api_timeout, "tag", count_api=False)
-        if response:
-            for tag in response:
-                if tag.get('label') == tag_label:
-                    tag_id = tag.get('id')
-                    sonarr_logger.debug(f"Found existing tag '{tag_label}' with ID: {tag_id}")
-                    return tag_id
-        
-        # Tag doesn't exist, create it
-        tag_data = {"label": tag_label}
-        response = arr_request(api_url, api_key, api_timeout, "tag", method="POST", data=tag_data, count_api=False)
-        if response and 'id' in response:
-            tag_id = response['id']
-            sonarr_logger.info(f"Created new tag '{tag_label}' with ID: {tag_id}")
-            return tag_id
-        else:
-            sonarr_logger.error(f"Failed to create tag '{tag_label}'. Response: {response}")
-            return None
-            
-    except Exception as e:
-        sonarr_logger.error(f"Error managing tag '{tag_label}': {e}")
-        return None
+    return _tag_manager.get_or_create_tag(api_url, api_key, api_timeout, tag_label)
+
 
 def add_tag_to_series(api_url: str, api_key: str, api_timeout: int, series_id: int, tag_id: int) -> bool:
     """
     Add a tag to a series in Sonarr.
-    
-    Args:
-        api_url: The base URL of the Sonarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        series_id: The ID of the series to tag
-        tag_id: The ID of the tag to add
-        
-    Returns:
-        True if successful, False otherwise
+
+    This is a thin wrapper around TagManager.add_tag_to_entity().
     """
-    try:
-        # First get the current series data
-        series_data = arr_request(api_url, api_key, api_timeout, f"series/{series_id}", count_api=False)
-        if not series_data:
-            sonarr_logger.error(f"Failed to get series data for ID: {series_id}")
-            return False
-        
-        # Check if the tag is already present
-        current_tags = series_data.get('tags', [])
-        if tag_id in current_tags:
-            sonarr_logger.debug(f"Tag {tag_id} already exists on series {series_id}")
-            return True
-        
-        # Add the new tag to the list
-        current_tags.append(tag_id)
-        series_data['tags'] = current_tags
-        
-        # Update the series with the new tags
-        response = arr_request(api_url, api_key, api_timeout, f"series/{series_id}", method="PUT", data=series_data, count_api=False)
-        if response:
-            sonarr_logger.debug(f"Successfully added tag {tag_id} to series {series_id}")
-            return True
-        else:
-            sonarr_logger.error(f"Failed to update series {series_id} with tag {tag_id}")
-            return False
-            
-    except Exception as e:
-        sonarr_logger.error(f"Error adding tag {tag_id} to series {series_id}: {e}")
-        return False
+    return _tag_manager.add_tag_to_entity(api_url, api_key, api_timeout, series_id, tag_id)
+
 
 def tag_processed_series(api_url: str, api_key: str, api_timeout: int, series_id: int, tag_label: str = "huntarr-missing") -> bool:
     """
     Tag a series in Sonarr with the specified tag.
-    
-    Args:
-        api_url: The base URL of the Sonarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        series_id: The ID of the series to tag
-        tag_label: The tag to apply (huntarr-missing, huntarr-upgraded, huntarr-shows-missing)
-        
-    Returns:
-        True if the tagging was successful, False otherwise
+
+    This is a thin wrapper around TagManager.tag_processed_entity().
     """
-    try:
-        # Get or create the tag
-        tag_id = get_or_create_tag(api_url, api_key, api_timeout, tag_label)
-        if tag_id is None:
-            sonarr_logger.error(f"Failed to get or create tag '{tag_label}' in Sonarr")
-            return False
-            
-        # Add the tag to the series
-        success = add_tag_to_series(api_url, api_key, api_timeout, series_id, tag_id)
-        if success:
-            sonarr_logger.debug(f"Successfully tagged Sonarr series {series_id} with '{tag_label}'")
-            return True
-        else:
-            sonarr_logger.error(f"Failed to add tag '{tag_label}' to Sonarr series {series_id}")
-            return False
-            
-    except Exception as e:
-        sonarr_logger.error(f"Error tagging Sonarr series {series_id} with '{tag_label}': {e}")
-        return False
+    return _tag_manager.tag_processed_entity(api_url, api_key, api_timeout, series_id, tag_label)
+
 
 def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> Optional[List[Dict]]:
     """
     Get all quality profiles configured in Sonarr.
 
-    Args:
-        api_url: The base URL of the Sonarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-
-    Returns:
-        A list of quality profile objects, or None if the request failed.
-        Each profile contains: id, name, upgradeAllowed, cutoff, items, etc.
+    This is a thin wrapper around ArrAPIClient.get_quality_profiles().
     """
-    try:
-        sonarr_logger.debug("Fetching quality profiles from Sonarr...")
-        
-        # Use the qualityProfile endpoint - this doesn't count toward API limits since it's configuration data
-        profiles = arr_request(api_url, api_key, api_timeout, "qualityProfile", count_api=False)
-        
-        if profiles is None:
-            sonarr_logger.error("Failed to retrieve quality profiles from Sonarr API.")
-            return None
-        
-        sonarr_logger.debug(f"Found {len(profiles)} quality profiles in Sonarr")
-        
-        # Log profile names for debugging
-        profile_names = [profile.get('name', 'Unknown') for profile in profiles]
-        sonarr_logger.debug(f"Quality profiles: {', '.join(profile_names)}")
-        
-        return profiles
-        
-    except Exception as e:
-        sonarr_logger.error(f"Error retrieving quality profiles: {str(e)}")
-        return None
+    return _api_client.get_quality_profiles(api_url, api_key, api_timeout)

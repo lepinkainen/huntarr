@@ -2,28 +2,40 @@
 """
 Radarr-specific API functions
 Handles all communication with the Radarr API
+
+This module has been refactored to use the base API client, tag manager,
+and pagination helpers to eliminate code duplication across *arr apps.
 """
 
 import requests
 import json
-import sys
 import time
-import traceback
 from typing import List, Dict, Any, Optional, Union
-# Correct the import path
+
+# Import base modules for shared functionality
+from src.primary.apps.base.api_client import ArrAPIClient
+from src.primary.apps.base.tag_manager import TagManager
+from src.primary.apps.base.pagination import PaginationHelper, radarr_monitored_filter
 from src.primary.utils.logger import get_logger
-from src.primary.settings_manager import get_ssl_verify_setting
 
 # Get logger for the Radarr app
 radarr_logger = get_logger("radarr")
 
-# Use a session for better performance
-session = requests.Session()
+# Initialize base client, tag manager, and pagination helper
+_api_client = ArrAPIClient("radarr", api_version="v3", logger=radarr_logger)
+_tag_manager = TagManager(_api_client, entity_type="movie")
+_pagination_helper = PaginationHelper(_api_client)
+
+# Keep session reference for backward compatibility with direct requests
+session = _api_client.session
 
 def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None, params: Dict = None, count_api: bool = True) -> Any:
     """
     Make a request to the Radarr API.
-    
+
+    This is a thin wrapper around ArrAPIClient.request() for backward compatibility.
+    Note: Radarr checks API limit before making request (check_limit_before=True).
+
     Args:
         api_url: The base URL of the Radarr API
         api_key: The API key for authentication
@@ -33,134 +45,31 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
         data: Optional data payload for POST/PUT requests
         params: Optional query parameters for GET requests
         count_api: Whether the request counts toward API tally
-    
+
     Returns:
         The parsed JSON response or None if the request failed
     """
-    try:
-        if not api_url or not api_key:
-            radarr_logger.error("No URL or API key provided")
-            return None
-        
-        # Check API limit before making request
-        from src.primary.stats_manager import check_hourly_cap_exceeded, increment_hourly_cap
-        if check_hourly_cap_exceeded("radarr"):
-            radarr_logger.warning("\U0001F6D1 Radarr API hourly limit reached - skipping request")
-            return None
-        
-        # Construct the full URL properly
-        full_url = f"{api_url.rstrip('/')}/api/v3/{endpoint.lstrip('/')}"
-        
-    
-        
-        # Set up headers with the API key
-        headers = {
-            "X-Api-Key": api_key,
-            "Content-Type": "application/json",
-            "User-Agent": "Huntarr/1.0 (https://huntarr.io)"
-        }
-        
-        # Get SSL verification setting
-        verify_ssl = get_ssl_verify_setting()
-        
-        if not verify_ssl:
-            radarr_logger.debug("SSL verification disabled by user setting")
-        
-        # Make the request based on the method
-        if method.upper() == "GET":
-            response = session.get(full_url, headers=headers, params=params, timeout=api_timeout, verify=verify_ssl)
-        elif method.upper() == "POST":
-            response = session.post(full_url, headers=headers, json=data, timeout=api_timeout, verify=verify_ssl)
-        elif method.upper() == "PUT":
-            response = session.put(full_url, headers=headers, json=data, timeout=api_timeout, verify=verify_ssl)
-        elif method.upper() == "DELETE":
-            response = session.delete(full_url, headers=headers, timeout=api_timeout, verify=verify_ssl)
-        else:
-            radarr_logger.error(f"Unsupported HTTP method: {method}")
-            return None
-        
-        # Check for errors
-        response.raise_for_status()
-        
-        # Increment API usage counter only after successful request
-        if count_api:
-            increment_hourly_cap("radarr")
-        
-        # Parse JSON response
-        if response.text:
-            return response.json()
-        return {}
-        
-    except requests.exceptions.RequestException as e:
-        radarr_logger.error(f"API request failed: {e}")
-        return None
+    return _api_client.request(
+        api_url, api_key, api_timeout, endpoint, method, data,
+        params=params, count_api=count_api, check_limit_before=True
+    )
 
 def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int:
     """
-    Get the current size of the download queue.
+    Get the current size of the Radarr download queue.
 
-    Args:
-        api_url: The base URL of the Radarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-
-    Returns:
-        The number of items in the download queue, or -1 if the request failed
+    This is a thin wrapper around ArrAPIClient.get_download_queue_size().
     """
-    if not api_url or not api_key:
-        radarr_logger.error("Radarr API URL or API Key not provided for queue size check.")
-        return -1
-    try:
-        # Radarr uses /api/v3/queue
-        endpoint = f"{api_url.rstrip('/')}/api/v3/queue?page=1&pageSize=1000" # Fetch a large page size
-        headers = {"X-Api-Key": api_key}
-        response = session.get(endpoint, headers=headers, timeout=api_timeout)
-        response.raise_for_status()
-        queue_data = response.json()
-        queue_size = queue_data.get('totalRecords', 0)
-        radarr_logger.debug(f"Radarr download queue size: {queue_size}")
-        return queue_size
-    except requests.exceptions.RequestException as e:
-        radarr_logger.error(f"Error getting Radarr download queue size: {e}")
-        return -1 # Return -1 to indicate an error
-    except Exception as e:
-        radarr_logger.error(f"An unexpected error occurred while getting Radarr queue size: {e}")
-        return -1
+    return _api_client.get_download_queue_size(api_url, api_key, api_timeout)
+
 
 def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> Optional[List[Dict]]:
     """
     Get all quality profiles configured in Radarr.
 
-    Args:
-        api_url: The base URL of the Radarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-
-    Returns:
-        A list of quality profile objects, or None if the request failed.
-        Each profile contains: id, name, upgradeAllowed, cutoff, items, etc.
+    This is a thin wrapper around ArrAPIClient.get_quality_profiles().
     """
-    try:
-        radarr_logger.debug("Fetching quality profiles from Radarr...")
-        
-        # Use the qualityProfile endpoint - this doesn't count toward API limits since it's configuration data
-        profiles = arr_request(api_url, api_key, api_timeout, "qualityProfile", count_api=False)
-        
-        if profiles is None:
-            radarr_logger.error("Failed to retrieve quality profiles from Radarr API.")
-            return None
-        
-        radarr_logger.debug(f"Found {len(profiles)} quality profiles in Radarr")
-        
-        # Log profile names for debugging
-        profile_names = [profile.get('name', 'Unknown') for profile in profiles]
-        radarr_logger.debug(f"Quality profiles: {', '.join(profile_names)}")
-        
-        return profiles
-        
-    except Exception as e:
-        radarr_logger.error(f"Error retrieving quality profiles: {str(e)}")
-        return None
+    return _api_client.get_quality_profiles(api_url, api_key, api_timeout)
 
 def get_quality_profile_names(api_url: str, api_key: str, api_timeout: int) -> List[str]:
     """
@@ -400,32 +309,12 @@ def movie_search(api_url: str, api_key: str, api_timeout: int, movie_ids: List[i
         return None
 
 def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
-    """Check the connection to Radarr API."""
-    try:
-        # Ensure api_url is properly formatted
-        if not api_url:
-            radarr_logger.error("API URL is empty or not set")
-            return False
-            
-        # Make sure api_url has a scheme
-        if not (api_url.startswith('http://') or api_url.startswith('https://')):
-            radarr_logger.error(f"Invalid URL format: {api_url} - URL must start with http:// or https://")
-            return False
-            
-        # Ensure URL doesn't end with a slash before adding the endpoint
-        base_url = api_url.rstrip('/')
-        full_url = f"{base_url}/api/v3/system/status"
-        
-        response = requests.get(full_url, headers={"X-Api-Key": api_key}, timeout=api_timeout)
-        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
-        radarr_logger.debug("Successfully connected to Radarr.")
-        return True
-    except requests.exceptions.RequestException as e:
-        radarr_logger.error(f"Error connecting to Radarr: {e}")
-        return False
-    except Exception as e:
-        radarr_logger.error(f"An unexpected error occurred during Radarr connection check: {e}")
-        return False
+    """
+    Check the connection to Radarr API.
+
+    This is a thin wrapper around ArrAPIClient.check_connection().
+    """
+    return _api_client.check_connection(api_url, api_key, api_timeout)
 
 def wait_for_command(api_url: str, api_key: str, api_timeout: int, command_id: int, 
                     delay_seconds: int = 1, max_attempts: int = 600) -> bool:
@@ -461,118 +350,28 @@ def wait_for_command(api_url: str, api_key: str, api_timeout: int, command_id: i
 def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> Optional[int]:
     """
     Get existing tag ID or create a new tag in Radarr.
-    
-    Args:
-        api_url: The base URL of the Radarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        tag_label: The label/name of the tag to create or find
-        
-    Returns:
-        The tag ID if successful, None otherwise
+
+    This is a thin wrapper around TagManager.get_or_create_tag().
     """
-    try:
-        # First, check if the tag already exists
-        response = arr_request(api_url, api_key, api_timeout, "tag", count_api=False)
-        if response:
-            for tag in response:
-                if tag.get('label') == tag_label:
-                    tag_id = tag.get('id')
-                    radarr_logger.debug(f"Found existing tag '{tag_label}' with ID: {tag_id}")
-                    return tag_id
-        
-        # Tag doesn't exist, create it
-        tag_data = {"label": tag_label}
-        response = arr_request(api_url, api_key, api_timeout, "tag", method="POST", data=tag_data, count_api=False)
-        if response and 'id' in response:
-            tag_id = response['id']
-            radarr_logger.info(f"Created new tag '{tag_label}' with ID: {tag_id}")
-            return tag_id
-        else:
-            radarr_logger.error(f"Failed to create tag '{tag_label}'. Response: {response}")
-            return None
-            
-    except Exception as e:
-        radarr_logger.error(f"Error managing tag '{tag_label}': {e}")
-        return None
+    return _tag_manager.get_or_create_tag(api_url, api_key, api_timeout, tag_label)
+
 
 def add_tag_to_movie(api_url: str, api_key: str, api_timeout: int, movie_id: int, tag_id: int) -> bool:
     """
     Add a tag to a movie in Radarr.
-    
-    Args:
-        api_url: The base URL of the Radarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        movie_id: The ID of the movie to tag
-        tag_id: The ID of the tag to add
-        
-    Returns:
-        True if successful, False otherwise
+
+    This is a thin wrapper around TagManager.add_tag_to_entity().
     """
-    try:
-        # First get the current movie data
-        movie_data = arr_request(api_url, api_key, api_timeout, f"movie/{movie_id}", count_api=False)
-        if not movie_data:
-            radarr_logger.error(f"Failed to get movie data for ID: {movie_id}")
-            return False
-        
-        # Check if the tag is already present
-        current_tags = movie_data.get('tags', [])
-        if tag_id in current_tags:
-            radarr_logger.debug(f"Tag {tag_id} already exists on movie {movie_id}")
-            return True
-        
-        # Add the new tag to the list
-        current_tags.append(tag_id)
-        movie_data['tags'] = current_tags
-        
-        # Update the movie with the new tags
-        response = arr_request(api_url, api_key, api_timeout, f"movie/{movie_id}", method="PUT", data=movie_data, count_api=False)
-        if response:
-            radarr_logger.debug(f"Successfully added tag {tag_id} to movie {movie_id}")
-            return True
-        else:
-            radarr_logger.error(f"Failed to update movie {movie_id} with tag {tag_id}")
-            return False
-            
-    except Exception as e:
-        radarr_logger.error(f"Error adding tag {tag_id} to movie {movie_id}: {e}")
-        return False
+    return _tag_manager.add_tag_to_entity(api_url, api_key, api_timeout, movie_id, tag_id)
+
 
 def tag_processed_movie(api_url: str, api_key: str, api_timeout: int, movie_id: int, tag_label: str = "huntarr-missing") -> bool:
     """
     Tag a movie in Radarr with the specified tag.
-    
-    Args:
-        api_url: The base URL of the Radarr API
-        api_key: The API key for authentication
-        api_timeout: Timeout for the API request
-        movie_id: The ID of the movie to tag
-        tag_label: The tag to apply (huntarr-missing, huntarr-upgraded)
-        
-    Returns:
-        True if the tagging was successful, False otherwise
+
+    This is a thin wrapper around TagManager.tag_processed_entity().
     """
-    try:
-        # Get or create the tag
-        tag_id = get_or_create_tag(api_url, api_key, api_timeout, tag_label)
-        if tag_id is None:
-            radarr_logger.error(f"Failed to get or create tag '{tag_label}' in Radarr")
-            return False
-            
-        # Add the tag to the movie
-        success = add_tag_to_movie(api_url, api_key, api_timeout, movie_id, tag_id)
-        if success:
-            radarr_logger.debug(f"Successfully tagged Radarr movie {movie_id} with '{tag_label}'")
-            return True
-        else:
-            radarr_logger.error(f"Failed to add tag '{tag_label}' to Radarr movie {movie_id}")
-            return False
-            
-    except Exception as e:
-        radarr_logger.error(f"Error tagging Radarr movie {movie_id} with '{tag_label}': {e}")
-        return False
+    return _tag_manager.tag_processed_entity(api_url, api_key, api_timeout, movie_id, tag_label)
 
 def get_movies_with_missing_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> Optional[List[Dict]]:
     """
