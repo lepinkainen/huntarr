@@ -41,9 +41,6 @@ stop_event = threading.Event() # Use an event for clearer stop signaling
 # Hourly cap scheduler thread
 hourly_cap_scheduler_thread = None
 
-# Background refresher for Prowlarr statistics
-prowlarr_stats_thread = None
-
 # Define which apps have background processing cycles
 CYCLICAL_APP_TYPES = ["sonarr", "radarr", "lidarr", "readarr", "whisparr", "eros"]
 
@@ -69,7 +66,7 @@ def app_specific_loop(app_type: str) -> None:
     app_logger = get_logger(app_type)
     app_logger.info(f"=== [{app_type.upper()}] Thread starting ===")
 
-    # Immediately exit for non-cyclical apps (e.g., prowlarr)
+    # Immediately exit for non-cyclical apps
     if app_type not in CYCLICAL_APP_TYPES:
         app_logger.info(f"Skipping background loop for non-cyclical app: {app_type}")
         return
@@ -613,7 +610,7 @@ def start_app_threads():
 
     for app_type, is_configured in configured_apps.items():
         if is_configured:
-            # Skip non-cyclical apps (e.g., prowlarr handled via routes)
+            # Skip non-cyclical apps
             if app_type not in CYCLICAL_APP_TYPES:
                 logger.debug(f"Configured non-cyclical app detected; not starting background thread: {app_type}")
                 continue
@@ -688,16 +685,6 @@ def shutdown_threads():
             logger.warning("Hourly API cap scheduler did not stop gracefully")
         else:
             logger.info("Hourly API cap scheduler stopped")
-    
-    # Stop the Prowlarr stats refresher
-    global prowlarr_stats_thread
-    if prowlarr_stats_thread and prowlarr_stats_thread.is_alive():
-        logger.info("Waiting for Prowlarr stats refresher to stop...")
-        prowlarr_stats_thread.join(timeout=5.0)
-        if prowlarr_stats_thread.is_alive():
-            logger.warning("Prowlarr stats refresher did not stop gracefully")
-        else:
-            logger.info("Prowlarr stats refresher stopped")
 
     # Stop the scheduler engine
     try:
@@ -771,52 +758,6 @@ def hourly_cap_scheduler_loop():
     
     logger.info("Hourly API cap scheduler stopped")
 
-def prowlarr_stats_loop():
-    """Background loop to refresh Prowlarr statistics cache every 5 minutes.
-    Runs independently of the frontend and does nothing if Prowlarr is not configured or disabled.
-    """
-    refresher_logger = get_logger("prowlarr")
-    refresher_logger.info("Prowlarr stats refresher thread started")
-    try:
-        from src.primary.settings_manager import load_settings
-        # Import inside loop target to avoid circular issues at module import time
-        from src.primary.apps import prowlarr_routes as prow
-
-        refresh_interval_seconds = 300  # 5 minutes
-
-        # Do an immediate pass on start
-        while not stop_event.is_set():
-            try:
-                settings = load_settings("prowlarr")
-                api_url = (settings.get("api_url", "") or "").strip()
-                api_key = (settings.get("api_key", "") or "").strip()
-                enabled = settings.get("enabled", True)
-
-                if not api_url or not api_key or not enabled:
-                    # Not configured or disabled; sleep a bit and check again
-                    if stop_event.wait(60):
-                        break
-                    continue
-
-                # Trigger cache update (safe even if cache is warm)
-                try:
-                    prow._update_stats_cache()
-                except Exception as e:
-                    refresher_logger.error(f"Prowlarr stats refresh error: {e}", exc_info=True)
-
-                # Sleep until next refresh or until stop requested
-                if stop_event.wait(refresh_interval_seconds):
-                    break
-
-            except Exception as loop_error:
-                refresher_logger.error(f"Unexpected error in Prowlarr stats refresher: {loop_error}", exc_info=True)
-                # Back off briefly to avoid tight error loops
-                if stop_event.wait(60):
-                    break
-    finally:
-        refresher_logger.info("Prowlarr stats refresher thread stopped")
-
-
 def start_hourly_cap_scheduler():
     """Start the hourly API cap scheduler thread"""
     global hourly_cap_scheduler_thread
@@ -835,21 +776,6 @@ def start_hourly_cap_scheduler():
     
     logger.info(f"Hourly API cap scheduler started. Thread is alive: {hourly_cap_scheduler_thread.is_alive()}")
 
-def start_prowlarr_stats_thread():
-    """Start the Prowlarr statistics refresher thread (5-minute cadence)."""
-    global prowlarr_stats_thread
-    if prowlarr_stats_thread and prowlarr_stats_thread.is_alive():
-        logger.info("Prowlarr stats refresher already running")
-        return
-    prowlarr_stats_thread = threading.Thread(
-        target=prowlarr_stats_loop,
-        name="ProwlarrStatsRefresher",
-        daemon=True,
-    )
-    prowlarr_stats_thread.start()
-    logger.info(f"Prowlarr stats refresher started. Thread is alive: {prowlarr_stats_thread.is_alive()}")
-
-
 def start_huntarr():
     """Main entry point for Huntarr background tasks."""
     logger.info(f"--- Starting Huntarr Background Tasks v{__version__} --- ")
@@ -861,13 +787,6 @@ def start_huntarr():
     except Exception as e:
         logger.error(f"Failed to start hourly API cap scheduler: {e}")
 
-    # Start the Prowlarr stats refresher
-    try:
-        start_prowlarr_stats_thread()
-        logger.info("Prowlarr stats refresher started successfully")
-    except Exception as e:
-        logger.error(f"Failed to start Prowlarr stats refresher: {e}")
-         
     # Start the scheduler engine
     try:
         start_scheduler()

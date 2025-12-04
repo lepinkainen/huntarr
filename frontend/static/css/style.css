@@ -1778,8 +1778,9 @@ label .info-icon ~ text {
     padding: 15px;
     margin-bottom: 15px;
     border: 1px solid var(--border-color, #3c3c3c);
-}/
-* Prowlarr Statistics Styling */
+}
+
+/* Statistics Styling */
 .statistics-content {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));

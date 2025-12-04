@@ -580,8 +580,8 @@ const appsDashboard = {
     
     // Check status of all apps
     checkAllAppStatus: function() {
-        const apps = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros', 'prowlarr'];
-        
+        const apps = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros'];
+
         apps.forEach(app => {
             this.checkAppStatus(app);
         });
@@ -705,7 +705,7 @@ const appsDashboard = {
                 { icon: 'fas fa-download', text: 'Sonarr: Downloaded "The Office S09E23"', time: '2 minutes ago', type: 'success' },
                 { icon: 'fas fa-search', text: 'Radarr: Searching for "Inception (2010)"', time: '5 minutes ago', type: 'info' },
                 { icon: 'fas fa-music', text: 'Lidarr: Added "Pink Floyd - Dark Side of the Moon"', time: '12 minutes ago', type: 'success' },
-                { icon: 'fas fa-exclamation-triangle', text: 'Prowlarr: Indexer "TorrentLeech" failed health check', time: '18 minutes ago', type: 'warning' },
+                { icon: 'fas fa-check', text: 'Whisparr: Import completed successfully', time: '18 minutes ago', type: 'success' },
                 { icon: 'fas fa-book', text: 'Readarr: Imported "Dune by Frank Herbert"', time: '25 minutes ago', type: 'success' }
             ];
             
@@ -729,7 +729,7 @@ const appsDashboard = {
         
         if (!configuredAppsElement) return;
         
-        const apps = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros', 'prowlarr'];
+        const apps = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros'];
         let configuredApps = 0;
         let totalInstances = 0;
         let activeConnections = 0;

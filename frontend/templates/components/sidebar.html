@@ -59,36 +59,6 @@
             </a>
         </div>
 
-        <!-- Resources Group -->
-        <div class="nav-group">
-            <div class="nav-group-title">Resources</div>
-            <a href="https://github.com/plexguide/Unraid_Intel-ARC_Deployment" class="nav-item" target="_blank"
-                rel="noopener noreferrer">
-                <div class="nav-icon-wrapper">
-                    <i class="fas fa-film"></i>
-                </div>
-                <span>My AV1 Guide</span>
-            </a>
-            <a href="https://github.com/flmorg/cleanuperr" class="nav-item" target="_blank" rel="noopener noreferrer">
-                <div class="nav-icon-wrapper">
-                    <i class="fas fa-broom"></i>
-                </div>
-                <span>Cleanuperr</span>
-            </a>
-            <a href="https://github.com/BassHous3/taggarr" class="nav-item" target="_blank" rel="noopener noreferrer">
-                <div class="nav-icon-wrapper">
-                    <i class="fas fa-tags"></i>
-                </div>
-                <span>Taggarr</span>
-            </a>
-            <a href="https://github.com/Wizarrrr/wizarr" class="nav-item" target="_blank" rel="noopener noreferrer">
-                <div class="nav-icon-wrapper">
-                    <i class="fas fa-magic"></i>
-                </div>
-                <span>Wizarr</span>
-            </a>
-            <!-- Project Sponsors removed from here and placed above CORE -->
-        </div>
     </nav>
 </div>
 
@@ -163,12 +133,6 @@
                     <img src="./static/images/app-icons/eros.png" alt="Whisparr V3" class="app-icon-img">
                 </div>
                 <span>Whisparr V3</span>
-            </a>
-            <a href="./#prowlarr" class="nav-item prowlarr-app" id="appsProwlarrNav">
-                <div class="nav-icon-wrapper prowlarr-icon">
-                    <img src="./static/images/app-icons/prowlarr.png" alt="Prowlarr" class="app-icon-img">
-                </div>
-                <span>Prowlarr</span>
             </a>
         </div>
     </nav>
@@ -755,21 +719,6 @@
         transform: scale(1.05);
     }
 
-    /* Prowlarr - Orange (as requested) */
-    .prowlarr-app:hover .prowlarr-icon,
-    .prowlarr-app.active .prowlarr-icon {
-        background: rgba(230, 126, 34, 0.2);
-        border: 2px solid rgba(230, 126, 34, 0.6);
-        box-shadow: 0 0 15px rgba(230, 126, 34, 0.4), inset 0 0 10px rgba(230, 126, 34, 0.1);
-        transform: scale(1.1);
-    }
-
-    .prowlarr-app:hover .app-icon-img,
-    .prowlarr-app.active .app-icon-img {
-        filter: brightness(1.2) contrast(1.2) drop-shadow(0 0 8px rgba(230, 126, 34, 0.6));
-        transform: scale(1.05);
-    }
-
     /* Mobile adjustments for app icons */
     @media (max-width: 768px) {
         .app-icon-img {
@@ -830,8 +779,6 @@
             selector = '#appsWhisparrNav';
         } else if (currentHash === '#eros') {
             selector = '#appsErosNav';
-        } else if (currentHash === '#prowlarr') {
-            selector = '#appsProwlarrNav';
         }
         // Settings sidebar items
         else if (currentHash === '#settings') {
