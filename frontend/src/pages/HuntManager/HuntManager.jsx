@@ -138,15 +138,16 @@ function HuntManager() {
         const slug = generateSlug(title)
 
         // Generate app-specific URL
+        // Note: Radarr/Lidarr use numeric IDs, others use slugs
         switch (entry.app_type) {
           case 'sonarr':
             targetUrl = `${baseUrl}/series/${slug}`
             break
           case 'radarr':
-            targetUrl = `${baseUrl}/movie/${slug}`
+            targetUrl = `${baseUrl}/movie/${entry.media_id}`
             break
           case 'lidarr':
-            targetUrl = `${baseUrl}/artist/${slug}`
+            targetUrl = `${baseUrl}/artist/${entry.media_id}`
             break
           case 'readarr':
             targetUrl = `${baseUrl}/author/${slug}`
