@@ -114,9 +114,28 @@ if getattr(sys, 'frozen', False):
     if not static_dir:
         static_dir = os.path.join(base_path, 'static')
         print(f"Warning: Using default static dir: {static_dir}")
-        
+
+    # React dist directory for PyInstaller
+    react_dist_candidates = [
+        os.path.join(base_path, 'dist'),
+        os.path.join(base_path, '..', 'Resources', 'frontend', 'dist'),
+        os.path.join(base_path, 'frontend', 'dist'),
+        os.path.join(os.path.dirname(base_path), 'Resources', 'frontend', 'dist')
+    ]
+    react_dist_dir = None
+    for candidate in react_dist_candidates:
+        candidate_path = os.path.abspath(candidate)
+        if os.path.exists(candidate_path) and os.path.isdir(candidate_path):
+            react_dist_dir = candidate_path
+            print(f"Found valid React dist directory: {react_dist_dir}")
+            break
+    if not react_dist_dir:
+        react_dist_dir = os.path.join(base_path, 'dist')
+        print(f"Warning: Using default React dist dir: {react_dist_dir}")
+
     print(f"PyInstaller mode - Using template dir: {template_dir}")
     print(f"PyInstaller mode - Using static dir: {static_dir}")
+    print(f"PyInstaller mode - Using React dist dir: {react_dist_dir}")
     print(f"Template dir exists: {os.path.exists(template_dir)}")
     if os.path.exists(template_dir):
         print(f"Template dir contents: {os.listdir(template_dir)}")
@@ -129,6 +148,11 @@ else:
     print(f"Template dir exists: {os.path.exists(template_dir)}")
     if os.path.exists(template_dir):
         print(f"Template dir contents: {os.listdir(template_dir)}")
+
+# React build directory (built by Vite)
+react_dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'frontend', 'dist'))
+print(f"React dist dir: {react_dist_dir}")
+print(f"React dist dir exists: {os.path.exists(react_dist_dir)}")
 
 # Get base_url from settings (used for reverse proxy subpath configurations)
 def get_base_url():
@@ -295,16 +319,28 @@ log_lock = Lock()
 
 # Log files are now handled by database-only logging system
 
+# Serve React app assets (JS, CSS, etc.)
+@app.route('/assets/<path:filename>')
+def react_assets(filename):
+    """Serve React build assets"""
+    return send_from_directory(os.path.join(react_dist_dir, 'assets'), filename)
+
 # Handle both root path and base URL root path
 @app.route('/')
 def home():
-    """Render the main index page"""
-    return render_template('index.html')
+    """Serve React app"""
+    return send_from_directory(react_dist_dir, 'index.html')
 
-@app.route('/user')
-def user():
-    """Redirect to main index with user section"""
-    return redirect('./#user')
+# Catch-all route for React SPA routing - must be registered last
+# This allows React Router to handle client-side routes like /apps, /settings, etc.
+@app.route('/<path:path>')
+def react_spa_catchall(path):
+    """Catch-all for React SPA routing"""
+    # Don't catch API routes, static files, or auth pages
+    if path.startswith(('api/', 'static/', 'login', 'setup', 'logs', 'health', 'ping', 'version')):
+        return app.send_static_file(path) if os.path.exists(os.path.join(static_dir, path)) else ('Not found', 404)
+    # Serve React index.html for all other routes (SPA routing)
+    return send_from_directory(react_dist_dir, 'index.html')
     
 # This section previously contained code for redirecting paths to include the base URL
 # It has been removed as Flask's APPLICATION_ROOT setting provides this functionality
