@@ -4,7 +4,7 @@ import { fetchWithTimeout } from '../../api/client'
 import styles from './Layout.module.css'
 
 function Layout({ children }) {
-  const { darkMode, toggleDarkMode, configuredApps, hasSession } = useApp()
+  const { darkMode, toggleDarkMode, configuredApps, hasSession, authRequired } = useApp()
   const location = useLocation()
 
   // Determine active section for sidebar highlighting
@@ -88,7 +88,7 @@ function Layout({ children }) {
           >
             <i className={darkMode ? 'fas fa-sun' : 'fas fa-moon'} />
           </button>
-          {hasSession && (
+          {authRequired && hasSession && (
             <button
               className={styles.logoutBtn}
               onClick={handleLogout}

@@ -10,6 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - All Docker image publishing goes to ghcr.io/adamflagg/huntarr
 - All git operations target origin (adamflagg/huntarr), never upstream
 
+### NO Local Docker Builds
+**NEVER run docker or docker-compose commands locally.**
+- Docker images are built via GitHub Actions workflows
+- To test Docker builds, push to the branch and trigger the workflow
+- For local testing, use the Flask dev server directly (`python main.py`)
+
 ## Project Overview
 
 Huntarr is a media automation tool that searches for missing content and quality upgrades in *arr applications (Sonarr, Radarr, Lidarr, Readarr, Whisparr). It runs continuously, querying these applications in configurable cycles to find and download missing media while being gentle on indexers.
@@ -34,10 +40,6 @@ npm run dev                       # Runs on port 5173
 
 # Setup venv (first time only)
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-
-# Docker development
-docker-compose down && docker-compose up -d --build
-docker logs huntarr               # Check logs
 ```
 
 ## Architecture
@@ -137,8 +139,7 @@ else:
    - Legacy (vanilla JS): Use relative URLs (`./api/...`)
    - React: Use absolute URLs (`/api/...`) - see URL Handling section above
 3. **Use DatabaseManager** - Never direct SQLite calls outside database.py
-4. **Test both environments** - Docker and local development
-5. **Rebuild for testing**: `docker-compose down && docker-compose up -d --build`
+4. **Test locally** - Use `python main.py` for Flask and `npm run dev` for React
 
 ## API Structure
 
