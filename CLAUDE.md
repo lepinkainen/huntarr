@@ -16,6 +16,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - To test Docker builds, push to the branch and trigger the workflow
 - For local testing, use the Flask dev server directly (`python main.py`)
 
+### GitHub Actions Workflows
+**ALWAYS specify the fork repo when triggering workflows.**
+```bash
+# CORRECT - specify the fork repo
+gh workflow run "Build and Push Docker Image" --ref branch-name -R adamflagg/huntarr
+
+# WRONG - defaults to upstream which will fail with 403
+gh workflow run "Build and Push Docker Image" --ref branch-name
+```
+
 ## Project Overview
 
 Huntarr is a media automation tool that searches for missing content and quality upgrades in *arr applications (Sonarr, Radarr, Lidarr, Readarr, Whisparr). It runs continuously, querying these applications in configurable cycles to find and download missing media while being gentle on indexers.
