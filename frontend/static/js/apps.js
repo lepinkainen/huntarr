@@ -22,12 +22,15 @@ const appsModule = {
         
         // Set a global flag to indicate we've loaded
         window._appsModuleLoaded = true;
-        
+
         // Add global variable to track if we're in the middle of saving
         window._appsCurrentlySaving = false;
-        
+
         // Add global variable to disable change detection temporarily
         window._appsSuppressChangeDetection = false;
+
+        // Initialize app changes tracking object
+        window._hasAppChanges = window._hasAppChanges || {};
         
         // Cache DOM elements
         this.cacheElements();
@@ -623,9 +626,14 @@ const appsDashboard = {
                             .catch(() => false);
                     });
                     
-                    Promise.all(statusPromises).then(() => {
-                        this.updateAppStatus(app, instanceCount, onlineCount);
-                    });
+                    Promise.all(statusPromises)
+                        .then(() => {
+                            this.updateAppStatus(app, instanceCount, onlineCount);
+                        })
+                        .catch(err => {
+                            console.error(`Error checking ${app} instances:`, err);
+                            this.updateAppStatus(app, instanceCount, 0);
+                        });
                 } else {
                     this.updateAppStatus(app, 0, 0);
                 }
@@ -647,17 +655,27 @@ const appsDashboard = {
         }
         
         const testUrl = `${instance.url}/api/v3/system/status`;
-        
+
+        // Use AbortController for timeout (fetch doesn't support timeout option)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         return fetch(testUrl, {
             method: 'GET',
             headers: {
                 'X-Api-Key': instance.api_key,
                 'Content-Type': 'application/json'
             },
-            timeout: 5000
+            signal: controller.signal
         })
-        .then(response => response.ok)
-        .catch(() => false);
+        .then(response => {
+            clearTimeout(timeoutId);
+            return response.ok;
+        })
+        .catch(() => {
+            clearTimeout(timeoutId);
+            return false;
+        });
     },
     
     // Update app status display

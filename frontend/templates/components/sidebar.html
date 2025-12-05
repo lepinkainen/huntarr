@@ -712,75 +712,8 @@
 </style>
 
 <script>
-    // Function to set active nav item based on the current hash
-    function setActiveNavItem() {
-        // Get all navigation items from all sidebars
-        const navItems = document.querySelectorAll('.nav-item');
-
-        // Remove active class from all items
-        navItems.forEach(item => {
-            item.classList.remove('active');
-        });
-
-        // Get current hash, or default to home if no hash
-        let currentHash = window.location.hash;
-        if (!currentHash) {
-            currentHash = '#home';
-        }
-
-        // Set the appropriate nav item as active based on current section
-        let selector = null;
-
-        // Main sidebar items
-        if (currentHash === '#home') {
-            selector = '#homeNav';
-        } else if (currentHash === '#hunt-manager') {
-            selector = '#huntManagerNav';
-        } else if (currentHash === '#logs') {
-            selector = '#logsNav';
-        } else if (currentHash === '#apps' || currentHash === '#sonarr') {
-            selector = '#appsNav';
-        }
-        // Apps sidebar items
-        else if (currentHash === '#radarr') {
-            selector = '#appsRadarrNav';
-        } else if (currentHash === '#lidarr') {
-            selector = '#appsLidarrNav';
-        } else if (currentHash === '#readarr') {
-            selector = '#appsReadarrNav';
-        } else if (currentHash === '#whisparr') {
-            selector = '#appsWhisparrNav';
-        } else if (currentHash === '#eros') {
-            selector = '#appsErosNav';
-        }
-        // Settings sidebar items
-        else if (currentHash === '#settings') {
-            selector = '#settingsMainNav';
-        } else if (currentHash === '#scheduling') {
-            selector = '#settingsSchedulingNav';
-        } else if (currentHash === '#notifications') {
-            selector = '#settingsNotificationsNav';
-        } else if (currentHash === '#user') {
-            selector = '#settingsUserNav';
-        }
-        // Default to home
-        else {
-            selector = '#homeNav';
-        }
-
-        const activeItem = document.querySelector(selector);
-        if (activeItem) {
-            activeItem.classList.add('active');
-        }
-    }
-
-    // Set active on page load
-    document.addEventListener('DOMContentLoaded', setActiveNavItem);
-
-    // Update active when hash changes
-    window.addEventListener('hashchange', setActiveNavItem);
-
     // Load version from version.txt and update all sidebar version elements
+    // Note: Active nav item handling is done by new-main.js switchSection()
     document.addEventListener('DOMContentLoaded', function() {
         fetch('./version.txt')
             .then(response => response.ok ? response.text() : Promise.reject('Failed to load'))

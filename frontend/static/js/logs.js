@@ -429,8 +429,8 @@ window.LogsModule = {
                         console.debug(`[LogsModule] Polling request - not updating pagination. Current: totalLogs=${this.totalLogs}, totalPages=${this.totalPages}, currentPage=${this.currentPage}`);
                     }
                     
-                    // Update connection status on successful API call (only on initial load, not polling)
-                    if (this.elements.logConnectionStatus && !isPolling) {
+                    // Update connection status on successful API call
+                    if (this.elements.logConnectionStatus) {
                         this.elements.logConnectionStatus.textContent = 'Connected';
                         this.elements.logConnectionStatus.className = 'status-connected';
                     }

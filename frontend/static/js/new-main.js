@@ -26,7 +26,8 @@ let huntarrUI = {
     },
     originalSettings: {}, // Store the full original settings object
     settingsChanged: false, // Legacy flag (auto-save enabled)
-    
+    formChanged: {}, // Track form changes per app
+
     // Logo URL
     logoUrl: './static/logo/256.png',
     
@@ -3560,67 +3561,8 @@ let huntarrUI = {
         });
     },
 
-    showMainSidebar: function() {
-        // Remove flash prevention style if it exists
-        const flashPreventionStyle = document.getElementById('sidebar-flash-prevention');
-        if (flashPreventionStyle) {
-            flashPreventionStyle.remove();
-        }
-
-        // Show main sidebar and hide others
-        const mainSidebar = document.getElementById('sidebar');
-        const settingsSidebar = document.getElementById('settings-sidebar');
-        const appsSidebar = document.getElementById('apps-sidebar');
-
-        if (mainSidebar) mainSidebar.style.display = 'block';
-        if (settingsSidebar) settingsSidebar.style.display = 'none';
-        if (appsSidebar) appsSidebar.style.display = 'none';
-
-        console.debug('[huntarrUI] Main sidebar shown');
-
-        // Clear Settings sidebar preference when showing main sidebar
-        localStorage.removeItem('huntarr-settings-sidebar');
-    },
-
-    showAppsSidebar: function() {
-        // Remove flash prevention style if it exists
-        const flashPreventionStyle = document.getElementById('sidebar-flash-prevention');
-        if (flashPreventionStyle) {
-            flashPreventionStyle.remove();
-        }
-
-        // Hide main sidebar and show apps sidebar
-        const mainSidebar = document.getElementById('sidebar');
-        const settingsSidebar = document.getElementById('settings-sidebar');
-        const appsSidebar = document.getElementById('apps-sidebar');
-
-        if (mainSidebar) mainSidebar.style.display = 'none';
-        if (settingsSidebar) settingsSidebar.style.display = 'none';
-        if (appsSidebar) appsSidebar.style.display = 'block';
-
-        // Update active states in Apps sidebar
-        this.updateAppsSidebarActive();
-    },
-
-    showSettingsSidebar: function() {
-        // Remove flash prevention style if it exists
-        const flashPreventionStyle = document.getElementById('sidebar-flash-prevention');
-        if (flashPreventionStyle) {
-            flashPreventionStyle.remove();
-        }
-
-        // Hide main sidebar and show settings sidebar
-        const mainSidebar = document.getElementById('sidebar');
-        const settingsSidebar = document.getElementById('settings-sidebar');
-        const appsSidebar = document.getElementById('apps-sidebar');
-
-        if (mainSidebar) mainSidebar.style.display = 'none';
-        if (appsSidebar) appsSidebar.style.display = 'none';
-        if (settingsSidebar) settingsSidebar.style.display = 'block';
-
-        // Update active states in Settings sidebar
-        this.updateSettingsSidebarActive();
-    },
+    // Note: showMainSidebar, showAppsSidebar, showSettingsSidebar are defined earlier at line 756
+    // The duplicate definitions here were removed to avoid dead code
 
     updateAppsSidebarActive: function() {
         // Remove active from all Apps nav items

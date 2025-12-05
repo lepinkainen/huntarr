@@ -253,16 +253,7 @@ button {
     z-index: 1;
     outline: none;
     border-radius: 4px;
-    animation: glowPulse 1.5s infinite alternate;
-}
-
-@keyframes glowPulse {
-    from {
-        box-shadow: 0 0 8px 2px rgba(52, 152, 219, 0.5);
-    }
-    to {
-        box-shadow: 0 0 15px 4px rgba(52, 152, 219, 0.7);
-    }
+    /* animation removed for cleaner UI */
 }
 
 /* Theme Switch */
@@ -543,38 +534,28 @@ select.form-control {
     overflow: auto !important;
 }
 
-/* Color-shifting divider line */
+/* Divider line - simplified from animated rainbow */
 .color-shift-divider {
     height: 1px;
-    background: linear-gradient(to right, #3498db, #9b59b6, #2ecc71, #f1c40f, #e74c3c);
-    background-size: 500% 100%;
-    animation: gradientShift 30s ease infinite;
+    background: rgba(52, 152, 219, 0.5);
     margin: 15px 0;
     border: none;
-    opacity: 0.7;
 }
 
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-/* Top Bar */
+/* Top Bar - simplified from gradient */
 .top-bar {
     height: 60px;
-    background: linear-gradient(135deg, #1e2738 0%, #0e1420 50%, #101824 75%, rgba(18, 25, 38, 0.95) 100%);
-    background-size: 100% 100%;
+    background: #1a1a2e;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
     border-bottom: 1px solid rgba(90, 109, 137, 0.15);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     position: relative;
 }
 
-/* Add subtle highlight to the bottom of the topbar */
+/* Subtle accent line at bottom of topbar */
 .top-bar::after {
     content: '';
     position: absolute;
@@ -582,7 +563,7 @@ select.form-control {
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, rgba(52, 152, 219, 0.3), rgba(155, 89, 182, 0.3)); /* Sonarr blue to Whisparr purple */
+    background: rgba(52, 152, 219, 0.4);
     z-index: 1;
 }
 
@@ -643,16 +624,16 @@ select.form-control {
 }
 
 .card {
-    background: linear-gradient(135deg, rgba(30, 39, 56, 0.95) 0%, rgba(14, 20, 32, 0.95) 50%, rgba(16, 24, 36, 0.95) 100%);
+    background: #2d2d44;
     border-radius: 8px;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     padding: 20px;
     position: relative;
-    border: 1px solid rgba(90, 109, 137, 0.1);
+    border: 1px solid rgba(90, 109, 137, 0.15);
     overflow: hidden;
 }
 
-/* Add subtle glow accent to cards */
+/* Subtle accent line at top of cards */
 .card::before {
     content: '';
     position: absolute;
@@ -660,8 +641,7 @@ select.form-control {
     left: 0;
     width: 100%;
     height: 2px;
-    background: linear-gradient(90deg, rgba(52, 152, 219, 0.3), rgba(155, 89, 182, 0.3)); /* Sonarr blue to Whisparr purple */
-    opacity: 0.7;
+    background: rgba(52, 152, 219, 0.4);
 }
 
 .card h2, .card h3 {
@@ -1086,19 +1066,18 @@ select.form-control {
 }
 
 .settings-group {
-    background: linear-gradient(145deg, rgba(30, 39, 56, 0.6), rgba(22, 28, 40, 0.7));
+    background: rgba(30, 39, 56, 0.6);
     border: 1px solid rgba(90, 109, 137, 0.15);
     border-radius: 12px;
     padding: 25px;
     margin-bottom: 25px;
     position: relative;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(5px);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transition: box-shadow 0.2s ease;
 }
 
 .settings-group:hover {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
 .settings-group h3 {
@@ -1107,24 +1086,10 @@ select.form-control {
     font-size: 1.2rem;
     color: white;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(to right, rgba(52, 152, 219, 0.8), rgba(41, 128, 185, 0.7));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    background: rgba(52, 152, 219, 0.25);
     border-left: 4px solid rgba(52, 152, 219, 0.9);
     letter-spacing: 0.5px;
-    position: relative;
-    overflow: hidden;
-}
-
-.settings-group h3::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
-    pointer-events: none;
 }
 
 .setting-item {
@@ -1171,7 +1136,7 @@ select.form-control {
     transform: scale(1.1);
 }
 
-/* Enhanced input fields */
+/* Input fields - simplified */
 .setting-item input[type="text"],
 .setting-item input[type="number"],
 .setting-item input[type="password"] {
@@ -1179,20 +1144,19 @@ select.form-control {
     padding: 12px 15px;
     border: 1px solid rgba(90, 109, 137, 0.2);
     border-radius: 8px;
-    background: linear-gradient(145deg, rgba(15, 23, 36, 0.7), rgba(22, 30, 45, 0.5));
+    background: rgba(20, 28, 40, 0.8);
     color: var(--text-primary);
     font-size: 14px;
     font-weight: 500;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
-    backdrop-filter: blur(5px);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .setting-item input[type="text"]:focus,
 .setting-item input[type="number"]:focus,
 .setting-item input[type="password"]:focus {
     border-color: rgba(52, 152, 219, 0.5);
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15), 0 1px 0 rgba(255, 255, 255, 0.1) inset;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
     outline: none;
 }
 
@@ -2155,27 +2119,17 @@ input:checked + .toggle-slider:before {
     }
 }
 
-/* Define color-shifting animation with 50% reduced glow */
-@keyframes glowing-ring {
-  0% { box-shadow: 0 0 7.5px #3498db, 0 0 2.5px rgba(52, 152, 219, 0.4); } /* Sonarr blue */
-  20% { box-shadow: 0 0 7.5px #f1c40f, 0 0 2.5px rgba(241, 196, 15, 0.4); } /* Radarr yellow */
-  40% { box-shadow: 0 0 7.5px #2ecc71, 0 0 2.5px rgba(46, 204, 113, 0.4); } /* Lidarr green */
-  60% { box-shadow: 0 0 7.5px #e74c3c, 0 0 2.5px rgba(231, 76, 60, 0.4); } /* Readarr red */
-  80% { box-shadow: 0 0 7.5px #9b59b6, 0 0 2.5px rgba(155, 89, 182, 0.4); } /* Whisparr purple */
-  100% { box-shadow: 0 0 7.5px #3498db, 0 0 2.5px rgba(52, 152, 219, 0.4); } /* Back to Sonarr blue */
-}
-
+/* Styled select - simplified from rainbow animation */
 .styled-select {
   background: var(--accent-color);
   color: #fff;
   border: none;
   border-radius: 20px;
-  padding: 10px 35px 10px 20px; /* Increase right padding for the arrow */
+  padding: 10px 35px 10px 20px;
   font-weight: 500;
   font-size: 1rem;
   min-width: 140px;
-  /* Add glowing ring animation */
-  animation: glowing-ring 10s infinite ease-in-out;
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -2184,7 +2138,6 @@ input:checked + .toggle-slider:before {
   transition: all 0.3s ease;
   margin-right: 10px;
   position: relative;
-  /* Add dropdown arrow using pseudo-element */
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -2197,20 +2150,9 @@ input:checked + .toggle-slider:before {
   padding: 8px 12px;
 }
 
-/* Define faster glowing animation for hover state with 50% reduced glow */
-@keyframes glowing-ring-hover {
-  0% { box-shadow: 0 0 10px #3498db, 0 0 5px rgba(52, 152, 219, 0.6); } /* Sonarr blue */
-  20% { box-shadow: 0 0 10px #f1c40f, 0 0 5px rgba(241, 196, 15, 0.6); } /* Radarr yellow */
-  40% { box-shadow: 0 0 10px #2ecc71, 0 0 5px rgba(46, 204, 113, 0.6); } /* Lidarr green */
-  60% { box-shadow: 0 0 10px #e74c3c, 0 0 5px rgba(231, 76, 60, 0.6); } /* Readarr red */
-  80% { box-shadow: 0 0 10px #9b59b6, 0 0 5px rgba(155, 89, 182, 0.6); } /* Whisparr purple */
-  100% { box-shadow: 0 0 10px #3498db, 0 0 5px rgba(52, 152, 219, 0.6); } /* Back to Sonarr blue */
-}
-
 .styled-select:focus, .styled-select:hover {
   background: var(--accent-hover);
-  /* Switch to more intense glowing animation on hover */
-  animation: glowing-ring-hover 6s infinite ease-in-out;
+  box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
 }
 
 /* Add helper text for dropdowns */
