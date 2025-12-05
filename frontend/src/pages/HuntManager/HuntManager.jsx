@@ -97,42 +97,67 @@ function HuntManager() {
     setTimeout(() => setActionStatus(null), 3000)
   }
 
-  // Open item in external app (Sonarr only for now)
+  // Generate slug from title for *arr app URLs
+  const generateSlug = (title) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/\s*\((\d{4})\)\s*/g, '-$1')
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, ' ')
+      .replace(/\s/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+  }
+
+  // Open item in external app
   const handleItemClick = async (entry) => {
-    if (entry.app_type !== 'sonarr' || !entry.instance_name) return
+    const supportedApps = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros']
+    if (!supportedApps.includes(entry.app_type) || !entry.instance_name) return
 
     try {
-      // Fetch instance settings to get API URL
+      // Fetch instance settings to get URL
       const res = await fetchWithTimeout(`/api/settings/${entry.app_type}`)
       if (!res.ok) return
 
       const settings = await res.json()
       const instance = settings.instances?.find(inst => inst.name === entry.instance_name)
-      if (!instance?.api_url) return
+      if (!instance?.api_url && !instance?.external_url) return
 
-      // Generate direct link
-      const baseUrl = instance.api_url.replace(/\/$/, '')
+      // Use external_url if set, otherwise fall back to api_url
+      const baseUrl = (instance.external_url || instance.api_url).replace(/\/$/, '')
       let targetUrl = baseUrl
 
       if (entry.media_id && entry.processed_info) {
-        // Extract series title (remove season/episode info)
-        let seriesTitle = entry.processed_info
-        if (seriesTitle.includes(' - ')) {
-          seriesTitle = seriesTitle.split(' - ')[0]
+        // Extract title (remove season/episode/year info for slug generation)
+        let title = entry.processed_info
+        if (title.includes(' - ')) {
+          title = title.split(' - ')[0]
         }
 
-        // Generate Sonarr-compatible slug
-        const slug = seriesTitle
-          .toLowerCase()
-          .trim()
-          .replace(/\s*\((\d{4})\)\s*/g, '-$1')
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, ' ')
-          .replace(/\s/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '')
+        const slug = generateSlug(title)
 
-        targetUrl = `${baseUrl}/series/${slug}`
+        // Generate app-specific URL
+        switch (entry.app_type) {
+          case 'sonarr':
+            targetUrl = `${baseUrl}/series/${slug}`
+            break
+          case 'radarr':
+            targetUrl = `${baseUrl}/movie/${slug}`
+            break
+          case 'lidarr':
+            targetUrl = `${baseUrl}/artist/${slug}`
+            break
+          case 'readarr':
+            targetUrl = `${baseUrl}/author/${slug}`
+            break
+          case 'whisparr':
+          case 'eros':
+            targetUrl = `${baseUrl}/series/${slug}`
+            break
+          default:
+            targetUrl = baseUrl
+        }
       }
 
       window.open(targetUrl, '_blank')
@@ -151,10 +176,14 @@ function HuntManager() {
     )
   }
 
-  // Format app instance
+  // Format app instance with colored badge
   const formatAppInstance = (appType, instanceName) => {
     const appName = appType.charAt(0).toUpperCase() + appType.slice(1)
-    return `${appName} (${instanceName})`
+    return (
+      <span className={`${styles.appBadge} ${styles[appType]}`}>
+        {appName} ({instanceName})
+      </span>
+    )
   }
 
   return (
@@ -259,13 +288,13 @@ function HuntManager() {
                 <tr key={`${entry.id || index}-${entry.date_time}`}>
                   <td>
                     <span
-                      className={`${styles.processedInfo} ${entry.app_type === 'sonarr' && entry.instance_name ? styles.clickable : ''}`}
+                      className={`${styles.processedInfo} ${entry.instance_name ? styles.clickable : ''}`}
                       onClick={() => handleItemClick(entry)}
-                      title={entry.app_type === 'sonarr' && entry.instance_name ? `Click to open in Sonarr (${entry.instance_name})` : ''}
+                      title={entry.instance_name ? `Click to open in ${entry.app_type.charAt(0).toUpperCase() + entry.app_type.slice(1)} (${entry.instance_name})` : ''}
                     >
                       {entry.processed_info}
                     </span>
-                    {entry.discovered && (
+                    {!!entry.discovered && (
                       <span className={styles.discoveryBadge}>🔍 Discovered</span>
                     )}
                   </td>

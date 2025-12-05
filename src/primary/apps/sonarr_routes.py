@@ -25,7 +25,7 @@ def sonarr_page():
     """Render the Sonarr page"""
     return render_template('sonarr.html')
 
-@sonarr_bp.route('/api/sonarr/missing', methods=['POST'])
+@sonarr_bp.route('/missing', methods=['POST'])
 def sonarr_missing():
     """Handle Sonarr missing episodes search"""
     try:
@@ -50,7 +50,7 @@ def sonarr_missing():
         logger.error(f"Error in Sonarr missing search: {e}")
         return jsonify({"error": str(e)}), 500
 
-@sonarr_bp.route('/api/sonarr/upgrade', methods=['POST'])
+@sonarr_bp.route('/upgrade', methods=['POST'])
 def sonarr_upgrade():
     """Handle Sonarr upgrade search"""
     try:
@@ -75,7 +75,7 @@ def sonarr_upgrade():
         logger.error(f"Error in Sonarr upgrade search: {e}")
         return jsonify({"error": str(e)}), 500
 
-@sonarr_bp.route('/api/sonarr/reset', methods=['POST'])
+@sonarr_bp.route('/reset', methods=['POST'])
 def sonarr_reset():
     """Reset Sonarr state files"""
     try:

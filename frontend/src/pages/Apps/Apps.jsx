@@ -277,10 +277,10 @@ function AppSection({ appName }) {
 
   // Separate connection fields from settings fields for instances
   const connectionFields = instanceFields.filter(f =>
-    ['name', 'api_url', 'api_key', 'enabled'].includes(f.name)
+    ['name', 'api_url', 'api_key', 'external_url', 'enabled'].includes(f.name)
   )
   const instanceSettingsFields = instanceFields.filter(f =>
-    !['name', 'api_url', 'api_key', 'enabled'].includes(f.name)
+    !['name', 'api_url', 'api_key', 'external_url', 'enabled'].includes(f.name)
   )
 
   return (
@@ -419,6 +419,16 @@ function AppSection({ appName }) {
                         onChange={(e) => updateInstance(index, 'api_key', e.target.value)}
                         placeholder="Enter API key"
                       />
+                    </div>
+                    <div className={styles.field}>
+                      <label>External URL <span className={styles.optional}>(optional)</span></label>
+                      <input
+                        type="text"
+                        value={instance.external_url || ''}
+                        onChange={(e) => updateInstance(index, 'external_url', e.target.value)}
+                        placeholder={`https://${appName}.example.com`}
+                      />
+                      <small className={styles.fieldHelp}>Public URL for browser links. Uses API URL if empty.</small>
                     </div>
                   </div>
 

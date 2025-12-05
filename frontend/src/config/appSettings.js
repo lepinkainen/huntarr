@@ -8,6 +8,7 @@ const commonInstanceFields = [
   { name: 'name', label: 'Instance Name', type: 'text', default: 'Default' },
   { name: 'api_url', label: 'API URL', type: 'text', placeholder: 'http://localhost:8989' },
   { name: 'api_key', label: 'API Key', type: 'password', placeholder: 'Enter API key' },
+  { name: 'external_url', label: 'External URL', type: 'text', placeholder: 'https://sonarr.example.com', help: 'Public URL for browser links (optional)' },
   { name: 'enabled', label: 'Enabled', type: 'checkbox', default: true }
 ]
 

@@ -3,7 +3,7 @@
 from flask import Blueprint, request, jsonify
 import datetime, os, requests
 
-from src.primary.state import reset_state_file
+from src.primary.state import reset_state_file, check_state_reset
 from src.primary.utils.logger import get_logger, APP_LOG_FILES
 from src.primary.settings_manager import load_settings, get_ssl_verify_setting
 from src.primary.apps.base.routes import eros_test_connection_handler
@@ -12,13 +12,91 @@ import socket
 from urllib.parse import urlparse
 from src.primary.apps.eros import api as eros_api
 from src.primary.apps.eros import get_configured_instances
+from src.primary.apps.eros import missing, upgrade
+from src.primary.auth import get_app_url_and_key
+from src.primary import settings_manager
+import logging
 # Import centralized path configuration
 from src.primary.utils.config_paths import CONFIG_PATH
+
+logger = logging.getLogger(__name__)
 
 eros_bp = Blueprint('eros', __name__)
 eros_logger = get_logger("eros")
 
 # State management now handled directly through database calls
+
+@eros_bp.route('/missing', methods=['POST'])
+def eros_missing():
+    """Handle Eros missing items search"""
+    try:
+        # Check if state needs to be reset
+        check_state_reset("eros")
+
+        # Get app configuration from database
+        app_url, api_key = get_app_url_and_key("eros")
+        if not app_url or not api_key:
+            return jsonify({"error": "Eros not configured"}), 400
+
+        # Get settings from database
+        missing_search_enabled = settings_manager.get_app_setting("eros", "missing_search", True)
+        if not missing_search_enabled:
+            return jsonify({"message": "Missing search is disabled for Eros"}), 200
+
+        # Run missing search
+        result = missing.run_missing_search(app_url, api_key, "eros")
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error(f"Error in Eros missing search: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@eros_bp.route('/upgrade', methods=['POST'])
+def eros_upgrade():
+    """Handle Eros upgrade search"""
+    try:
+        # Check if state needs to be reset
+        check_state_reset("eros")
+
+        # Get app configuration from database
+        app_url, api_key = get_app_url_and_key("eros")
+        if not app_url or not api_key:
+            return jsonify({"error": "Eros not configured"}), 400
+
+        # Get settings from database
+        upgrade_search_enabled = settings_manager.get_app_setting("eros", "upgrade_search", True)
+        if not upgrade_search_enabled:
+            return jsonify({"message": "Upgrade search is disabled for Eros"}), 200
+
+        # Run upgrade search
+        result = upgrade.run_upgrade_search(app_url, api_key, "eros")
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error(f"Error in Eros upgrade search: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@eros_bp.route('/reset', methods=['POST'])
+def eros_reset():
+    """Reset Eros state files"""
+    try:
+        data = request.get_json() or {}
+        reset_type = data.get('type', 'all')
+
+        success = True
+        if reset_type == 'missing' or reset_type == 'all':
+            success &= reset_state_file("eros", "processed_missing")
+        if reset_type == 'upgrade' or reset_type == 'all':
+            success &= reset_state_file("eros", "processed_upgrades")
+
+        if success:
+            return jsonify({"message": f"Eros {reset_type} state reset successfully"})
+        else:
+            return jsonify({"error": f"Failed to reset Eros {reset_type} state"}), 500
+
+    except Exception as e:
+        logger.error(f"Error resetting Eros state: {e}")
+        return jsonify({"error": str(e)}), 500
 
 def test_connection_internal(url, api_key):
     """Internal helper for status checks - returns dict instead of Flask response"""
