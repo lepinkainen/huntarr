@@ -1,3 +1,21 @@
+# Stage 1: Build React frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy package files first for better caching
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm ci --no-audit --no-fund
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build the React app
+RUN npm run build
+
+# Stage 2: Python application
 FROM python:3.9-slim
 
 WORKDIR /app
@@ -18,6 +36,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . /app/
 
+# Copy built React assets from frontend builder
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+
 # Create necessary directories
 # Log files are now stored in database only
 RUN mkdir -p /config && chmod -R 755 /config
@@ -25,7 +46,6 @@ RUN mkdir -p /config && chmod -R 755 /config
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV TZ=UTC
-# ENV APP_TYPE=sonarr # APP_TYPE is likely managed via config now, remove if not needed
 
 # Expose port
 EXPOSE 9705
