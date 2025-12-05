@@ -244,4 +244,5 @@ tally/
 # Editor/IDE specific
 .serena/
 .cursor/
-.playwright-mcp/frontend/.vite/
+.playwright-mcp/
+frontend/.vite/

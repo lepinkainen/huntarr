@@ -223,70 +223,9 @@
 .appCard.whisparr { border-top: 3px solid var(--whisparr-color); }
 .appCard.eros { border-top: 3px solid var(--eros-color); }
 
-/* Community Links Grid */
-.linksGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.75rem;
-}
-
-.linkCard {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.linkCard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
-  border-color: var(--accent-color);
-}
-
-.linkIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
-}
-
-.linkIcon i {
-  font-size: 1.125rem;
-}
-
-.linkContent {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  min-width: 0;
-}
-
-.linkTitle {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.linkDesc {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .appsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .linksGrid {
     grid-template-columns: 1fr;
   }
 

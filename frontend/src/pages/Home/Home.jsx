@@ -14,7 +14,7 @@ function AppStatsCard({ app, stats, onReset }) {
     <div className={`${styles.appCard} ${styles[app]}`}>
       <div className={styles.appHeader}>
         <img
-          src={`./static/images/app-icons/${app}.png`}
+          src={`/static/images/app-icons/${app}.png`}
           alt={app}
           className={styles.appIcon}
         />
@@ -53,38 +53,6 @@ function AppStatsCard({ app, stats, onReset }) {
     </div>
   )
 }
-
-// Community links data
-const COMMUNITY_LINKS = [
-  {
-    title: 'Discord',
-    description: 'Join the community',
-    url: 'https://discord.gg/huntarr',
-    icon: 'fab fa-discord',
-    color: '#5865f2'
-  },
-  {
-    title: 'GitHub',
-    description: 'Source code & issues',
-    url: 'https://github.com/plexguide/Huntarr.io',
-    icon: 'fab fa-github',
-    color: '#333'
-  },
-  {
-    title: 'Documentation',
-    description: 'Setup guides & docs',
-    url: 'https://huntarr.io/docs',
-    icon: 'fas fa-book',
-    color: '#3498db'
-  },
-  {
-    title: 'Donate',
-    description: 'Support development',
-    url: 'https://ko-fi.com/huntarr',
-    icon: 'fas fa-heart',
-    color: '#e74c3c'
-  }
-]
 
 function Home() {
   const { configuredApps, refreshStats } = useApp()
@@ -199,39 +167,6 @@ function Home() {
         </div>
       </div>
 
-      {/* Community Links */}
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <h3>
-            <i className="fas fa-users" /> Community & Resources
-          </h3>
-        </div>
-
-        <div className={styles.cardBody}>
-          <div className={styles.linksGrid}>
-            {COMMUNITY_LINKS.map(link => (
-              <a
-                key={link.title}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.linkCard}
-              >
-                <div
-                  className={styles.linkIcon}
-                  style={{ backgroundColor: link.color }}
-                >
-                  <i className={link.icon} />
-                </div>
-                <div className={styles.linkContent}>
-                  <span className={styles.linkTitle}>{link.title}</span>
-                  <span className={styles.linkDesc}>{link.description}</span>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

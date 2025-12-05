@@ -15,7 +15,7 @@ function Layout({ children }) {
       {/* Main Sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.logo}>
-          <img src="./static/logo/huntarr.png" alt="Huntarr" />
+          <img src="/static/logo/huntarr.png" alt="Huntarr" />
           <span>Huntarr</span>
         </div>
 
@@ -94,7 +94,7 @@ function Layout({ children }) {
                 }
               >
                 <img
-                  src={`./static/images/app-icons/${app}.png`}
+                  src={`/static/images/app-icons/${app}.png`}
                   alt={app}
                   className={styles.appIcon}
                 />

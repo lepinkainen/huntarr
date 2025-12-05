@@ -34,22 +34,6 @@ const SYSTEM_FIELDS = [
   }
 ]
 
-// Display Settings
-const DISPLAY_FIELDS = [
-  {
-    name: 'display_community_resources',
-    label: 'Show Community Resources',
-    type: 'checkbox',
-    help: 'Display the Resources section on the home page'
-  },
-  {
-    name: 'display_huntarr_support',
-    label: 'Show Huntarr Support',
-    type: 'checkbox',
-    help: 'Display support section for GitHub stars and donations'
-  }
-]
-
 // Security Settings
 const SECURITY_FIELDS = [
   {
@@ -228,24 +212,6 @@ function GeneralSettings() {
         </h3>
         <div className={styles.fieldsGrid}>
           {SYSTEM_FIELDS.map(field => (
-            <SettingsField
-              key={field.name}
-              field={field}
-              value={settings[field.name]}
-              onChange={handleChange}
-              instanceData={settings}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Display Settings */}
-      <div className={styles.settingsGroup}>
-        <h3>
-          <i className="fas fa-desktop" /> Display Settings
-        </h3>
-        <div className={styles.fieldsGrid}>
-          {DISPLAY_FIELDS.map(field => (
             <SettingsField
               key={field.name}
               field={field}
