@@ -117,8 +117,9 @@ function Home() {
   // Handle cycle reset for an app
   const handleReset = useCallback(async (app) => {
     try {
-      const res = await fetchWithTimeout(`./api/${app}/reset-cycle`, {
-        method: 'POST'
+      const res = await fetchWithTimeout(`./api/cycle/reset/${app}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       })
       if (res.ok) {
         loadStats()
@@ -135,8 +136,9 @@ function Home() {
     }
 
     try {
-      const res = await fetchWithTimeout('./api/stats/reset', {
-        method: 'POST'
+      const res = await fetchWithTimeout('./api/stats/reset_public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       })
       if (res.ok) {
         loadStats()

@@ -39,6 +39,16 @@ function Layout({ children }) {
           </NavLink>
 
           <NavLink
+            to="/hunt-manager"
+            className={({ isActive }) =>
+              `${styles.navItem} ${isActive ? styles.active : ''}`
+            }
+          >
+            <i className="fas fa-crosshairs" />
+            <span>Hunt Manager</span>
+          </NavLink>
+
+          <NavLink
             to="/logs"
             className={({ isActive }) =>
               `${styles.navItem} ${isActive ? styles.active : ''}`

@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useLogStream } from '../../hooks/useSSE'
 import styles from './Logs.module.css'
 
 const APP_FILTERS = [
   { value: 'all', label: 'All Apps' },
+  { value: 'system', label: 'System' },
   { value: 'sonarr', label: 'Sonarr' },
   { value: 'radarr', label: 'Radarr' },
   { value: 'lidarr', label: 'Lidarr' },
@@ -11,6 +12,16 @@ const APP_FILTERS = [
   { value: 'whisparr', label: 'Whisparr' },
   { value: 'eros', label: 'Eros' }
 ]
+
+const LEVEL_FILTERS = [
+  { value: 'DEBUG', label: 'Debug' },
+  { value: 'INFO', label: 'Info' },
+  { value: 'WARNING', label: 'Warning' },
+  { value: 'ERROR', label: 'Error' }
+]
+
+// Log level priority - show this level and above
+const LEVEL_PRIORITY = { DEBUG: 0, INFO: 1, WARNING: 2, ERROR: 3, CRITICAL: 4 }
 
 const LEVEL_COLORS = {
   DEBUG: 'var(--text-muted)',
@@ -21,34 +32,41 @@ const LEVEL_COLORS = {
 }
 
 function Logs() {
-  const [filter, setFilter] = useState('all')
+  const [appFilter, setAppFilter] = useState('all')
+  const [levelFilter, setLevelFilter] = useState('INFO') // Default to INFO like legacy
   const [autoScroll, setAutoScroll] = useState(true)
   const [search, setSearch] = useState('')
-  const logsEndRef = useRef(null)
+  const logsTopRef = useRef(null)
 
-  const { logs, connected, clearLogs, connect } = useLogStream(
-    filter === 'all' ? null : filter
-  )
+  const { logs, connected, loading, clearLogs, connect } = useLogStream(appFilter)
 
-  // Auto-scroll to bottom when new logs arrive
+  // Auto-scroll to TOP when new logs arrive (newest logs are first)
   useEffect(() => {
-    if (autoScroll && logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    if (autoScroll && logsTopRef.current) {
+      logsTopRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [logs, autoScroll])
 
-  // Filter logs by search term
-  const filteredLogs = search
-    ? logs.filter(log =>
-        log.message?.toLowerCase().includes(search.toLowerCase()) ||
-        log.app?.toLowerCase().includes(search.toLowerCase())
-      )
-    : logs
+  // Filter logs by level and search term
+  const filteredLogs = useMemo(() => {
+    const minPriority = LEVEL_PRIORITY[levelFilter] || 0
 
-  // Handle filter change - reconnect with new filter
-  const handleFilterChange = useCallback((e) => {
-    setFilter(e.target.value)
-  }, [])
+    return logs.filter(log => {
+      // Level filter - show this level and above
+      const logPriority = LEVEL_PRIORITY[log.level] ?? 1
+      if (logPriority < minPriority) return false
+
+      // Search filter
+      if (search) {
+        const searchLower = search.toLowerCase()
+        const matchesMessage = log.message?.toLowerCase().includes(searchLower)
+        const matchesApp = log.app?.toLowerCase().includes(searchLower)
+        if (!matchesMessage && !matchesApp) return false
+      }
+
+      return true
+    })
+  }, [logs, levelFilter, search])
 
   return (
     <div className={styles.logs}>
@@ -59,7 +77,7 @@ function Logs() {
               <i className="fas fa-file-alt" /> Real-time Logs
             </h3>
             <span className={`${styles.status} ${connected ? styles.connected : styles.disconnected}`}>
-              <i className={`fas fa-circle`} />
+              <i className="fas fa-circle" />
               {connected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
@@ -76,11 +94,21 @@ function Logs() {
             </div>
 
             <select
-              value={filter}
-              onChange={handleFilterChange}
+              value={appFilter}
+              onChange={(e) => setAppFilter(e.target.value)}
               className={styles.filterSelect}
             >
               {APP_FILTERS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+
+            <select
+              value={levelFilter}
+              onChange={(e) => setLevelFilter(e.target.value)}
+              className={styles.filterSelect}
+            >
+              {LEVEL_FILTERS.map(({ value, label }) => (
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
@@ -113,15 +141,21 @@ function Logs() {
         </div>
 
         <div className={styles.logsContainer}>
-          {filteredLogs.length === 0 ? (
+          {loading ? (
+            <div className={styles.emptyState}>
+              <i className="fas fa-spinner fa-spin" />
+              <p>Loading logs...</p>
+            </div>
+          ) : filteredLogs.length === 0 ? (
             <div className={styles.emptyState}>
               <i className="fas fa-inbox" />
-              <p>No logs yet. Waiting for activity...</p>
+              <p>No logs match the current filters.</p>
             </div>
           ) : (
             <div className={styles.logsList}>
+              <div ref={logsTopRef} />
               {filteredLogs.map((log, index) => (
-                <div key={index} className={styles.logEntry}>
+                <div key={log.id ?? index} className={styles.logEntry}>
                   <span className={styles.timestamp}>
                     {log.timestamp || new Date().toLocaleTimeString()}
                   </span>
@@ -139,7 +173,6 @@ function Logs() {
                   <span className={styles.message}>{log.message || log.raw}</span>
                 </div>
               ))}
-              <div ref={logsEndRef} />
             </div>
           )}
         </div>

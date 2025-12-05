@@ -8,6 +8,7 @@ import Logs from './pages/Logs/Logs'
 import { lazy, Suspense } from 'react'
 const Settings = lazy(() => import('./pages/Settings/Settings'))
 const Apps = lazy(() => import('./pages/Apps/Apps'))
+const HuntManager = lazy(() => import('./pages/HuntManager/HuntManager'))
 
 function App() {
   const { isLoading } = useApp()
@@ -27,6 +28,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/apps/*" element={<Apps />} />
+          <Route path="/hunt-manager" element={<HuntManager />} />
           <Route path="/settings/*" element={<Settings />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="*" element={<Navigate to="/" replace />} />

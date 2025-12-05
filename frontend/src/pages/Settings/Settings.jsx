@@ -1,8 +1,12 @@
 import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom'
 import styles from './Settings.module.css'
+import GeneralSettings from './GeneralSettings'
+import BackupSettings from './BackupSettings'
+import NotificationsSettings from './NotificationsSettings'
+import UserSettings from './UserSettings'
 
-// Placeholder for settings sections
-function SettingsSection({ title, icon }) {
+// Placeholder for settings sections not yet implemented
+function SettingsSection({ title, icon, legacyHash }) {
   return (
     <div className={styles.section}>
       <div className={styles.placeholder}>
@@ -12,7 +16,7 @@ function SettingsSection({ title, icon }) {
           This section is being migrated to React.
           For now, please use the legacy interface.
         </p>
-        <a href="/#settings" className={styles.legacyLink}>
+        <a href={`/#${legacyHash || 'settings'}`} className={styles.legacyLink}>
           <i className="fas fa-external-link-alt" /> Open Legacy Settings
         </a>
       </div>
@@ -26,7 +30,6 @@ function SettingsSidebar() {
 
   const navItems = [
     { path: '/settings/general', label: 'General', icon: 'fas fa-cog' },
-    { path: '/settings/apps', label: 'Applications', icon: 'fas fa-th-large' },
     { path: '/settings/scheduling', label: 'Scheduling', icon: 'fas fa-clock' },
     { path: '/settings/notifications', label: 'Notifications', icon: 'fas fa-bell' },
     { path: '/settings/backup', label: 'Backup & Restore', icon: 'fas fa-database' },
@@ -63,30 +66,14 @@ function Settings() {
 
       <div className={styles.content}>
         <Routes>
-          <Route
-            path="general"
-            element={<SettingsSection title="General Settings" icon="fas fa-cog" />}
-          />
-          <Route
-            path="apps"
-            element={<SettingsSection title="Application Settings" icon="fas fa-th-large" />}
-          />
+          <Route path="general" element={<GeneralSettings />} />
           <Route
             path="scheduling"
-            element={<SettingsSection title="Scheduling" icon="fas fa-clock" />}
+            element={<SettingsSection title="Scheduling" icon="fas fa-clock" legacyHash="scheduling" />}
           />
-          <Route
-            path="notifications"
-            element={<SettingsSection title="Notifications" icon="fas fa-bell" />}
-          />
-          <Route
-            path="backup"
-            element={<SettingsSection title="Backup & Restore" icon="fas fa-database" />}
-          />
-          <Route
-            path="user"
-            element={<SettingsSection title="User Account" icon="fas fa-user" />}
-          />
+          <Route path="notifications" element={<NotificationsSettings />} />
+          <Route path="backup" element={<BackupSettings />} />
+          <Route path="user" element={<UserSettings />} />
           <Route path="*" element={<Navigate to="general" replace />} />
         </Routes>
       </div>

@@ -106,33 +106,88 @@ export function useSSE(url, options = {}) {
 }
 
 /**
- * Hook specifically for Huntarr log streaming
- * @param {string} appFilter - Optional app filter (sonarr, radarr, etc.)
- * @returns {Object} - Log streaming state and controls
+ * Hook for Huntarr log polling (REST API, not SSE)
+ * The Flask backend uses /api/logs/{appType} with JSON responses
+ * @param {string} appFilter - App filter (all, sonarr, radarr, etc.)
+ * @param {number} pollInterval - Polling interval in ms (default: 3000)
+ * @returns {Object} - Log state and controls
  */
-export function useLogStream(appFilter = null) {
-  const url = appFilter ? `./logs?app=${appFilter}` : './logs'
+export function useLogStream(appFilter = 'all', pollInterval = 3000) {
+  const [logs, setLogs] = useState([])
+  const [error, setError] = useState(null)
+  const [connected, setConnected] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const {
-    messages: logs,
-    error,
-    connected,
-    connect,
-    disconnect,
-    clearMessages: clearLogs
-  } = useSSE(url, {
-    autoConnect: true,
-    reconnectDelay: 3000,
-    maxRetries: 10
-  })
+  const intervalRef = useRef(null)
+  const appFilterRef = useRef(appFilter)
+
+  // Update ref when filter changes
+  useEffect(() => {
+    appFilterRef.current = appFilter
+  }, [appFilter])
+
+  const fetchLogs = useCallback(async () => {
+    try {
+      const res = await fetch(`./api/logs/${appFilterRef.current}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      const data = await res.json()
+      if (data.success && data.logs) {
+        // Parse log strings into objects
+        const parsedLogs = data.logs.map((logStr, idx) => {
+          const parts = logStr.split('|')
+          return {
+            id: idx,
+            timestamp: parts[0] || '',
+            level: parts[1] || 'INFO',
+            app: parts[2] || 'system',
+            message: parts.slice(3).join('|') || logStr
+          }
+        })
+        setLogs(parsedLogs)
+        setConnected(true)
+        setError(null)
+      }
+    } catch (err) {
+      setError(`Failed to fetch logs: ${err.message}`)
+      setConnected(false)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const connect = useCallback(() => {
+    fetchLogs()
+    intervalRef.current = setInterval(fetchLogs, pollInterval)
+  }, [fetchLogs, pollInterval])
+
+  const disconnect = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+    setConnected(false)
+  }, [])
+
+  const clearLogs = useCallback(() => {
+    setLogs([])
+  }, [])
+
+  // Auto-connect on mount, reconnect when filter changes
+  useEffect(() => {
+    connect()
+    return () => disconnect()
+  }, [appFilter, connect, disconnect])
 
   return {
     logs,
     error,
     connected,
+    loading,
     connect,
     disconnect,
-    clearLogs
+    clearLogs,
+    refetch: fetchLogs
   }
 }
 

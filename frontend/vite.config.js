@@ -6,13 +6,10 @@ export default defineConfig({
   root: '.',
   publicDir: 'public',
   server: {
+    host: '0.0.0.0',
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:9705',
-        changeOrigin: true
-      },
-      '/logs': {
         target: 'http://localhost:9705',
         changeOrigin: true
       },

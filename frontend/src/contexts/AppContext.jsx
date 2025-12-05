@@ -35,7 +35,7 @@ export function AppProvider({ children }) {
     async function loadInitialData() {
       try {
         // Load settings
-        const settingsRes = await fetchWithTimeout('./api/settings')
+        const settingsRes = await fetchWithTimeout('/api/settings')
         if (settingsRes.ok) {
           const data = await settingsRes.json()
           setSettings(data)
@@ -46,9 +46,10 @@ export function AppProvider({ children }) {
         await Promise.all(
           APP_TYPES.map(async (app) => {
             try {
-              const res = await fetchWithTimeout(`./api/${app}/status`)
+              const res = await fetchWithTimeout(`/api/status/${app}`)
               const data = await res.json()
-              appStatus[app] = data.configured || false
+              // API returns { connected_count, total_configured }
+              appStatus[app] = (data.total_configured || 0) > 0
             } catch {
               appStatus[app] = false
             }
@@ -57,7 +58,7 @@ export function AppProvider({ children }) {
         setConfiguredApps(appStatus)
 
         // Load stats
-        const statsRes = await fetchWithTimeout('./api/stats')
+        const statsRes = await fetchWithTimeout('/api/stats')
         if (statsRes.ok) {
           const statsData = await statsRes.json()
           setStats(statsData)
@@ -86,7 +87,7 @@ export function AppProvider({ children }) {
   // Update settings
   const updateSettings = useCallback(async (appName, newSettings) => {
     try {
-      const res = await fetchWithTimeout(`./api/settings/${appName}`, {
+      const res = await fetchWithTimeout(`/api/settings/${appName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings)
@@ -109,11 +110,11 @@ export function AppProvider({ children }) {
   // Refresh app status
   const refreshAppStatus = useCallback(async (appName) => {
     try {
-      const res = await fetchWithTimeout(`./api/${appName}/status`)
+      const res = await fetchWithTimeout(`/api/status/${appName}`)
       const data = await res.json()
       setConfiguredApps(prev => ({
         ...prev,
-        [appName]: data.configured || false
+        [appName]: (data.total_configured || 0) > 0
       }))
       return data
     } catch (error) {
@@ -125,7 +126,7 @@ export function AppProvider({ children }) {
   // Refresh stats
   const refreshStats = useCallback(async () => {
     try {
-      const res = await fetchWithTimeout('./api/stats')
+      const res = await fetchWithTimeout('/api/stats')
       if (res.ok) {
         const data = await res.json()
         setStats(data)

@@ -17,15 +17,27 @@ Huntarr is a media automation tool that searches for missing content and quality
 ## Build & Run Commands
 
 ```bash
-# Local development
+# Local development (two terminals needed)
+
+# Terminal 1 - Flask backend
+cd /home/adam/huntarr
+source .venv/bin/activate
 python main.py                    # Runs on port 9705
 
-# Docker development (recommended)
+# Terminal 2 - React dev server (hot reload)
+cd /home/adam/huntarr/frontend
+npm run dev                       # Runs on port 5173
+
+# Access:
+# - React app (dev):    http://<ip>:5173
+# - Legacy app:         http://<ip>:9705
+
+# Setup venv (first time only)
+python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+
+# Docker development
 docker-compose down && docker-compose up -d --build
 docker logs huntarr               # Check logs
-
-# Access UI
-http://localhost:9705
 ```
 
 ## Architecture
@@ -72,17 +84,27 @@ db.set_setting('sonarr', 'api_key', 'value')
 
 ## Key Patterns
 
-### URL Handling
-Always use relative URLs for subpath deployment compatibility:
+### URL Handling - IMPORTANT
+
+**Legacy Frontend (Vanilla JS)**: Uses relative URLs (`./api/...`) for subpath deployment compatibility:
 ```javascript
-// Correct
+// Legacy app - relative URLs work because it uses hash-based routing (#sonarr)
 fetch('./api/endpoint')
 window.location.href = './'
-
-// Wrong - breaks under subpath like domain.com/huntarr/
-fetch('/api/endpoint')
-window.location.href = '/'
 ```
+
+**React Frontend**: Uses absolute URLs (`/api/...`) because React Router uses path-based routing:
+```javascript
+// React app - MUST use absolute URLs
+// From /apps/radarr, "./api/..." resolves to /apps/api/... (WRONG)
+// From /apps/radarr, "/api/..." resolves to /api/... (CORRECT)
+fetch('/api/endpoint')
+fetch(`/api/settings/${appName}`)
+```
+
+**Why the difference?**
+- Legacy uses `/#sonarr` (hash routing) - browser always sees `/` as the path
+- React uses `/apps/sonarr` (path routing) - relative URLs resolve from current path
 
 ### Multi-Instance Support
 Each app supports multiple instances. Settings stored with instance index:
@@ -108,10 +130,12 @@ else:
     # Local development
 ```
 
-## Critical Rules from rules.md
+## Critical Development Rules
 
 1. **Never hardcode paths** - Use `os.path.join()` and environment detection
-2. **Never use absolute URLs** in frontend - Always relative (`./api/` not `/api/`)
+2. **URL handling differs by frontend**:
+   - Legacy (vanilla JS): Use relative URLs (`./api/...`)
+   - React: Use absolute URLs (`/api/...`) - see URL Handling section above
 3. **Use DatabaseManager** - Never direct SQLite calls outside database.py
 4. **Test both environments** - Docker and local development
 5. **Rebuild for testing**: `docker-compose down && docker-compose up -d --build`
