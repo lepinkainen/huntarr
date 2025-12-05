@@ -291,8 +291,9 @@ def update_session_username(session_id: str, new_username: str) -> bool:
 def authenticate_request():
     """Flask route decorator to check if user is authenticated"""
 
-    # Skip authentication for static files and the login/setup pages
+    # Skip authentication for static files, React assets, and the login/setup pages
     static_path = "/static/"
+    assets_path = "/assets/"  # React build assets (JS, CSS)
     login_path = "/login"
     api_login_path = "/api/login"
     api_auth_plex_path = "/api/auth/plex"
@@ -317,8 +318,8 @@ def authenticate_request():
             logger.debug(f"Allowing setup/user page access for path: {request.path}")
         return None
 
-    # Skip authentication for static files, API setup, health check path, and ping
-    if request.path.startswith((static_path, api_setup_path)) or request.path in (favicon_path, health_check_path, ping_path):
+    # Skip authentication for static files, React assets, API setup, health check path, and ping
+    if request.path.startswith((static_path, assets_path, api_setup_path)) or request.path in (favicon_path, health_check_path, ping_path):
         return None
     
     # Skip authentication for login pages, Plex auth endpoints, recovery key endpoints, and setup-related user endpoints

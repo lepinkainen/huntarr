@@ -73,6 +73,7 @@
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: center;
+  gap: 0.5rem;
 }
 
 .themeToggle {
@@ -90,6 +91,24 @@
 .themeToggle:hover {
   color: var(--accent-color);
   border-color: var(--accent-color);
+}
+
+.logoutBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.logoutBtn:hover {
+  color: #ef4444;
+  border-color: #ef4444;
 }
 
 /* Sub Sidebar (Apps) */

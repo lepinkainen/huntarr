@@ -603,13 +603,54 @@ def api_settings():
 def save_general_settings():
     general_logger = get_logger("web_server")
     general_logger.info("Received request to save general settings.")
-    
+
+    # SECURITY: Only allow unauthenticated access during setup
+    # After setup is complete, require authentication
+    from src.primary.auth import user_exists, verify_session, SESSION_COOKIE_NAME
+    from src.primary.utils.database import get_database
+
+    db = get_database()
+    setup_in_progress = db.is_setup_in_progress()
+    has_user = user_exists()
+
+    # If user exists and setup is complete, require authentication
+    if has_user and not setup_in_progress:
+        session_id = request.cookies.get(SESSION_COOKIE_NAME)
+        if not session_id or not verify_session(session_id):
+            # Check bypass modes as a fallback (user might be in local bypass mode)
+            try:
+                general_settings = settings_manager.load_settings('general')
+                proxy_bypass = general_settings.get('proxy_auth_bypass', False)
+                local_bypass = general_settings.get('local_access_bypass', False)
+
+                # If proxy bypass is enabled, allow access
+                if proxy_bypass:
+                    pass  # Allow
+                # If local bypass is enabled, check if request is local
+                elif local_bypass:
+                    remote_addr = request.remote_addr
+                    local_networks = ['127.0.0.1', '::1', '10.', '172.16.', '172.17.', '172.18.',
+                                      '172.19.', '172.20.', '172.21.', '172.22.', '172.23.',
+                                      '172.24.', '172.25.', '172.26.', '172.27.', '172.28.',
+                                      '172.29.', '172.30.', '172.31.', '192.168.']
+                    is_local = any(remote_addr == net or (net.endswith('.') and remote_addr.startswith(net))
+                                   for net in local_networks)
+                    if not is_local:
+                        general_logger.warning(f"Unauthorized settings change attempt from {remote_addr}")
+                        return jsonify({"success": False, "error": "Unauthorized"}), 401
+                else:
+                    general_logger.warning("Unauthorized settings change attempt - no valid session")
+                    return jsonify({"success": False, "error": "Unauthorized"}), 401
+            except Exception as e:
+                general_logger.error(f"Error checking auth bypass: {e}")
+                return jsonify({"success": False, "error": "Unauthorized"}), 401
+
     # Make sure we have data
     if not request.is_json:
         return jsonify({"success": False, "error": "Expected JSON data"}), 400
-    
+
     data = request.json
-    
+
     # Debug: Log the incoming data to see if timezone is present
     general_logger.debug(f"Received general settings data: {data}")
     if 'timezone' in data:

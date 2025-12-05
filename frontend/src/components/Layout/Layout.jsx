@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useApp } from '../../contexts/AppContext'
+import { fetchWithTimeout } from '../../api/client'
 import styles from './Layout.module.css'
 
 function Layout({ children }) {
@@ -9,6 +10,17 @@ function Layout({ children }) {
   // Determine active section for sidebar highlighting
   const isAppsSection = location.pathname.startsWith('/apps')
   const isSettingsSection = location.pathname.startsWith('/settings')
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await fetchWithTimeout('/logout', { method: 'POST' })
+      window.location.href = '/login'
+    } catch (err) {
+      // Still redirect on error
+      window.location.href = '/login'
+    }
+  }
 
   return (
     <div className={styles.layout}>
@@ -72,8 +84,17 @@ function Layout({ children }) {
             className={styles.themeToggle}
             onClick={toggleDarkMode}
             aria-label="Toggle dark mode"
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             <i className={darkMode ? 'fas fa-sun' : 'fas fa-moon'} />
+          </button>
+          <button
+            className={styles.logoutBtn}
+            onClick={handleLogout}
+            aria-label="Logout"
+            title="Logout"
+          >
+            <i className="fas fa-sign-out-alt" />
           </button>
         </div>
       </aside>

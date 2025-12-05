@@ -27,6 +27,16 @@ from datetime import datetime
 
 common_bp = Blueprint('common', __name__)
 
+# Helper to get React dist directory
+def get_react_dist_dir():
+    """Get the path to React build directory"""
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'frontend', 'dist'))
+
+def serve_react_app():
+    """Serve React app's index.html"""
+    react_dist = get_react_dist_dir()
+    return send_from_directory(react_dist, 'index.html')
+
 # --- Static File Serving --- #
 
 @common_bp.route('/static/<path:filename>')
@@ -275,8 +285,8 @@ def login_route():
             logger.error(f"Error checking for Plex users: {e}")
             plex_auth_enabled = False
         
-        logger.debug("Displaying login page.")
-        return render_template('login.html', plex_auth_enabled=plex_auth_enabled)
+        logger.debug("Displaying login page (React).")
+        return serve_react_app()
 
 @common_bp.route('/logout', methods=['POST'])
 def logout_route():
@@ -319,13 +329,13 @@ def setup():
                 logger.info("User exists and setup is complete, redirecting to login")
                 return redirect(url_for('common.login_route'))
             
-            # Render setup page with progress data
-            return render_template('setup.html', setup_progress=setup_progress)
+            # Render React setup page
+            return serve_react_app()
             
         except Exception as e:
             logger.error(f"Error checking setup progress: {e}")
-            # Fallback to normal setup flow
-            return render_template('setup.html', setup_progress=None)
+            # Fallback to React setup page
+            return serve_react_app()
     
     elif request.method == 'POST':
         # For POST requests, check if user exists to prevent duplicate creation
@@ -418,7 +428,7 @@ def setup():
     else:
         # GET request - show setup page
         logger.info("Displaying setup page.")
-        return render_template('setup.html') # This function should now be defined via import
+        return serve_react_app()  # Serve React app
 
 # --- User Management API Routes --- #
 
