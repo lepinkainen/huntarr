@@ -62,10 +62,32 @@ function Home() {
   // Fetch stats on mount and periodically
   const loadStats = useCallback(async () => {
     try {
-      const res = await fetchWithTimeout('./api/stats')
-      if (res.ok) {
-        const data = await res.json()
-        setStats(data)
+      // Fetch both stats and hourly caps in parallel
+      const [statsRes, capsRes] = await Promise.all([
+        fetchWithTimeout('/api/stats'),
+        fetchWithTimeout('/api/hourly-caps')
+      ])
+
+      if (statsRes.ok && capsRes.ok) {
+        const statsData = await statsRes.json()
+        const capsData = await capsRes.json()
+
+        // Merge hourly caps into stats
+        const mergedStats = { ...statsData.stats }
+        for (const app of Object.keys(mergedStats)) {
+          const appCaps = capsData.caps?.[app] || {}
+          const appLimit = capsData.limits?.[app] || 20
+          mergedStats[app] = {
+            ...mergedStats[app],
+            apiUsed: appCaps.api_hits || 0,
+            apiLimit: appLimit
+          }
+        }
+        setStats(mergedStats)
+      } else if (statsRes.ok) {
+        // Fallback if hourly-caps fails
+        const statsData = await statsRes.json()
+        setStats(statsData.stats || {})
       }
     } catch (error) {
       console.error('Failed to load stats:', error)

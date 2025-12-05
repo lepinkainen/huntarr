@@ -283,32 +283,32 @@ def process_missing_seasons_packs_mode(
             season_id = f"{series_id}_{season_number}"
             success = add_processed_id("sonarr", instance_name, season_id)
             sonarr_logger.debug(f"Added season ID {season_id} to processed list for {instance_name}, success: {success}")
-            
-                    # Tag the series if enabled
-        if tag_processed_items:
-            from src.primary.settings_manager import get_custom_tag
-            custom_tag = get_custom_tag("sonarr", "missing", "huntarr-missing")
-            try:
-                sonarr_api.tag_processed_series(api_url, api_key, api_timeout, series_id, custom_tag)
-                sonarr_logger.debug(f"Tagged series {series_id} with '{custom_tag}'")
-            except Exception as e:
-                sonarr_logger.warning(f"Failed to tag series {series_id} with '{custom_tag}': {e}")
-            
-            # Log to history system
+
+            # Tag the series if enabled
+            if tag_processed_items:
+                from src.primary.settings_manager import get_custom_tag
+                custom_tag = get_custom_tag("sonarr", "missing", "huntarr-missing")
+                try:
+                    sonarr_api.tag_processed_series(api_url, api_key, api_timeout, series_id, custom_tag)
+                    sonarr_logger.debug(f"Tagged series {series_id} with '{custom_tag}'")
+                except Exception as e:
+                    sonarr_logger.warning(f"Failed to tag series {series_id} with '{custom_tag}': {e}")
+
+            # Log to history system (always, regardless of tagging)
             media_name = f"{series_title} - Season {season_number} (contains {episode_count} missing episodes)"
             log_processed_media("sonarr", media_name, season_id, instance_name, "missing")
             sonarr_logger.debug(f"Logged history entry for season pack: {media_name}")
-            
+
             # CRITICAL FIX: Use increment_stat_only to avoid double-counting API calls
             # The API call is already tracked in search_season(), so we only increment stats here
             for i in range(episode_count):
                 increment_stat_only("sonarr", "hunted")
             sonarr_logger.debug(f"Incremented sonarr hunted statistics for {episode_count} episodes in season pack (API call already tracked separately)")
-            
+
             # Wait for command to complete if configured
             if command_wait_delay > 0 and command_wait_attempts > 0:
                 if wait_for_command(
-                    api_url, api_key, api_timeout, command_id, 
+                    api_url, api_key, api_timeout, command_id,
                     command_wait_delay, command_wait_attempts, "Season Search", stop_check
                 ):
                     pass
