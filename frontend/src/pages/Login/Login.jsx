@@ -1,34 +1,47 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchWithTimeout } from '../../api/client'
 import styles from './Login.module.css'
 
-// Check if setup is needed (no user exists)
-async function checkSetupNeeded() {
+// Check initial status - setup needed OR already authenticated
+// Use plain fetch instead of fetchWithTimeout to avoid 401 handling on login page
+async function checkInitialStatus() {
   try {
-    const res = await fetchWithTimeout('/api/setup/status')
-    if (res.ok) {
-      const data = await res.json()
-      // No user exists = need setup
-      return !data.user_exists
+    // First check if setup is needed
+    const setupRes = await fetch('/api/setup/status', { credentials: 'include' })
+    if (setupRes.ok) {
+      const setupData = await setupRes.json()
+      if (!setupData.user_exists) {
+        return { redirect: '/setup' }
+      }
+    }
+
+    // Then check if already authenticated
+    const authRes = await fetch('/api/auth/status', { credentials: 'include' })
+    if (authRes.ok) {
+      const authData = await authRes.json()
+      // If authenticated OR auth not required, redirect to home
+      if (authData.authenticated || !authData.auth_required) {
+        return { redirect: '/' }
+      }
     }
   } catch (err) {
-    // If we can't check, continue to login
+    // If we can't check, continue to login page
   }
-  return false
+  return { redirect: null }
 }
 
 function Login() {
   const navigate = useNavigate()
-  const [checkingSetup, setCheckingSetup] = useState(true)
+  const [checkingStatus, setCheckingStatus] = useState(true)
 
-  // Check if setup is needed on mount
+  // Check if setup needed or already authenticated on mount
   useEffect(() => {
-    checkSetupNeeded().then((needsSetup) => {
-      if (needsSetup) {
-        window.location.href = '/setup'
+    checkInitialStatus().then(({ redirect }) => {
+      if (redirect) {
+        window.location.href = redirect
       } else {
-        setCheckingSetup(false)
+        setCheckingStatus(false)
       }
     })
   }, [])
@@ -51,6 +64,8 @@ function Login() {
   const [plexPinId, setPlexPinId] = useState(null)
   const [plexAuthUrl, setPlexAuthUrl] = useState('')
   const [plexChecking, setPlexChecking] = useState(false)
+  // Use ref for popup window so we can close it synchronously
+  const plexWindowRef = useRef(null)
 
   // Recovery modal state
   const [recoveryKey, setRecoveryKey] = useState('')
@@ -121,8 +136,8 @@ function Login() {
         setPlexPinId(data.pin_id)
         setPlexAuthUrl(data.auth_url)
         setShowPlexModal(true)
-        // Open Plex auth in new window
-        window.open(data.auth_url, '_blank', 'width=800,height=600')
+        // Open Plex auth in new window and store the reference
+        plexWindowRef.current = window.open(data.auth_url, '_blank', 'width=800,height=600')
       } else {
         setError(data.error || 'Failed to start Plex authentication')
         setPlexChecking(false)
@@ -153,8 +168,18 @@ function Login() {
           const loginData = await loginRes.json()
 
           if (loginData.success) {
+            // Close the Plex popup window on success
+            if (plexWindowRef.current && !plexWindowRef.current.closed) {
+              plexWindowRef.current.close()
+            }
+            plexWindowRef.current = null
             window.location.href = loginData.redirect || '/'
           } else {
+            // Close the Plex popup window on error
+            if (plexWindowRef.current && !plexWindowRef.current.closed) {
+              plexWindowRef.current.close()
+            }
+            plexWindowRef.current = null
             setError(loginData.error || 'Plex login failed')
             setShowPlexModal(false)
             setPlexChecking(false)
@@ -168,6 +193,11 @@ function Login() {
     const interval = setInterval(checkPin, 2000)
     const timeout = setTimeout(() => {
       clearInterval(interval)
+      // Close the Plex popup window on timeout
+      if (plexWindowRef.current && !plexWindowRef.current.closed) {
+        plexWindowRef.current.close()
+      }
+      plexWindowRef.current = null
       setShowPlexModal(false)
       setPlexChecking(false)
       setError('Plex authentication timed out')
@@ -181,6 +211,11 @@ function Login() {
 
   // Close Plex modal
   const closePlexModal = () => {
+    // Close the Plex popup window if still open
+    if (plexWindowRef.current && !plexWindowRef.current.closed) {
+      plexWindowRef.current.close()
+    }
+    plexWindowRef.current = null
     setShowPlexModal(false)
     setPlexChecking(false)
     setPlexPinId(null)
@@ -267,13 +302,13 @@ function Login() {
     }
   }
 
-  // Show loading while checking setup status
-  if (checkingSetup) {
+  // Show loading while checking initial status
+  if (checkingStatus) {
     return (
       <div className={styles.loginPage}>
         <div className={styles.loginContainer}>
           <div className={styles.logo}>
-            <img src="/static/logo/huntarr.png" alt="Huntarr" />
+            <img src="/static/logo/256.png" alt="Huntarr" />
             <h1>Huntarr</h1>
           </div>
         </div>
@@ -285,7 +320,7 @@ function Login() {
     <div className={styles.loginPage}>
       <div className={styles.loginContainer}>
         <div className={styles.logo}>
-          <img src="/static/logo/huntarr.png" alt="Huntarr" />
+          <img src="/static/logo/256.png" alt="Huntarr" />
           <h1>Huntarr</h1>
         </div>
 
@@ -398,8 +433,7 @@ function Login() {
             </>
           ) : (
             <>
-              <img src="/static/images/plex-icon.png" alt="Plex" className={styles.plexIcon} />
-              Sign in with Plex
+              Sign in with <img src="/icons/plex.svg" alt="Plex" style={{ height: '1.2em', marginLeft: '0.3em', verticalAlign: 'middle' }} />
             </>
           )}
         </button>

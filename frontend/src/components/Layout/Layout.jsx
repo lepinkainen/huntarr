@@ -4,7 +4,7 @@ import { fetchWithTimeout } from '../../api/client'
 import styles from './Layout.module.css'
 
 function Layout({ children }) {
-  const { darkMode, toggleDarkMode, configuredApps } = useApp()
+  const { darkMode, toggleDarkMode, configuredApps, hasSession } = useApp()
   const location = useLocation()
 
   // Determine active section for sidebar highlighting
@@ -27,7 +27,7 @@ function Layout({ children }) {
       {/* Main Sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.logo}>
-          <img src="/static/logo/huntarr.png" alt="Huntarr" />
+          <img src="/static/logo/256.png" alt="Huntarr" />
           <span>Huntarr</span>
         </div>
 
@@ -88,14 +88,16 @@ function Layout({ children }) {
           >
             <i className={darkMode ? 'fas fa-sun' : 'fas fa-moon'} />
           </button>
-          <button
-            className={styles.logoutBtn}
-            onClick={handleLogout}
-            aria-label="Logout"
-            title="Logout"
-          >
-            <i className="fas fa-sign-out-alt" />
-          </button>
+          {hasSession && (
+            <button
+              className={styles.logoutBtn}
+              onClick={handleLogout}
+              aria-label="Logout"
+              title="Logout"
+            >
+              <i className="fas fa-sign-out-alt" />
+            </button>
+          )}
         </div>
       </aside>
 

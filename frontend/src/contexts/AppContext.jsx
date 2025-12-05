@@ -10,6 +10,12 @@ export function AppProvider({ children }) {
   // Loading state
   const [isLoading, setIsLoading] = useState(true)
 
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(null) // null = checking, true/false = result
+  const [authRequired, setAuthRequired] = useState(true)
+  const [authMode, setAuthMode] = useState('login')
+  const [hasSession, setHasSession] = useState(false) // Whether user has active session (for logout button)
+
   // Theme state
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('huntarr-dark-mode')
@@ -30,8 +36,67 @@ export function AppProvider({ children }) {
     upgraded: {}
   })
 
-  // Fetch initial data
+  // Check authentication status first, then load data
   useEffect(() => {
+    // Check if on auth page IMMEDIATELY, before any async operations
+    // This prevents any API calls from being made on login/setup pages
+    const pathname = window.location.pathname
+    const isAuthPage = pathname === '/login' || pathname === '/setup' ||
+                       pathname.startsWith('/login') || pathname.startsWith('/setup')
+
+    // On auth pages, don't check auth or load data - just mark as ready
+    if (isAuthPage) {
+      console.debug('AppContext: On auth page, skipping data load')
+      setIsLoading(false)
+      setIsAuthenticated(null) // Unknown on auth pages
+      return // Exit early, don't run any API calls
+    }
+
+    async function checkAuthAndLoadData() {
+      // Double-check we're not on auth page (in case of navigation during async)
+      const currentPath = window.location.pathname
+      if (currentPath === '/login' || currentPath === '/setup' ||
+          currentPath.startsWith('/login') || currentPath.startsWith('/setup')) {
+        console.debug('AppContext: Navigated to auth page during load, aborting')
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        // Check auth status first
+        const authRes = await fetch('/api/auth/status', { credentials: 'include' })
+        if (authRes.ok) {
+          const authData = await authRes.json()
+          setIsAuthenticated(authData.authenticated)
+          setAuthRequired(authData.auth_required)
+          setAuthMode(authData.auth_mode)
+          setHasSession(authData.has_session ?? authData.authenticated)
+
+          // If not authenticated and auth is required, redirect to login
+          if (!authData.authenticated && authData.auth_required) {
+            console.debug('Not authenticated, redirecting to login')
+            window.location.href = '/login'
+            return
+          }
+        } else {
+          // If auth check fails, assume we need to login
+          console.error('Auth check failed, redirecting to login')
+          setIsAuthenticated(false)
+          window.location.href = '/login'
+          return
+        }
+      } catch (err) {
+        console.error('Auth check error:', err)
+        // On network error, try to continue but mark as unauthenticated
+        setIsAuthenticated(false)
+        window.location.href = '/login'
+        return
+      }
+
+      // Now load the rest of the data
+      await loadInitialData()
+    }
+
     async function loadInitialData() {
       try {
         // Load settings
@@ -70,7 +135,7 @@ export function AppProvider({ children }) {
       }
     }
 
-    loadInitialData()
+    checkAuthAndLoadData()
   }, [])
 
   // Apply dark mode to document
@@ -146,6 +211,12 @@ export function AppProvider({ children }) {
     settings,
     stats,
     appTypes: APP_TYPES,
+
+    // Auth state
+    isAuthenticated,
+    authRequired,
+    authMode,
+    hasSession,
 
     // Actions
     toggleDarkMode,

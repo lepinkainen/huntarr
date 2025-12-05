@@ -10,8 +10,7 @@ import io
 import qrcode
 import pyotp
 import logging
-# Add render_template, send_from_directory, session
-from flask import Blueprint, request, jsonify, make_response, redirect, url_for, current_app, render_template, send_from_directory, session, send_file
+from flask import Blueprint, request, jsonify, make_response, redirect, url_for, current_app, send_from_directory, session, send_file
 from ..auth import (
     verify_user, create_session, get_username_from_session, SESSION_COOKIE_NAME,
     change_username as auth_change_username, change_password as auth_change_password,
@@ -1213,11 +1212,11 @@ def setup_status():
     try:
         from src.primary.utils.database import get_database
         db = get_database()
-        
+
         # Check if user exists and setup progress
         user_exists_flag = user_exists()
         setup_in_progress = db.is_setup_in_progress() if user_exists_flag else False
-        
+
         return jsonify({
             "success": True,
             "user_exists": user_exists_flag,
@@ -1226,6 +1225,123 @@ def setup_status():
     except Exception as e:
         logger.error(f"Error checking setup status: {e}")
         return jsonify({"success": False, "error": "Failed to check setup status"}), 500
+
+@common_bp.route('/api/auth/status', methods=['GET'])
+def auth_status():
+    """Check if current session is authenticated and return auth mode.
+
+    This endpoint is used by the React frontend to determine:
+    1. Whether the user is authenticated (has valid session)
+    2. Whether authentication is required (based on auth_mode setting)
+    3. The current authentication mode
+
+    This endpoint must be accessible without authentication (in bypass list).
+    """
+    try:
+        from src.primary.utils.database import get_database
+        from src.primary.settings_manager import get_setting
+
+        db = get_database()
+
+        # Get auth mode setting
+        auth_mode = get_setting('general', 'auth_mode', 'login')
+
+        # Check if user exists
+        has_user = user_exists()
+
+        # If no user exists, auth is not required (needs setup)
+        if not has_user:
+            return jsonify({
+                'authenticated': True,
+                'auth_required': False,
+                'auth_mode': auth_mode,
+                'reason': 'no_user'
+            })
+
+        # Check if setup is in progress
+        if db.is_setup_in_progress():
+            return jsonify({
+                'authenticated': True,
+                'auth_required': False,
+                'auth_mode': auth_mode,
+                'reason': 'setup_in_progress'
+            })
+
+        # Check auth mode - if no_login, auth is not required
+        if auth_mode == 'no_login':
+            return jsonify({
+                'authenticated': True,
+                'auth_required': False,
+                'auth_mode': auth_mode,
+                'reason': 'no_login_mode'
+            })
+
+        # Check for local_access_bypass
+        try:
+            from src.primary.settings_manager import get_setting
+            local_access_bypass = get_setting('general', 'local_access_bypass', False)
+            proxy_auth_bypass = get_setting('general', 'proxy_auth_bypass', False)
+
+            # Check if request is from local network
+            if local_access_bypass:
+                client_ip = request.environ.get('HTTP_X_FORWARDED_FOR',
+                           request.environ.get('REMOTE_ADDR', ''))
+                if ',' in client_ip:
+                    client_ip = client_ip.split(',')[0].strip()
+
+                # Check if local IP
+                is_local = client_ip.startswith(('127.', '192.168.', '10.', '172.16.', '172.17.',
+                                                 '172.18.', '172.19.', '172.20.', '172.21.',
+                                                 '172.22.', '172.23.', '172.24.', '172.25.',
+                                                 '172.26.', '172.27.', '172.28.', '172.29.',
+                                                 '172.30.', '172.31.', '::1', 'localhost'))
+                if is_local:
+                    # Check if user has an active session anyway
+                    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+                    is_authenticated = bool(session_id and verify_session(session_id))
+                    return jsonify({
+                        'authenticated': is_authenticated or True,  # Bypass allows access
+                        'auth_required': False,
+                        'auth_mode': auth_mode,
+                        'has_session': is_authenticated,
+                        'reason': 'local_bypass'
+                    })
+
+            # Check proxy auth bypass
+            if proxy_auth_bypass:
+                # Check if user has an active session anyway
+                session_id = request.cookies.get(SESSION_COOKIE_NAME)
+                is_authenticated = bool(session_id and verify_session(session_id))
+                return jsonify({
+                    'authenticated': is_authenticated or True,  # Bypass allows access
+                    'auth_required': False,
+                    'auth_mode': auth_mode,
+                    'has_session': is_authenticated,
+                    'reason': 'proxy_bypass'
+                })
+        except Exception as e:
+            logger.error(f"Error checking bypass modes in auth_status: {e}")
+
+        # For login mode, check session
+        session_id = request.cookies.get(SESSION_COOKIE_NAME)
+        is_authenticated = bool(session_id and verify_session(session_id))
+
+        return jsonify({
+            'authenticated': is_authenticated,
+            'auth_required': True,
+            'auth_mode': auth_mode,
+            'has_session': is_authenticated
+        })
+
+    except Exception as e:
+        logger.error(f"Error in auth_status endpoint: {e}", exc_info=True)
+        # On error, assume auth is required for safety
+        return jsonify({
+            'authenticated': False,
+            'auth_required': True,
+            'auth_mode': 'login',
+            'error': str(e)
+        }), 500
 
 
 

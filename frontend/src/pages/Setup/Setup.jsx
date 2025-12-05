@@ -355,7 +355,7 @@ function Setup() {
       <div className={styles.setupPage}>
         <div className={styles.setupContainer}>
           <div className={styles.logo}>
-            <img src="/static/logo/huntarr.png" alt="Huntarr" />
+            <img src="/static/logo/256.png" alt="Huntarr" />
             <h1>Huntarr</h1>
           </div>
           <div className={styles.stepContent}>
@@ -370,7 +370,7 @@ function Setup() {
     <div className={styles.setupPage}>
       <div className={styles.setupContainer}>
         <div className={styles.logo}>
-          <img src="/static/logo/huntarr.png" alt="Huntarr" />
+          <img src="/static/logo/256.png" alt="Huntarr" />
           <h1>Huntarr Setup</h1>
         </div>
 
@@ -524,7 +524,7 @@ function Setup() {
               </div>
             ) : (
               <button className={styles.plexBtn} onClick={startPlexLink}>
-                <img src="/static/images/plex-icon.png" alt="Plex" className={styles.plexIcon} />
+                <i className="fab fa-plex" />
                 Link Plex Account
               </button>
             )}

@@ -16,6 +16,40 @@ export default defineConfig({
       '/static': {
         target: 'http://localhost:9705',
         changeOrigin: true
+      },
+      // Auth form submissions - only proxy POST requests, GET handled by Vite SPA
+      '/login': {
+        target: 'http://localhost:9705',
+        changeOrigin: true,
+        bypass(req) {
+          // Only proxy POST requests, let GET pass through to Vite
+          if (req.method !== 'POST') {
+            return req.url
+          }
+        }
+      },
+      '/logout': {
+        target: 'http://localhost:9705',
+        changeOrigin: true
+      },
+      '/setup': {
+        target: 'http://localhost:9705',
+        changeOrigin: true,
+        bypass(req) {
+          // Only proxy POST requests, let GET pass through to Vite
+          if (req.method !== 'POST') {
+            return req.url
+          }
+        }
+      },
+      '/auth': {
+        target: 'http://localhost:9705',
+        changeOrigin: true
+      },
+      // SSE logs endpoint - this is an API endpoint, always proxy
+      '/logs': {
+        target: 'http://localhost:9705',
+        changeOrigin: true
       }
     }
   },

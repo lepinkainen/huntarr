@@ -6,7 +6,7 @@
 const DEFAULT_TIMEOUT = 120000 // 2 minutes
 
 /**
- * Fetch with configurable timeout
+ * Fetch with configurable timeout and automatic 401 redirect
  * @param {string} url - URL to fetch (relative URLs supported)
  * @param {Object} options - Fetch options
  * @param {number} timeout - Timeout in milliseconds
@@ -22,6 +22,23 @@ export async function fetchWithTimeout(url, options = {}, timeout = DEFAULT_TIME
       signal: controller.signal,
       credentials: 'include' // Include cookies for session auth
     })
+
+    // Global 401 handler - redirect to login when session is invalid
+    // Skip redirect for auth-related endpoints to prevent loops
+    if (response.status === 401) {
+      const authEndpoints = ['/login', '/setup', '/api/auth/status', '/api/setup/status']
+      const isAuthEndpoint = authEndpoints.some(ep => url.includes(ep))
+      const isOnAuthPage = window.location.pathname.startsWith('/login') ||
+                           window.location.pathname.startsWith('/setup')
+
+      if (!isAuthEndpoint && !isOnAuthPage) {
+        console.debug('Received 401, redirecting to login')
+        window.location.href = '/login'
+        // Return the response but redirect is happening
+        return response
+      }
+    }
+
     return response
   } finally {
     clearTimeout(timeoutId)

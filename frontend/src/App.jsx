@@ -13,13 +13,15 @@ const Login = lazy(() => import('./pages/Login/Login'))
 const Setup = lazy(() => import('./pages/Setup/Setup'))
 
 function App() {
-  const { isLoading } = useApp()
+  const { isLoading, isAuthenticated, authRequired } = useApp()
   const location = useLocation()
 
   // Auth pages render without Layout
   const isAuthPage = location.pathname === '/login' || location.pathname === '/setup'
 
-  if (isLoading && !isAuthPage) {
+  // Show loading while checking auth (isAuthenticated is null during check)
+  // But not for auth pages which should render immediately
+  if ((isLoading || isAuthenticated === null) && !isAuthPage) {
     return (
       <div className="loading-screen">
         <div className="loading-spinner" />
@@ -38,6 +40,12 @@ function App() {
         </Routes>
       </Suspense>
     )
+  }
+
+  // If auth is required but not authenticated, redirect to login
+  // This is a fallback - the context should already redirect
+  if (authRequired && !isAuthenticated) {
+    return <Navigate to="/login" replace />
   }
 
   return (

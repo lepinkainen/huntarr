@@ -22,7 +22,7 @@ import logging
 import threading
 import importlib # Added import
 import requests
-from flask import Flask, render_template, request, jsonify, Response, send_from_directory, redirect, url_for, session, stream_with_context, Blueprint, current_app, g, make_response # Added stream_with_context and Blueprint
+from flask import Flask, request, jsonify, Response, send_from_directory, redirect, url_for, session, stream_with_context, Blueprint, current_app, g, make_response
 # from src.primary.config import API_URL # No longer needed directly
 # Use only settings_manager
 from src.primary import settings_manager
@@ -325,6 +325,12 @@ def react_assets(filename):
     """Serve React build assets"""
     return send_from_directory(os.path.join(react_dist_dir, 'assets'), filename)
 
+# Serve icons from React build
+@app.route('/icons/<path:filename>')
+def react_icons(filename):
+    """Serve React build icons"""
+    return send_from_directory(os.path.join(react_dist_dir, 'icons'), filename)
+
 # Handle both root path and base URL root path
 @app.route('/')
 def home():
@@ -337,261 +343,11 @@ def home():
 def react_spa_catchall(path):
     """Catch-all for React SPA routing"""
     # Don't catch API routes, static files, or auth pages
-    if path.startswith(('api/', 'static/', 'login', 'setup', 'logs', 'health', 'ping', 'version')):
+    if path.startswith(('api/', 'static/', 'health', 'ping', 'version')):
         return app.send_static_file(path) if os.path.exists(os.path.join(static_dir, path)) else ('Not found', 404)
     # Serve React index.html for all other routes (SPA routing)
     return send_from_directory(react_dist_dir, 'index.html')
     
-# This section previously contained code for redirecting paths to include the base URL
-# It has been removed as Flask's APPLICATION_ROOT setting provides this functionality
-
-# Removed /settings and /logs routes if handled by index.html and JS routing
-# Keep /logs if it's the actual SSE endpoint
-
-# Old file-based logs route removed - using database-based logs now
-    """
-    Event stream for logs.
-    Filter logs by app type using the 'app' query parameter.
-    Supports 'all', 'system', 'sonarr', 'radarr', 'lidarr', 'readarr'.
-    Example: /logs?app=sonarr
-    """
-    app_type = request.args.get('app', 'all')  # Default to 'all' if no app specified
-    web_logger = get_logger("web_server")
-
-    valid_app_types = list(KNOWN_LOG_FILES.keys()) + ['all']
-    if app_type not in valid_app_types:
-        web_logger.warning(f"Invalid app type '{app_type}' requested for logs. Defaulting to 'all'.")
-        app_type = 'all'
-
-    # Import needed modules
-    import time
-    from pathlib import Path
-    import threading
-    import datetime # Added datetime import
-    import time  # Add time module import
-
-    # Use a client identifier to track connections
-    # Use request.remote_addr directly for client_id
-    client_id = request.remote_addr 
-    current_time_str = datetime.datetime.now().strftime("%H:%M:%S") # Renamed variable
-
-    web_logger.debug(f"Starting log stream for app type: {app_type} (client: {client_id}, time: {current_time_str})")
-
-    # Track active connections to limit resource usage
-    if not hasattr(app, 'active_log_streams'):
-        app.active_log_streams = {}
-        app.log_stream_lock = threading.Lock()
-
-    # Clean up stale connections (older than 60 seconds without activity)
-    with app.log_stream_lock:
-        current_time = time.time()
-        stale_clients = [c for c, t in app.active_log_streams.items()
-                         if current_time - t > 60]
-        for client in stale_clients:
-            # Check if client exists before popping, avoid KeyError
-            if client in app.active_log_streams:
-                app.active_log_streams.pop(client)
-                web_logger.debug(f"Removed stale log stream connection for client: {client}")
-
-        # If too many connections, return an error for new ones
-        # Increased limit slightly and check before adding the new client
-        MAX_LOG_CONNECTIONS = 10 # Define as constant
-        if len(app.active_log_streams) >= MAX_LOG_CONNECTIONS:
-            web_logger.warning(f"Too many log stream connections ({len(app.active_log_streams)}). Rejecting new connection from {client_id}")
-            # Send SSE formatted error message
-            return Response("event: error\ndata: Too many active connections. Please try again later.\n\n",
-                           mimetype='text/event-stream', status=429) # Use 429 status code
-
-        # Add/Update this client's timestamp *after* checking the limit
-        app.active_log_streams[client_id] = current_time
-        web_logger.debug(f"Active log streams: {len(app.active_log_streams)} clients. Added/Updated: {client_id}")
-
-
-    def generate():
-        """Generate log events for the SSE stream."""
-        client_ip = request.remote_addr
-        web_logger.debug(f"Log stream generator started for {app_type} (Client: {client_ip})")
-        try:
-            # Initialize last activity time
-            last_activity = time.time()
-
-            # Determine which log files to follow
-            log_files_to_follow = []
-            if app_type == 'all':
-                log_files_to_follow = list(KNOWN_LOG_FILES.items())
-            elif app_type == 'system':
-                # For system, only follow main log
-                system_log = KNOWN_LOG_FILES.get('system')
-                if system_log:
-                    log_files_to_follow = [('system', system_log)]
-                    web_logger.debug(f"Following system log: {system_log}")
-            else:
-                # For specific app, follow that app's log
-                app_log = KNOWN_LOG_FILES.get(app_type)
-                if app_log:
-                    log_files_to_follow = [(app_type, app_log)]
-                    web_logger.debug(f"Following {app_type} log: {app_log}")
-                
-                # Also include system log for related messages
-                system_log = KNOWN_LOG_FILES.get('system')
-                if system_log:
-                    log_files_to_follow.append(('system', system_log))
-                    web_logger.debug(f"Also following system log for {app_type} messages")
-
-            if not log_files_to_follow:
-                web_logger.warning(f"No log files found for app type: {app_type}")
-                yield f"data: No logs available for {app_type}\n\n"
-                return
-
-            # Send confirmation
-            yield f"data: Starting log stream for {app_type}...\n\n"
-            web_logger.debug(f"Sent confirmation for {app_type} (Client: {client_ip})")
-
-            # Track file positions
-            positions = {}
-            last_check = {}
-            keep_alive_counter = 0
-
-            # Convert to Path objects
-            log_files_to_follow = [(name, Path(path) if isinstance(path, str) else path)
-                               for name, path in log_files_to_follow if path]
-
-            # Main streaming loop
-            while True:
-                had_content = False
-                current_time = time.time()
-
-                # Update client activity
-                if current_time - last_activity > 10:
-                    with app.log_stream_lock:
-                        if client_id in app.active_log_streams:
-                            app.active_log_streams[client_id] = current_time
-                        else:
-                            web_logger.debug(f"Client {client_id} gone. Stopping generator.")
-                            break
-                    last_activity = current_time
-
-                keep_alive_counter += 1
-
-                # Check each file
-                for name, path in log_files_to_follow:
-                    try:
-                        # Limit check frequency
-                        now = datetime.datetime.now()
-                        if name in last_check and (now - last_check[name]).total_seconds() < 0.2:
-                            continue
-                        
-                        last_check[name] = now
-
-                        # Check file exists
-                        if not path.exists():
-                            if positions.get(name) != -1:
-                                web_logger.warning(f"Log file {path} not found. Skipping.")
-                                positions[name] = -1
-                            continue
-                        elif positions.get(name) == -1:
-                            web_logger.info(f"Log file {path} found again. Resuming.")
-                            positions.pop(name, None)
-
-                        # Get size
-                        try:
-                            current_size = path.stat().st_size
-                        except FileNotFoundError:
-                            web_logger.warning(f"Log file {path} disappeared. Skipping.")
-                            positions[name] = -1
-                            continue
-
-                        # Init position or handle truncation
-                        if name not in positions or current_size < positions.get(name, 0):
-                            start_pos = max(0, current_size - 5120)
-                            web_logger.debug(f"Init position for {name}: {start_pos}")
-                            positions[name] = start_pos
-
-                        # Read content
-                        try:
-                            with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-                                f.seek(positions[name])
-                                new_lines = []
-                                lines_read = 0
-                                max_lines = 100
-
-                                while lines_read < max_lines:
-                                    line = f.readline()
-                                    if not line:
-                                        break
-                                    
-                                    # Only filter when reading system log for specific app tab
-                                    if app_type != 'all' and app_type != 'system' and name == 'system':
-                                        # MODIFIED: Don't include system logs in app tabs at all
-                                        include_line = False
-                                    else:
-                                        include_line = True
-                                    
-                                    if include_line:
-                                        new_lines.append(line)
-                                    
-                                    lines_read += 1
-
-                                # Process collected lines
-                                if new_lines:
-                                    had_content = True
-                                    positions[name] = f.tell()
-                                    for line in new_lines:
-                                        stripped = line.strip()
-                                        if stripped:
-                                            prefix = f"[{name.lower()}] " if app_type == 'all' else ""
-                                            yield f"data: {prefix}{stripped}\n\n"
-                        
-                        except FileNotFoundError:
-                            web_logger.warning(f"Log file {path} disappeared during read.")
-                            positions[name] = -1
-                        except Exception as e:
-                            web_logger.error(f"Error reading {path}: {e}")
-                            yield f"data: ERROR: Problem reading log: {str(e)}\n\n"
-                    
-                    except Exception as e:
-                        web_logger.error(f"Error processing {name}: {e}")
-                        yield f"data: ERROR: Unexpected issue with log.\n\n"
-
-                # Keep-alive or sleep
-                if not had_content:
-                    if keep_alive_counter >= 75:
-                        yield f": keepalive {time.time()}\n\n"
-                        keep_alive_counter = 0
-                    time.sleep(0.2)
-                else:
-                    keep_alive_counter = 0
-                    time.sleep(0.05)
-
-        except GeneratorExit:
-            # Clean up when client disconnects
-            web_logger.debug(f"Client {client_id} disconnected from log stream for {app_type}. Cleaning up.")
-        except Exception as e:
-            web_logger.error(f"Unhandled error in log stream generator for {app_type} (Client: {client_ip}): {e}", exc_info=True)
-            try:
-                # Ensure error message is properly formatted for SSE
-                yield f"event: error\ndata: ERROR: Log streaming failed unexpectedly: {str(e)}\n\n"
-            except Exception as yield_err:
-                 web_logger.error(f"Error yielding final error message to client {client_id}: {yield_err}")
-        finally:
-            # Ensure cleanup happens regardless of how the generator exits
-            with app.log_stream_lock:
-                removed_client = app.active_log_streams.pop(client_id, None)
-                if removed_client:
-                     web_logger.debug(f"Successfully removed client {client_id} from active log streams.")
-                else:
-                     web_logger.debug(f"Client {client_id} was already removed from active log streams before finally block.")
-            web_logger.debug(f"Log stream generator finished for {app_type} (Client: {client_id})")
-
-    # Return the SSE response with appropriate headers for better streaming
-    response = Response(stream_with_context(generate()), mimetype='text/event-stream') # Use stream_with_context
-    response.headers['Cache-Control'] = 'no-cache'
-    response.headers['X-Accel-Buffering'] = 'no'  # Disable nginx buffering if using nginx
-    return response
-
-# Legacy file-based logs route removed - now using database-based log routes in log_routes.py
-# The frontend should use /api/logs endpoints instead
-
 @app.route('/api/settings', methods=['GET'])
 def api_settings():
     if request.method == 'GET':

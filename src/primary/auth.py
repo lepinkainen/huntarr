@@ -294,6 +294,7 @@ def authenticate_request():
     # Skip authentication for static files, React assets, and the login/setup pages
     static_path = "/static/"
     assets_path = "/assets/"  # React build assets (JS, CSS)
+    icons_path = "/icons/"  # React build icons
     login_path = "/login"
     api_login_path = "/api/login"
     api_auth_plex_path = "/api/auth/plex"
@@ -318,8 +319,8 @@ def authenticate_request():
             logger.debug(f"Allowing setup/user page access for path: {request.path}")
         return None
 
-    # Skip authentication for static files, React assets, API setup, health check path, and ping
-    if request.path.startswith((static_path, assets_path, api_setup_path)) or request.path in (favicon_path, health_check_path, ping_path):
+    # Skip authentication for static files, React assets, icons, API setup, health check path, and ping
+    if request.path.startswith((static_path, assets_path, icons_path, api_setup_path)) or request.path in (favicon_path, health_check_path, ping_path):
         return None
     
     # Skip authentication for login pages, Plex auth endpoints, recovery key endpoints, and setup-related user endpoints
@@ -327,9 +328,10 @@ def authenticate_request():
     recovery_key_path = "/auth/recovery-key"
     api_user_2fa_path = "/api/user/2fa/"
     api_settings_general_path = "/api/settings/general"
-    
+    api_auth_status_path = "/api/auth/status"  # Frontend auth check endpoint
+
     # Check if request is for login/auth paths (including Plex auth) - skip authentication
-    if request.path.startswith((login_path, api_login_path, api_auth_plex_path, recovery_key_path, api_user_2fa_path)) or request.path == api_settings_general_path:
+    if request.path.startswith((login_path, api_login_path, api_auth_plex_path, recovery_key_path, api_user_2fa_path)) or request.path in (api_settings_general_path, api_auth_status_path):
         if not is_polling_endpoint:
             # Reduced logging frequency for common paths to prevent spam
             if hash(request.path) % 20 == 0:  # Log ~5% of auth skips
