@@ -300,7 +300,12 @@ function HuntManager() {
                     )}
                   </td>
                   <td>{formatOperation(entry.operation_type)}</td>
-                  <td>{entry.media_id}</td>
+                  <td>{
+                    // Transform Sonarr season IDs for display: "212_6" → "212 S6"
+                    entry.app_type === 'sonarr' && entry.media_id?.includes('_')
+                      ? entry.media_id.replace('_', ' S')
+                      : entry.media_id
+                  }</td>
                   <td>{formatAppInstance(entry.app_type, entry.instance_name)}</td>
                   <td>{entry.how_long_ago}</td>
                 </tr>

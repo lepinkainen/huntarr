@@ -215,11 +215,12 @@ def process_cutoff_upgrades(
             radarr_logger.error(f"Error checking hourly API cap: {e}")
             # Continue processing if cap check fails - safer than stopping
             
-        movie_id = movie.get("id")
+        movie_id = movie.get("id")  # Radarr internal ID for API calls
+        tmdb_id = movie.get("tmdbId")  # TMDB ID for Hunt Manager links
         movie_title = movie.get("title")
         movie_year = movie.get("year")
-        
-        radarr_logger.info(f"Processing upgrade for movie: \"{movie_title}\" ({movie_year}) (Movie ID: {movie_id})")
+
+        radarr_logger.info(f"Processing upgrade for movie: \"{movie_title}\" ({movie_year}) (Movie ID: {movie_id}, TMDB: {tmdb_id})")
         
         # Refresh functionality has been removed as it was identified as a performance bottleneck
         
@@ -242,10 +243,10 @@ def process_cutoff_upgrades(
                 except Exception as e:
                     radarr_logger.warning(f"Failed to tag movie {movie_id} with '{custom_tag}': {e}")
             
-            # Log to history so the upgrade appears in the history UI
+            # Log to history so the upgrade appears in the history UI (use TMDB ID for links)
             media_name = f"{movie_title} ({movie_year})"
-            log_processed_media("radarr", media_name, movie_id, instance_name, "upgrade")
-            radarr_logger.debug(f"Logged quality upgrade to history for movie ID {movie_id}")
+            log_processed_media("radarr", media_name, tmdb_id, instance_name, "upgrade")
+            radarr_logger.debug(f"Logged quality upgrade to history for movie (TMDB: {tmdb_id})")
             
             processed_count += 1
             processed_something = True

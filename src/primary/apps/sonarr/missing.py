@@ -266,10 +266,16 @@ def process_missing_seasons_packs_mode(
         series_id = season['series_id']
         season_number = season['season_number']
         series_title = season['series_title']
-        episode_count = season['episode_count']
-        
+
+        # Get the ACTUAL missing episode count from Sonarr API (not the sample count)
+        actual_episode_count = sonarr_api.get_season_missing_count(
+            api_url, api_key, api_timeout, series_id, season_number, monitored_only
+        )
+        # Fall back to sample count if API call fails
+        episode_count = actual_episode_count if actual_episode_count > 0 else season['episode_count']
+
         # Refresh functionality has been removed as it was identified as a performance bottleneck
-        
+
         sonarr_logger.info(f"Searching for season pack: {series_title} - Season {season_number} (contains {episode_count} missing episodes)")
         
         # Trigger an API call to search for the entire season

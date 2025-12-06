@@ -279,13 +279,14 @@ def process_missing_movies(
             radarr_logger.error(f"Error checking hourly API cap: {e}")
             # Continue processing if cap check fails - safer than stopping
             
-        movie_id = movie.get("id")
+        movie_id = movie.get("id")  # Radarr internal ID for API calls
+        tmdb_id = movie.get("tmdbId")  # TMDB ID for Hunt Manager links
         movie_title = movie.get("title", "Unknown Title")
-        
+
         # Refresh functionality has been removed as it was identified as a performance bottleneck
-        
+
         # Search for the movie
-        radarr_logger.info(f"Searching for movie '{movie_title}' (ID: {movie_id})...")
+        radarr_logger.info(f"Searching for movie '{movie_title}' (ID: {movie_id}, TMDB: {tmdb_id})...")
         search_success = radarr_api.movie_search(api_url, api_key, api_timeout, [movie_id])
         
         if search_success:
@@ -305,11 +306,11 @@ def process_missing_movies(
             success = add_processed_id("radarr", instance_name, str(movie_id))
             radarr_logger.debug(f"Added processed ID: {movie_id}, success: {success}")
             
-            # Log to history system
+            # Log to history system (use TMDB ID for links - Radarr UI uses TMDB ID in URLs)
             year = movie.get("year", "Unknown Year")
             media_name = f"{movie_title} ({year})"
-            log_processed_media("radarr", media_name, movie_id, instance_name, "missing")
-            radarr_logger.debug(f"Logged history entry for movie: {media_name}")
+            log_processed_media("radarr", media_name, tmdb_id, instance_name, "missing")
+            radarr_logger.debug(f"Logged history entry for movie: {media_name} (TMDB: {tmdb_id})")
             
             increment_stat_only("radarr", "hunted")
             movies_processed += 1

@@ -89,13 +89,13 @@ def get_series(api_url: str, api_key: str, api_timeout: int, series_id: Optional
 def get_episode(api_url: str, api_key: str, api_timeout: int, episode_id: int) -> Dict:
     """
     Get episode information by ID.
-    
+
     Args:
         api_url: The base URL of the Sonarr API
         api_key: The API key for authentication
         api_timeout: Timeout for the API request
         episode_id: The episode ID
-    
+
     Returns:
         Episode information or empty dict if request failed
     """
@@ -103,6 +103,41 @@ def get_episode(api_url: str, api_key: str, api_timeout: int, episode_id: int) -
     if response:
         return response
     return {}
+
+
+def get_season_missing_count(api_url: str, api_key: str, api_timeout: int, series_id: int, season_number: int, monitored_only: bool = True) -> int:
+    """
+    Get the actual count of missing episodes for a specific season.
+
+    Args:
+        api_url: The base URL of the Sonarr API
+        api_key: The API key for authentication
+        api_timeout: Timeout for the API request
+        series_id: The series ID
+        season_number: The season number
+        monitored_only: If True, only count monitored episodes
+
+    Returns:
+        Count of missing episodes in the season
+    """
+    endpoint = f"episode?seriesId={series_id}&seasonNumber={season_number}"
+    response = arr_request(api_url, api_key, api_timeout, endpoint, count_api=False)
+
+    if not response or not isinstance(response, list):
+        sonarr_logger.warning(f"Failed to get episode list for series {series_id} season {season_number}")
+        return 0
+
+    missing_count = 0
+    for episode in response:
+        has_file = episode.get("hasFile", False)
+        is_monitored = episode.get("monitored", True)
+
+        # Count as missing if no file and (monitored or we don't care about monitored status)
+        if not has_file and (not monitored_only or is_monitored):
+            missing_count += 1
+
+    return missing_count
+
 
 def get_queue(api_url: str, api_key: str, api_timeout: int) -> List:
     """
