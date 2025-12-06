@@ -4,9 +4,9 @@ on:
   workflow_dispatch:  # Manual trigger only
     inputs:
       tags:
-        description: 'Comma-separated tags (e.g., latest,optimized)'
+        description: 'Comma-separated tags (e.g., latest,v1.0.0)'
         required: true
-        default: 'latest,optimized'
+        default: 'latest'
 
 permissions:
   contents: read
