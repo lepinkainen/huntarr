@@ -24,7 +24,7 @@
 - [Installation Methods](#installation-methods)
 - [How It Works](#how-it-works)
 - [Screenshots](#screenshots)
-- [The Perfect Pair: Huntarr & Cleanuperr](#the-perfect-pair-huntarr--cleanuperr)
+- [The Perfect Pair: Huntarr & decluttarr](#the-perfect-pair-huntarr--decluttarr)
 
 ## Overview
 
@@ -98,22 +98,22 @@ services:
 
 ---
 
-## The Perfect Pair: Huntarr & Cleanuperr
+## The Perfect Pair: Huntarr & decluttarr
 
 <p align="center">
   <img src="frontend/static/logo/128.png" alt="Huntarr" width="64" height="64">
   <span style="font-size: 32px; margin: 0 15px;">+</span>
-  <img src="https://github.com/flmorg/cleanuperr/blob/main/Logo/128.png?raw=true" alt="Cleanuperr" width="64" height="64">
+  <img src="https://raw.githubusercontent.com/ManiMatter/decluttarr/latest/images/logo.png" alt="decluttarr" width="64" height="64">
 </p>
 
 **Huntarr** is the compulsive librarian who finds missing media and upgrades your existing content. It fills in the blanks and improves what you already have.
 
-**Cleanuperr** ([![GitHub stars](https://img.shields.io/github/stars/flmorg/cleanuperr?style=social)](https://github.com/flmorg/cleanuperr/stargazers)) is the janitor of your server; it keeps your download queue spotless, removes clutter, and blocks malicious files.
+**decluttarr** ([![GitHub stars](https://img.shields.io/github/stars/ManiMatter/decluttarr?style=social)](https://github.com/ManiMatter/decluttarr/stargazers)) watches your *arr download queues and removes stalled or unneeded downloads automatically.
 
 When combined, these tools create a powerful, self-sufficient media automation stack:
 
 - **Huntarr** hunts for content to add to your library
-- **Cleanuperr** ensures only clean downloads get through
+- **decluttarr** keeps your download queues clean and removes stalled torrents
 - Together, they create a reliable, hands-off media management system
 
-Learn more about **Cleanuperr** at [https://github.com/flmorg/cleanuperr](https://github.com/flmorg/cleanuperr)
+Learn more about **decluttarr** at [https://github.com/ManiMatter/decluttarr](https://github.com/ManiMatter/decluttarr)
