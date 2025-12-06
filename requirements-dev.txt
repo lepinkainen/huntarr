@@ -1,0 +1,6 @@
+# Development dependencies for linting and type checking
+# Install with: pip install -r requirements-dev.txt
+
+ruff>=0.1.0          # Fast Python linter and formatter
+pyright>=1.1.0       # Static type checker for Python
+pre-commit>=3.0.0    # Git hooks for code quality

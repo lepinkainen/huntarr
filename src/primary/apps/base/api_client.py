@@ -16,10 +16,11 @@ The ArrAPIClient class handles:
 
 import json
 import logging
-import requests
 import sys
 import traceback
-from typing import Any, Dict, Optional
+from typing import Any
+
+import requests
 
 from src.primary.settings_manager import get_ssl_verify_setting
 
@@ -47,7 +48,7 @@ class ArrAPIClient:
         self,
         app_name: str,
         api_version: str = "v3",
-        logger: Optional[logging.Logger] = None
+        logger: logging.Logger | None = None
     ):
         """
         Initialize the API client.
@@ -76,8 +77,8 @@ class ArrAPIClient:
         api_timeout: int,
         endpoint: str,
         method: str = "GET",
-        data: Optional[Dict] = None,
-        params: Optional[Dict] = None,
+        data: dict | None = None,
+        params: dict | None = None,
         count_api: bool = True,
         check_limit_before: bool = False
     ) -> Any:
@@ -118,7 +119,7 @@ class ArrAPIClient:
 
             # Check hourly limit before request if configured (Radarr pattern)
             if check_limit_before and count_api and check_hourly_cap_exceeded(self.app_name):
-                self.logger.warning(f"API hourly limit reached - skipping request")
+                self.logger.warning("API hourly limit reached - skipping request")
                 return None
 
             # Construct the full URL
@@ -169,7 +170,7 @@ class ArrAPIClient:
             return None
         except Exception as e:
             # Catch all exceptions and log them with traceback
-            error_msg = f"CRITICAL ERROR in arr_request: {str(e)}"
+            error_msg = f"CRITICAL ERROR in arr_request: {e!s}"
             self.logger.error(error_msg)
             self.logger.error(f"Full traceback: {traceback.format_exc()}")
             print(error_msg, file=sys.stderr)
@@ -180,12 +181,12 @@ class ArrAPIClient:
         self,
         method: str,
         url: str,
-        headers: Dict,
-        data: Optional[Dict],
-        params: Optional[Dict],
+        headers: dict,
+        data: dict | None,
+        params: dict | None,
         timeout: int,
         verify_ssl: bool
-    ) -> Optional[requests.Response]:
+    ) -> requests.Response | None:
         """
         Execute the HTTP request based on method type.
 
@@ -230,7 +231,7 @@ class ArrAPIClient:
             try:
                 return response.json()
             except json.JSONDecodeError as jde:
-                self.logger.error(f"Error decoding JSON response from {endpoint}: {str(jde)}")
+                self.logger.error(f"Error decoding JSON response from {endpoint}: {jde!s}")
                 self.logger.error(f"Response status code: {response.status_code}")
                 self.logger.error(f"Response content (first 200 chars): {response.content[:200]}")
                 return None
@@ -289,7 +290,7 @@ class ArrAPIClient:
             self.logger.error(f"Connection check failed for {api_url}: {e}")
             return False
 
-    def get_system_status(self, api_url: str, api_key: str, api_timeout: int) -> Dict:
+    def get_system_status(self, api_url: str, api_key: str, api_timeout: int) -> dict:
         """
         Get system status from the *arr API.
 
@@ -329,7 +330,7 @@ class ArrAPIClient:
             self.logger.error(f"Error getting download queue size: {e}")
             return -1
 
-    def get_quality_profiles(self, api_url: str, api_key: str, api_timeout: int) -> Optional[list]:
+    def get_quality_profiles(self, api_url: str, api_key: str, api_timeout: int) -> list | None:
         """
         Get all quality profiles configured in the *arr application.
 
@@ -359,7 +360,7 @@ class ArrAPIClient:
             return profiles
 
         except Exception as e:
-            self.logger.error(f"Error retrieving quality profiles: {str(e)}")
+            self.logger.error(f"Error retrieving quality profiles: {e!s}")
             return None
 
 

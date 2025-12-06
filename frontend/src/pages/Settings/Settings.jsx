@@ -26,7 +26,7 @@ function SettingsSection({ title, icon, legacyHash }) {
 
 // Settings sidebar navigation
 function SettingsSidebar() {
-  const location = useLocation()
+  const _location = useLocation()
 
   const navItems = [
     { path: '/settings/general', label: 'General', icon: 'fas fa-cog' },

@@ -7,19 +7,17 @@ This module has been refactored to use the base API client, tag manager,
 and pagination helpers to eliminate code duplication across *arr apps.
 """
 
-import requests
-import json
-import sys
 import time
-import traceback
-from typing import List, Dict, Any, Optional, Union
+from typing import Any
+
+import requests
 
 # Import base modules for shared functionality
 from src.primary.apps.base.api_client import ArrAPIClient
+from src.primary.apps.base.pagination import PaginationHelper
 from src.primary.apps.base.tag_manager import TagManager
-from src.primary.apps.base.pagination import PaginationHelper, lidarr_monitored_filter
-from src.primary.utils.logger import get_logger, debug_log
 from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.utils.logger import get_logger
 
 # Get logger for the Lidarr app
 lidarr_logger = get_logger("lidarr")
@@ -32,10 +30,12 @@ _pagination_helper = PaginationHelper(_api_client)
 # Keep session reference for backward compatibility with direct requests
 session = _api_client.session
 
-def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None, params: Dict = None, count_api: bool = True) -> Any:
+def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: dict | None = None, params: dict | None = None, count_api: bool = True) -> Any:
     """
-    Generic function to make requests to Lidarr API (V1).
-    
+    Make a request to the Lidarr API.
+
+    This is a thin wrapper around ArrAPIClient.request() for backward compatibility.
+
     Args:
         api_url: The base URL of the Lidarr API
         api_key: The API key for authentication
@@ -44,132 +44,49 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
         method: HTTP method (GET, POST, PUT, DELETE)
         data: Data to send in the request body (for POST/PUT)
         params: Query parameters
-        
-    Returns:
-        JSON response data, True for successful non-JSON responses, or None on error
-    """
-    try:
-        # Clean up the URL - ensure no double slashes
-        base_url = api_url.rstrip('/')
-        clean_endpoint = endpoint.lstrip('/')
-        
-        # Construct full URL with V1 API prefix for Lidarr
-        full_url = f"{base_url}/api/v1/{clean_endpoint}"
-        
-        # Setup headers
-        headers = {
-            "X-Api-Key": api_key,
-            "Content-Type": "application/json"
-        }
-        
-        # Get SSL verification setting
-        verify_ssl = get_ssl_verify_setting()
-        
-        # Log the request details
-        lidarr_logger.debug(f"Making {method} request to Lidarr: {full_url}")
-        if params:
-            lidarr_logger.debug(f"Request params: {params}")
-        if data:
-            debug_log("Lidarr API request payload", data, "lidarr")
-        
-        # Make the request
-        response = requests.request(
-            method.upper(),
-            full_url,
-            headers=headers,
-            json=data if data else None,
-            params=params if method.upper() == "GET" else None,
-            timeout=api_timeout,
-            verify=verify_ssl
-        )
-            
-        lidarr_logger.debug(f"Lidarr API Response Status: {response.status_code}")
-        # Use the improved debug_log function to safely log response data
-        if response.content and len(response.content) < 2000:
-            try:
-                response_data = response.json()
-                debug_log(f"Lidarr API Response from {endpoint}", response_data, "lidarr")
-            except json.JSONDecodeError:
-                # If it's not JSON, log safely as text but truncated
-                debug_log(f"Lidarr API Response (non-JSON) from {endpoint}", response.text[:500], "lidarr")
-        elif response.content:
-            lidarr_logger.debug(f"Lidarr API Response: Large response ({len(response.content)} bytes) - not logging content")
+        count_api: Whether to count this request toward the hourly API cap
 
-        # Check for successful response
-        response.raise_for_status()
-        
-        # Increment API counter only if count_api is True and request was successful
-        if count_api:
-            try:
-                from src.primary.stats_manager import increment_hourly_cap
-                increment_hourly_cap("lidarr")
-            except Exception as e:
-                lidarr_logger.warning(f"Failed to increment API counter for lidarr: {e}")
-            
-        # Parse response if there is content
-        if response.content and response.headers.get('Content-Type', '').startswith('application/json'):
-            return response.json()
-        elif response.status_code in [200, 201, 202]: # Success codes that might not return JSON
-            return True 
-        else: # Should have been caught by raise_for_status, but as a fallback
-            lidarr_logger.warning(f"Request successful (status {response.status_code}) but no JSON content returned from {endpoint}")
-            return True # Indicate success even without content
-                
-    except requests.exceptions.RequestException as e:
-        error_msg = f"Error during {method} request to Lidarr endpoint '{endpoint}': {str(e)}"
-        if e.response is not None:
-             error_msg += f" | Status: {e.response.status_code} | Response: {e.response.text[:500]}"
-        lidarr_logger.error(error_msg)
-        return None
-    except json.JSONDecodeError:
-        lidarr_logger.error(f"Error decoding JSON response from Lidarr endpoint '{endpoint}'. Response: {response.text[:500]}")
-        return None
-            
-    except Exception as e:
-        # Catch all exceptions and log them with traceback
-        error_msg = f"CRITICAL ERROR in Lidarr arr_request: {str(e)}"
-        lidarr_logger.error(error_msg)
-        lidarr_logger.error(f"Full traceback: {traceback.format_exc()}")
-        print(error_msg, file=sys.stderr)
-        print(traceback.format_exc(), file=sys.stderr)
-        return None
+    Returns:
+        The parsed JSON response or None if the request failed
+    """
+    return _api_client.request(api_url, api_key, api_timeout, endpoint, method, data, params=params, count_api=count_api)
 
 # --- Specific API Functions ---
 
-def get_system_status(api_url: str, api_key: str, api_timeout: int, verify_ssl: Optional[bool] = None) -> Dict:
+def get_system_status(api_url: str, api_key: str, api_timeout: int, verify_ssl: bool | None = None) -> dict:
     """
     Get Lidarr system status.
-    
+
     Args:
         api_url: The base URL of the Lidarr API
         api_key: The API key for authentication
         api_timeout: Timeout for the API request
         verify_ssl: Optional override for SSL verification
-        
+
     Returns:
         System status information or empty dict if request failed
     """
     # If verify_ssl is not provided, get it from settings
     if verify_ssl is None:
         verify_ssl = get_ssl_verify_setting()
-        
+
     # Log whether SSL verification is being used
     if not verify_ssl:
         lidarr_logger.debug("SSL verification disabled for system status check")
-        
+
     try:
         # For Lidarr, use V1 API
         endpoint = f"{api_url.rstrip('/')}/api/v1/system/status"
         headers = {"X-Api-Key": api_key}
-        
+
         # Execute the request with SSL verification setting
         response = requests.get(endpoint, headers=headers, timeout=api_timeout, verify=verify_ssl)
         response.raise_for_status()
-        
+
         # Parse and return the result
         return response.json()
     except Exception as e:
-        lidarr_logger.error(f"Error getting system status: {str(e)}")
+        lidarr_logger.error(f"Error getting system status: {e!s}")
         return {}
 
 def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
@@ -180,25 +97,25 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
     """
     return _api_client.check_connection(api_url, api_key, api_timeout)
 
-def get_artists(api_url: str, api_key: str, api_timeout: int, artist_id: Optional[int] = None) -> Union[List, Dict, None]:
+def get_artists(api_url: str, api_key: str, api_timeout: int, artist_id: int | None = None) -> list | dict | None:
     """Get artist information from Lidarr."""
     endpoint = f"artist/{artist_id}" if artist_id else "artist"
     return arr_request(api_url, api_key, api_timeout, endpoint, count_api=False)
 
-def get_albums(api_url: str, api_key: str, api_timeout: int, album_id: Optional[int] = None, artist_id: Optional[int] = None) -> Union[List, Dict, None]:
+def get_albums(api_url: str, api_key: str, api_timeout: int, album_id: int | None = None, artist_id: int | None = None) -> list | dict | None:
     """Get album information from Lidarr."""
     params = {}
     if artist_id:
         params['artistId'] = artist_id
-        
+
     if album_id:
         endpoint = f"album/{album_id}"
     else:
         endpoint = "album"
-        
+
     return arr_request(api_url, api_key, api_timeout, endpoint, params=params if params else None, count_api=False)
 
-def get_tracks(api_url: str, api_key: str, api_timeout: int, album_id: Optional[int] = None) -> Union[List, None]:
+def get_tracks(api_url: str, api_key: str, api_timeout: int, album_id: int | None = None) -> list | None:
      """Get track information for a specific album."""
      if not album_id:
          lidarr_logger.warning("get_tracks requires an album_id.")
@@ -206,7 +123,7 @@ def get_tracks(api_url: str, api_key: str, api_timeout: int, album_id: Optional[
      params = {'albumId': album_id}
      return arr_request(api_url, api_key, api_timeout, "track", params=params, count_api=False)
 
-def get_queue(api_url: str, api_key: str, api_timeout: int) -> List:
+def get_queue(api_url: str, api_key: str, api_timeout: int) -> list:
     """Get the current queue from Lidarr (handles pagination)."""
     # Lidarr v1 queue endpoint supports pagination, unlike Sonarr v3's simple list
     all_records = []
@@ -221,23 +138,23 @@ def get_queue(api_url: str, api_key: str, api_timeout: int) -> List:
             "sortDir": "asc"
         }
         response = arr_request(api_url, api_key, api_timeout, "queue", params=params, count_api=False)
-        
+
         if response and isinstance(response, dict) and 'records' in response:
             records = response.get('records', [])
             if not records:
                 break # No more records
             all_records.extend(records)
-            
+
             # Check if this was the last page
             total_records = response.get('totalRecords', 0)
             if len(all_records) >= total_records:
                 break
-            
+
             page += 1
         else:
             lidarr_logger.error(f"Failed to get queue page {page} or invalid response format.")
             break # Return what we have so far
-            
+
     return all_records
 
 def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int:
@@ -248,11 +165,11 @@ def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int
     """
     return _api_client.get_download_queue_size(api_url, api_key, api_timeout)
 
-def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
+def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict[str, Any]]:
     """Get missing albums from Lidarr, handling pagination."""
     endpoint = "wanted/missing"
     page = 1
-    page_size = 1000 
+    page_size = 1000
     all_missing_albums = []
     total_records_reported = -1
 
@@ -265,7 +182,7 @@ def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_o
             "includeArtist": "true" # Include artist info for filtering
             # Removed sortKey and sortDir
         }
-        
+
         lidarr_logger.debug(f"Requesting missing albums page {page} with params: {params}")
         response = arr_request(api_url, api_key, api_timeout, endpoint, params=params, count_api=False)
 
@@ -292,14 +209,14 @@ def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_o
             if total_records_on_page < page_size:
                 lidarr_logger.debug(f"Received {total_records_on_page} records (less than page size {page_size}). Assuming last page.")
                 break
-                
+
             page += 1
             # time.sleep(0.1) # Optional delay
 
         else:
             lidarr_logger.error(f"Failed to get missing albums page {page} or invalid response format.")
             break # Return what we have so far
-            
+
     lidarr_logger.info(f"Total missing albums fetched across all pages: {len(all_missing_albums)}")
 
     # Apply monitored filter after fetching
@@ -316,7 +233,7 @@ def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_o
         lidarr_logger.debug(f"Returning {len(all_missing_albums)} missing albums (monitored_only=False).")
         return all_missing_albums
 
-def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
+def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict[str, Any]]:
     """Get cutoff unmet albums from Lidarr, handling pagination."""
     # Note: Lidarr API returns ALBUMS for cutoff unmet, not tracks.
     endpoint = "wanted/cutoff"
@@ -334,10 +251,10 @@ def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monito
             "includeArtist": "true" # Include artist info for filtering
             # Removed sortKey and sortDir
         }
-        
+
         lidarr_logger.debug(f"Requesting cutoff unmet albums page {page} with params: {params}")
         response = arr_request(api_url, api_key, api_timeout, endpoint, params=params, count_api=False)
-        
+
         if response and isinstance(response, dict) and 'records' in response:
             records = response.get('records', [])
             total_records_on_page = len(records)
@@ -363,7 +280,7 @@ def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monito
             if total_records_on_page < page_size:
                 lidarr_logger.debug(f"Received {total_records_on_page} records (less than page size {page_size}). Assuming last page.")
                 break
-                
+
             page += 1
             # time.sleep(0.1) # Optional small delay between pages
 
@@ -371,7 +288,7 @@ def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monito
             # Log the error based on the response received (handled in arr_request)
             lidarr_logger.error(f"Error getting cutoff unmet albums from Lidarr (page {page}) or invalid response format. Stopping pagination.")
             # Return what we have so far, or indicate complete failure? Let's return what we have.
-            break 
+            break
 
     lidarr_logger.info(f"Total cutoff unmet albums fetched across all pages: {len(all_cutoff_unmet)}")
 
@@ -389,12 +306,12 @@ def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monito
         lidarr_logger.debug(f"Returning {len(all_cutoff_unmet)} cutoff unmet albums (monitored_only=False).")
         return all_cutoff_unmet
 
-def search_albums(api_url: str, api_key: str, api_timeout: int, album_ids: List[int]) -> Optional[Dict]:
+def search_albums(api_url: str, api_key: str, api_timeout: int, album_ids: list[int]) -> dict | None:
     """Trigger a search for specific albums in Lidarr."""
     if not album_ids:
         lidarr_logger.warning("No album IDs provided for search.")
         return None
-    
+
     # Check API limit before making request
     try:
         from src.primary.stats_manager import check_hourly_cap_exceeded
@@ -404,17 +321,17 @@ def search_albums(api_url: str, api_key: str, api_timeout: int, album_ids: List[
     except Exception as e:
         lidarr_logger.error(f"Error checking hourly API cap: {e}")
         # Continue with request if cap check fails - safer than skipping
-        
+
     payload = {
         "name": "AlbumSearch",
         "albumIds": album_ids
     }
     response = arr_request(api_url, api_key, api_timeout, "command", method="POST", data=payload)
-    
+
     if response and isinstance(response, dict) and 'id' in response:
         command_id = response.get('id')
         lidarr_logger.info(f"Triggered Lidarr AlbumSearch for album IDs: {album_ids}. Command ID: {command_id}")
-        
+
         # Increment API counter after successful request
         try:
             from src.primary.stats_manager import increment_hourly_cap
@@ -422,15 +339,15 @@ def search_albums(api_url: str, api_key: str, api_timeout: int, album_ids: List[
             lidarr_logger.debug(f"Incremented Lidarr hourly API cap for album search ({len(album_ids)} albums)")
         except Exception as cap_error:
             lidarr_logger.error(f"Failed to increment hourly API cap for album search: {cap_error}")
-        
+
         return response # Return the full command object including ID
     else:
         lidarr_logger.error(f"Failed to trigger Lidarr AlbumSearch for album IDs {album_ids}. Response: {response}")
         return None
 
-def search_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> Optional[Dict]:
+def search_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> dict | None:
     """Trigger a search for a specific artist in Lidarr."""
-    
+
     # Check API limit before making request
     try:
         from src.primary.stats_manager import check_hourly_cap_exceeded
@@ -440,7 +357,7 @@ def search_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) 
     except Exception as e:
         lidarr_logger.error(f"Error checking hourly API cap: {e}")
         # Continue with request if cap check fails - safer than skipping
-    
+
     payload = {
         "name": "ArtistSearch",
         "artistIds": [artist_id]
@@ -450,7 +367,7 @@ def search_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) 
     if response and isinstance(response, dict) and 'id' in response:
         command_id = response.get('id')
         lidarr_logger.info(f"Triggered Lidarr ArtistSearch for artist ID: {artist_id}. Command ID: {command_id}")
-        
+
         # Increment API counter after successful request
         try:
             from src.primary.stats_manager import increment_hourly_cap
@@ -458,13 +375,13 @@ def search_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) 
             lidarr_logger.debug(f"Incremented Lidarr hourly API cap for artist search (artist {artist_id})")
         except Exception as cap_error:
             lidarr_logger.error(f"Failed to increment hourly API cap for artist search: {cap_error}")
-        
+
         return response # Return the full command object
     else:
         lidarr_logger.error(f"Failed to trigger Lidarr ArtistSearch for artist ID {artist_id}. Response: {response}")
         return None
 
-def refresh_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> Optional[Dict]:
+def refresh_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> dict | None:
     """Refresh functionality has been removed as it was a performance bottleneck.
     This function now returns a placeholder success value without making any API calls."""
     lidarr_logger.debug(f"Refresh functionality disabled for artist ID: {artist_id}")
@@ -477,7 +394,7 @@ def refresh_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int)
         'message': 'Refresh functionality disabled for performance reasons'
     }
 
-def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int) -> Optional[Dict[str, Any]]:
+def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int) -> dict[str, Any] | None:
     """Get the status of a Lidarr command."""
     response = arr_request(api_url, api_key, api_timeout, f"command/{command_id}")
     if response and isinstance(response, dict):
@@ -487,11 +404,11 @@ def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id:
          lidarr_logger.error(f"Error getting Lidarr command status for ID {command_id}. Response: {response}")
          return None
 
-def get_artist_by_id(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> Optional[Dict[str, Any]]:
+def get_artist_by_id(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> dict[str, Any] | None:
     """Get artist details by ID from Lidarr."""
     return arr_request(api_url, api_key, api_timeout, f"artist/{artist_id}")
 
-def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> Optional[int]:
+def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> int | None:
     """
     Get existing tag ID or create a new tag in Lidarr.
 
@@ -517,18 +434,18 @@ def tag_processed_artist(api_url: str, api_key: str, api_timeout: int, artist_id
     """
     return _tag_manager.tag_processed_entity(api_url, api_key, api_timeout, artist_id, tag_label)
 
-def get_missing_albums_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> List[Dict[str, Any]]:
+def get_missing_albums_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> list[dict[str, Any]]:
     """
     Get a specified number of random missing albums by selecting a random page.
     This is much more efficient for very large libraries.
-    
+
     Args:
         api_url: The base URL of the Lidarr API
         api_key: The API key for authentication
         api_timeout: Timeout for the API request
         monitored_only: Whether to include only monitored albums
         count: How many albums to return
-        
+
     Returns:
         A list of randomly selected missing albums, up to the requested count
     """
@@ -536,61 +453,61 @@ def get_missing_albums_random_page(api_url: str, api_key: str, api_timeout: int,
     page_size = 100  # Smaller page size for better performance
     retries = 2
     retry_delay = 3
-    
+
     # First, make a request to get just the total record count (page 1 with size=1)
     params = {
         "page": 1,
         "pageSize": 1,
         "includeArtist": "true"  # Include artist info for filtering
     }
-    
+
     for attempt in range(retries + 1):
         try:
             # Get total record count from a minimal query
             lidarr_logger.debug(f"Getting missing albums count (attempt {attempt+1}/{retries+1})")
             response = arr_request(api_url, api_key, api_timeout, endpoint, params=params, count_api=False)
-            
+
             if not response or not isinstance(response, dict):
                 lidarr_logger.warning(f"Invalid response when getting missing count (attempt {attempt+1})")
                 if attempt < retries:
                     time.sleep(retry_delay)
                     continue
                 return []
-                
+
             total_records = response.get('totalRecords', 0)
-            
+
             if total_records == 0:
                 lidarr_logger.info("No missing albums found in Lidarr.")
                 return []
-                
+
             # Calculate total pages with our desired page size
             total_pages = (total_records + page_size - 1) // page_size
             lidarr_logger.info(f"Found {total_records} total missing albums across {total_pages} pages")
-            
+
             if total_pages == 0:
                 return []
-                
+
             # Select a random page
             import random
             random_page = random.randint(1, total_pages)
             lidarr_logger.info(f"Selected random page {random_page} of {total_pages} for missing albums")
-            
+
             # Get albums from the random page
             params = {
                 "page": random_page,
                 "pageSize": page_size,
                 "includeArtist": "true"
             }
-            
+
             response = arr_request(api_url, api_key, api_timeout, endpoint, params=params, count_api=False)
-            
+
             if not response or not isinstance(response, dict):
                 lidarr_logger.warning(f"Invalid response when getting missing albums page {random_page}")
                 return []
-                
+
             records = response.get('records', [])
             lidarr_logger.info(f"Retrieved {len(records)} missing albums from page {random_page}")
-            
+
             # Apply monitored filter if requested
             if monitored_only:
                 filtered_records = [
@@ -599,7 +516,7 @@ def get_missing_albums_random_page(api_url: str, api_key: str, api_timeout: int,
                 ]
                 lidarr_logger.debug(f"Filtered to {len(filtered_records)} monitored missing albums")
                 records = filtered_records
-            
+
             # Select random albums from this page
             if len(records) > count:
                 selected_records = random.sample(records, count)
@@ -609,30 +526,30 @@ def get_missing_albums_random_page(api_url: str, api_key: str, api_timeout: int,
                 # If we have fewer albums than requested, return all of them
                 lidarr_logger.debug(f"Returning all {len(records)} missing albums from page {random_page} (fewer than requested {count})")
                 return records
-                
+
         except Exception as e:
-            lidarr_logger.error(f"Error getting missing albums from Lidarr (attempt {attempt+1}): {str(e)}")
+            lidarr_logger.error(f"Error getting missing albums from Lidarr (attempt {attempt+1}): {e!s}")
             if attempt < retries:
                 time.sleep(retry_delay)
                 continue
             return []
-    
+
     # If we get here, all retries failed
     lidarr_logger.error("All attempts to get missing albums failed")
     return []
 
-def get_cutoff_unmet_albums_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> List[Dict[str, Any]]:
+def get_cutoff_unmet_albums_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> list[dict[str, Any]]:
     """
     Get a specified number of random cutoff unmet albums by selecting a random page.
     This is much more efficient for very large libraries.
-    
+
     Args:
         api_url: The base URL of the Lidarr API
         api_key: The API key for authentication
         api_timeout: Timeout for the API request
         monitored_only: Whether to include only monitored albums
         count: How many albums to return
-        
+
     Returns:
         A list of randomly selected cutoff unmet albums
     """
@@ -640,61 +557,61 @@ def get_cutoff_unmet_albums_random_page(api_url: str, api_key: str, api_timeout:
     page_size = 100  # Smaller page size for better performance
     retries = 2
     retry_delay = 3
-    
+
     # First, make a request to get just the total record count (page 1 with size=1)
     params = {
         "page": 1,
         "pageSize": 1,
         "includeArtist": "true"  # Include artist info for filtering
     }
-    
+
     for attempt in range(retries + 1):
         try:
             # Get total record count from a minimal query
             lidarr_logger.debug(f"Getting cutoff unmet albums count (attempt {attempt+1}/{retries+1})")
             response = arr_request(api_url, api_key, api_timeout, endpoint, params=params, count_api=False)
-            
+
             if not response or not isinstance(response, dict):
                 lidarr_logger.warning(f"Invalid response when getting cutoff unmet count (attempt {attempt+1})")
                 if attempt < retries:
                     time.sleep(retry_delay)
                     continue
                 return []
-                
+
             total_records = response.get('totalRecords', 0)
-            
+
             if total_records == 0:
                 lidarr_logger.info("No cutoff unmet albums found in Lidarr.")
                 return []
-                
+
             # Calculate total pages with our desired page size
             total_pages = (total_records + page_size - 1) // page_size
             lidarr_logger.info(f"Found {total_records} total cutoff unmet albums across {total_pages} pages")
-            
+
             if total_pages == 0:
                 return []
-                
+
             # Select a random page
             import random
             random_page = random.randint(1, total_pages)
             lidarr_logger.info(f"Selected random page {random_page} of {total_pages} for cutoff unmet albums")
-            
+
             # Get albums from the random page
             params = {
                 "page": random_page,
                 "pageSize": page_size,
                 "includeArtist": "true"
             }
-            
+
             response = arr_request(api_url, api_key, api_timeout, endpoint, params=params, count_api=False)
-            
+
             if not response or not isinstance(response, dict):
                 lidarr_logger.warning(f"Invalid response when getting cutoff unmet albums page {random_page}")
                 return []
-                
+
             records = response.get('records', [])
             lidarr_logger.info(f"Retrieved {len(records)} cutoff unmet albums from page {random_page}")
-            
+
             # Apply monitored filter if requested
             if monitored_only:
                 filtered_records = [
@@ -703,7 +620,7 @@ def get_cutoff_unmet_albums_random_page(api_url: str, api_key: str, api_timeout:
                 ]
                 lidarr_logger.debug(f"Filtered to {len(filtered_records)} monitored cutoff unmet albums")
                 records = filtered_records
-            
+
             # Select random albums from this page
             if len(records) > count:
                 selected_records = random.sample(records, count)
@@ -713,19 +630,19 @@ def get_cutoff_unmet_albums_random_page(api_url: str, api_key: str, api_timeout:
                 # If we have fewer albums than requested, return all of them
                 lidarr_logger.debug(f"Returning all {len(records)} cutoff unmet albums from page {random_page} (fewer than requested {count})")
                 return records
-                
+
         except Exception as e:
-            lidarr_logger.error(f"Error getting cutoff unmet albums from Lidarr (attempt {attempt+1}): {str(e)}")
+            lidarr_logger.error(f"Error getting cutoff unmet albums from Lidarr (attempt {attempt+1}): {e!s}")
             if attempt < retries:
                 time.sleep(retry_delay)
                 continue
             return []
-    
+
     # If we get here, all retries failed
     lidarr_logger.error("All attempts to get cutoff unmet albums failed")
     return []
 
-def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> Optional[List[Dict]]:
+def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> list[dict] | None:
     """
     Get all quality profiles configured in Lidarr.
 

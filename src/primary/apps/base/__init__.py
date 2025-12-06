@@ -11,7 +11,7 @@ Modules:
 """
 
 from src.primary.apps.base.api_client import ArrAPIClient
-from src.primary.apps.base.tag_manager import TagManager
 from src.primary.apps.base.pagination import PaginationHelper
+from src.primary.apps.base.tag_manager import TagManager
 
-__all__ = ['ArrAPIClient', 'TagManager', 'PaginationHelper']
+__all__ = ['ArrAPIClient', 'PaginationHelper', 'TagManager']

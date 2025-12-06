@@ -5,6 +5,7 @@ Readarr module initialization
 # Use src.primary imports
 from src.primary.apps.readarr.missing import process_missing_books
 from src.primary.apps.readarr.upgrade import process_cutoff_upgrades
+
 # Add necessary imports
 from src.primary.settings_manager import load_settings
 from src.primary.utils.logger import get_logger
@@ -25,8 +26,8 @@ def get_configured_instances():
     # Check if instances are configured
     if "instances" in settings and isinstance(settings["instances"], list) and settings["instances"]:
 
-        for idx, instance in enumerate(settings["instances"]):
-    
+        for _idx, instance in enumerate(settings["instances"]):
+
             # Enhanced validation
             api_url = instance.get("api_url", "").strip()
             api_key = instance.get("api_key", "").strip()
@@ -50,7 +51,7 @@ def get_configured_instances():
                     "hunt_upgrade_books": instance.get("hunt_upgrade_books", 0),  # Per-instance upgrade hunt value
                 }
                 instances.append(instance_data)
-    
+
             elif not is_enabled:
                 readarr_logger.debug(f"Skipping disabled instance: {instance.get('name', 'Unnamed')}")
             else:
@@ -91,4 +92,4 @@ def get_configured_instances():
     # Use debug level to avoid spamming logs, especially with 0 instances
     return instances
 
-__all__ = ["process_missing_books", "process_cutoff_upgrades", "get_configured_instances"]
+__all__ = ["get_configured_instances", "process_cutoff_upgrades", "process_missing_books"]

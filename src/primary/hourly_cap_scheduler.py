@@ -3,23 +3,23 @@
 Handles checking time and resetting hourly API caps at the top of each hour (00 minute mark)
 """
 
+import datetime
+import logging
 import threading
 import time
-import datetime
 import traceback
-import logging
 
 # Try both import patterns to handle different module contexts
 try:
     # When imported from the main app
-    from src.primary.utils.logger import get_logger
     from src.primary.stats_manager import reset_hourly_caps
+    from src.primary.utils.logger import get_logger
     logger = get_logger("hourly_caps")
 except ImportError:
     try:
         # When imported within the package
-        from primary.utils.logger import get_logger
         from primary.stats_manager import reset_hourly_caps
+        from primary.utils.logger import get_logger
         logger = get_logger("hourly_caps")
     except ImportError:
         # Fallback to standard logging in case neither works
@@ -41,7 +41,7 @@ def check_and_reset_caps():
     """
     try:
         current_time = datetime.datetime.now()
-        
+
         # Only reset at the top of the hour (minute 0)
         if current_time.minute == 0:
             logger.debug(f"Hourly reset triggered at {current_time.hour}:00")
@@ -68,29 +68,29 @@ def scheduler_loop():
     try:
         logger.info("Starting hourly API cap scheduler")
         print("Hourly API cap scheduler thread starting")
-        
+
         # Initial check on startup
         check_and_reset_caps()
-        
+
         while not stop_event.is_set():
             try:
                 # Sleep for 30 seconds between checks
                 # This ensures we won't miss the top of the hour
                 stop_event.wait(30)
-                
+
                 if stop_event.is_set():
                     logger.info("Stop event detected, exiting scheduler loop")
                     break
-                    
+
                 # Check if it's time to reset the caps
                 check_and_reset_caps()
-                    
+
             except Exception as e:
                 logger.error(f"Error in hourly cap scheduler loop: {e}")
                 logger.error(traceback.format_exc())
                 # Sleep briefly to avoid spinning in case of repeated errors
                 time.sleep(5)
-        
+
         logger.info("Hourly API cap scheduler stopped")
     except Exception as e:
         logger.error(f"Fatal error in scheduler_loop: {e}")
@@ -102,22 +102,22 @@ def start_scheduler():
     Start the hourly API cap scheduler thread
     """
     global scheduler_thread
-    
+
     try:
         logger.info("Attempting to start hourly API cap scheduler")
         print("Attempting to start hourly API cap scheduler")
-        
+
         if scheduler_thread and scheduler_thread.is_alive():
             logger.info("Hourly API cap scheduler already running")
             return
-        
+
         # Reset the stop event
         stop_event.clear()
-        
+
         # Create and start the scheduler thread
         scheduler_thread = threading.Thread(target=scheduler_loop, name="HourlyCapScheduler", daemon=True)
         scheduler_thread.start()
-        
+
         logger.info(f"Hourly API cap scheduler started. Thread is alive: {scheduler_thread.is_alive()}")
         print(f"Hourly API cap scheduler started. Thread is alive: {scheduler_thread.is_alive()}")
         return True
@@ -132,17 +132,17 @@ def stop_scheduler():
     Stop the hourly API cap scheduler thread
     """
     global scheduler_thread
-    
+
     if not scheduler_thread or not scheduler_thread.is_alive():
         logger.info("Hourly API cap scheduler not running")
         return
-    
+
     # Signal the thread to stop
     stop_event.set()
-    
+
     # Wait for the thread to terminate (with timeout)
     scheduler_thread.join(timeout=5.0)
-    
+
     if scheduler_thread.is_alive():
         logger.warning("Hourly API cap scheduler did not terminate gracefully")
     else:

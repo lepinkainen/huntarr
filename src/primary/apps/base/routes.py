@@ -5,9 +5,11 @@ Provides factory functions to create test_connection handlers with app-specific 
 """
 
 import socket
-import requests
 from urllib.parse import urlparse
+
+import requests
 from flask import jsonify, request
+
 from src.primary.settings_manager import get_ssl_verify_setting
 
 
@@ -36,7 +38,7 @@ def test_connection_handler(app_name: str, api_version: str, logger, version_val
 
     # Auto-correct URL if missing http(s) scheme
     if not (api_url.startswith('http://') or api_url.startswith('https://')):
-        logger.debug(f"Auto-correcting URL to add http:// scheme")
+        logger.debug("Auto-correcting URL to add http:// scheme")
         api_url = f"http://{api_url}"
 
     # Try socket connection for quick feedback on connectivity issues
@@ -59,7 +61,7 @@ def test_connection_handler(app_name: str, api_version: str, logger, version_val
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 404
     except Exception as e:
-        logger.debug(f"Socket test error, continuing with full request: {str(e)}")
+        logger.debug(f"Socket test error, continuing with full request: {e!s}")
 
     # Build API URL
     test_url = f"{api_url.rstrip('/')}/api/{api_version}/system/status"
@@ -131,7 +133,7 @@ def test_connection_handler(app_name: str, api_version: str, logger, version_val
         return jsonify({"success": False, "message": error_msg}), 404
 
     except requests.exceptions.RequestException as e:
-        error_msg = f"Connection test failed: {str(e)}"
+        error_msg = f"Connection test failed: {e!s}"
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500
 
@@ -151,7 +153,7 @@ def whisparr_test_connection_handler(logger):
 
     # Auto-correct URL
     if not (api_url.startswith('http://') or api_url.startswith('https://')):
-        logger.debug(f"Auto-correcting URL to add http:// scheme")
+        logger.debug("Auto-correcting URL to add http:// scheme")
         api_url = f"http://{api_url}"
 
     # Socket test
@@ -174,7 +176,7 @@ def whisparr_test_connection_handler(logger):
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 404
     except Exception as e:
-        logger.debug(f"Socket test error, continuing: {str(e)}")
+        logger.debug(f"Socket test error, continuing: {e!s}")
 
     # Try both v2 and v3 API paths
     api_paths = [
@@ -186,7 +188,6 @@ def whisparr_test_connection_handler(logger):
     verify_ssl = get_ssl_verify_setting()
 
     response = None
-    detected_version = None
 
     for api_path in api_paths:
         try:
@@ -195,7 +196,7 @@ def whisparr_test_connection_handler(logger):
             response = requests.get(url, headers=headers, timeout=(10, api_timeout), verify=verify_ssl)
 
             if response.status_code == 200:
-                detected_version = api_path["version"]
+                api_path["version"]
                 break
         except requests.exceptions.RequestException:
             continue
@@ -238,7 +239,7 @@ def whisparr_test_connection_handler(logger):
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500
     except requests.exceptions.RequestException as e:
-        error_msg = f"Connection test failed: {str(e)}"
+        error_msg = f"Connection test failed: {e!s}"
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500
 
@@ -251,14 +252,14 @@ def eros_test_connection_handler(logger):
     data = request.json
     api_url = data.get('api_url')
     api_key = data.get('api_key')
-    api_timeout = data.get('api_timeout', 30)
+    data.get('api_timeout', 30)
 
     if not api_url or not api_key:
         return jsonify({"success": False, "message": "API URL and API Key are required"}), 400
 
     # Auto-correct URL
     if not (api_url.startswith('http://') or api_url.startswith('https://')):
-        logger.debug(f"Auto-correcting URL to add http:// scheme")
+        logger.debug("Auto-correcting URL to add http:// scheme")
         api_url = f"http://{api_url}"
 
     # Socket test
@@ -281,7 +282,7 @@ def eros_test_connection_handler(logger):
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 404
     except Exception as e:
-        logger.debug(f"Socket test error, continuing: {str(e)}")
+        logger.debug(f"Socket test error, continuing: {e!s}")
 
     # Eros uses v3 API only
     test_url = f"{api_url.rstrip('/')}/api/v3/system/status"
@@ -331,10 +332,10 @@ def eros_test_connection_handler(logger):
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 504
     except requests.exceptions.ConnectionError as e:
-        error_msg = f"Connection error: {str(e)}"
+        error_msg = f"Connection error: {e!s}"
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 404
     except requests.exceptions.RequestException as e:
-        error_msg = f"Connection test failed: {str(e)}"
+        error_msg = f"Connection test failed: {e!s}"
         logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500

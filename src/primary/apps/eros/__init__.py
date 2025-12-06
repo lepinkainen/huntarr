@@ -35,8 +35,8 @@ def get_configured_instances():
     if "instances" in settings and isinstance(settings["instances"], list) and settings["instances"]:
         # Use debug level to avoid log spam on new installations
         # Instance count debug removed to reduce log spam
-        for idx, instance in enumerate(settings["instances"]):
-    
+        for _idx, instance in enumerate(settings["instances"]):
+
             # Enhanced validation
             api_url = instance.get("api_url", "").strip()
             api_key = instance.get("api_key", "").strip()
@@ -52,23 +52,23 @@ def get_configured_instances():
             # Only include properly configured instances
             if is_enabled and api_url and api_key:
                 instance_name = instance.get("name", "Default")
-                
+
                 # Create a settings object for this instance by combining global settings with instance-specific ones
                 instance_settings = settings.copy()
-                
+
                 # Remove instances list to avoid confusion
                 if "instances" in instance_settings:
                     del instance_settings["instances"]
-                
+
                 # Override with instance-specific settings
                 instance_settings["api_url"] = api_url
                 instance_settings["api_key"] = api_key
                 instance_settings["instance_name"] = instance_name
-                
+
                 # Add timeout setting with default if not present
                 if "api_timeout" not in instance_settings:
                     instance_settings["api_timeout"] = 30
-                
+
                 # Use debug level to prevent log spam
                 eros_logger.debug(f"Adding configured Eros instance: {instance_name}")
 
@@ -95,8 +95,8 @@ def get_configured_instances():
                         eros_logger.warning(f"Skipping instance {name} due to missing API URL or API Key")
     else:
         eros_logger.debug("No instances array found in settings or it's empty")
-    
+
     # Use debug level to avoid spamming logs, especially with 0 instances
     return instances
 
-__all__ = ["process_missing_items", "process_cutoff_upgrades", "get_configured_instances"]
+__all__ = ["get_configured_instances", "process_cutoff_upgrades", "process_missing_items"]

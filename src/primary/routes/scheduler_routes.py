@@ -4,11 +4,11 @@ Scheduler API Routes
 Handles API endpoints for scheduler management
 """
 
-import os
 import json
 import logging
-from flask import Blueprint, jsonify, request, Response
 from datetime import datetime
+
+from flask import Blueprint, Response, jsonify, request
 
 # Import the scheduler engine to get execution history
 from src.primary.scheduler_engine import get_execution_history
@@ -30,20 +30,20 @@ def load_schedules():
     try:
         db = get_database()
         schedules = db.get_schedules()
-        
+
         # Schedules loaded - spam reduced
-        
+
         # Add CORS headers
         response = Response(json.dumps(schedules))
         response.headers['Content-Type'] = 'application/json'
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
-    
+
     except Exception as e:
-        error_msg = f"Error loading schedules from database: {str(e)}"
+        error_msg = f"Error loading schedules from database: {e!s}"
         scheduler_logger.error(error_msg)
         return jsonify({"error": error_msg}), 500
-        
+
 
 @scheduler_api.route('/api/scheduler/history', methods=['GET'])
 def get_scheduler_history():
@@ -58,9 +58,9 @@ def get_scheduler_history():
         response.headers['Content-Type'] = 'application/json'
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
-    
+
     except Exception as e:
-        error_msg = f"Error getting scheduler history: {str(e)}"
+        error_msg = f"Error getting scheduler history: {e!s}"
         scheduler_logger.error(error_msg)
         return jsonify({"error": error_msg}), 500
 
@@ -72,17 +72,17 @@ def save_schedules():
     try:
         # Get schedule data from request
         schedules = request.json
-        
+
         if not schedules or not isinstance(schedules, dict):
             return jsonify({"error": "Invalid schedule data format"}), 400
-        
+
         # Save to database
         db = get_database()
         db.save_schedules(schedules)
-        
+
         total_schedules = sum(len(s) for s in schedules.values())
         # Schedules saved - no need to log every successful save
-        
+
         # Add timestamp to response
         response_data = {
             "success": True,
@@ -90,14 +90,14 @@ def save_schedules():
             "timestamp": datetime.now().isoformat(),
             "count": total_schedules
         }
-        
+
         # Add CORS headers
         response = Response(json.dumps(response_data))
         response.headers['Content-Type'] = 'application/json'
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
-    
+
     except Exception as e:
-        error_msg = f"Error saving schedules to database: {str(e)}"
+        error_msg = f"Error saving schedules to database: {e!s}"
         scheduler_logger.error(error_msg)
         return jsonify({"error": error_msg}), 500

@@ -4,25 +4,39 @@ Common routes blueprint for Huntarr web interface
 """
 
 import os
-import json
-import base64
-import io
-import qrcode
-import pyotp
-import logging
-from flask import Blueprint, request, jsonify, make_response, redirect, url_for, current_app, send_from_directory, session, send_file
-from ..auth import (
-    verify_user, create_session, get_username_from_session, SESSION_COOKIE_NAME,
-    change_username as auth_change_username, change_password as auth_change_password,
-    update_session_username,
-    validate_password_strength, logout, verify_session, disable_2fa_with_password_and_otp,
-    user_exists, create_user, generate_2fa_secret, verify_2fa_code, is_2fa_enabled, # Add missing auth imports
-    hash_password # Add hash_password import for recovery key reset
-)
-from ..utils.logger import logger # Ensure logger is imported
-from .. import settings_manager # Import settings_manager
 from datetime import datetime
 
+from flask import (
+    Blueprint,
+    current_app,
+    jsonify,
+    redirect,
+    request,
+    send_from_directory,
+    session,
+    url_for,
+)
+
+from .. import settings_manager  # Import settings_manager
+from ..auth import (
+    SESSION_COOKIE_NAME,
+    create_session,
+    create_user,
+    disable_2fa_with_password_and_otp,
+    generate_2fa_secret,
+    get_username_from_session,
+    is_2fa_enabled,
+    logout,
+    update_session_username,
+    user_exists,  # Add missing auth imports
+    validate_password_strength,
+    verify_2fa_code,
+    verify_session,
+    verify_user,
+)
+from ..auth import change_password as auth_change_password
+from ..auth import change_username as auth_change_username
+from ..utils.logger import logger  # Ensure logger is imported
 
 common_bp = Blueprint('common', __name__)
 
@@ -59,7 +73,7 @@ def health_check():
     try:
         # Check if shutdown is in progress using multiple methods
         from src.primary.background import stop_event
-        
+
         # Also check the global shutdown flag from main.py
         try:
             import main
@@ -73,27 +87,27 @@ def health_check():
                 "message": "Application is shutting down",
                 "ready": False
             }), 503  # Service Unavailable
-        
+
         # Basic database connectivity check
         from src.primary.utils.database import get_database
         db = get_database()
-        
+
         # Quick database health check
         with db.get_connection() as conn:
             conn.execute("SELECT 1")
-        
+
         return jsonify({
             "status": "healthy",
             "message": "Application is running normally",
             "ready": True,
             "timestamp": datetime.utcnow().isoformat()
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return jsonify({
             "status": "unhealthy",
-            "message": f"Health check failed: {str(e)}",
+            "message": f"Health check failed: {e!s}",
             "ready": False
         }), 503  # Service Unavailable
 
@@ -103,7 +117,7 @@ def readiness_check():
     try:
         # Check if the application is ready to serve traffic
         from src.primary.background import stop_event
-        
+
         # Also check the global shutdown flag from main.py
         try:
             import main
@@ -116,17 +130,17 @@ def readiness_check():
                 "ready": False,
                 "message": "Application is shutting down"
             }), 503
-        
+
         # Check if setup is complete
         from src.primary.utils.database import get_database
         db = get_database()
-        
+
         if db.is_setup_in_progress():
             return jsonify({
                 "ready": False,
                 "message": "Application setup in progress"
             }), 503
-        
+
         # Check if user exists (setup complete)
         from ..auth import user_exists
         if not user_exists():
@@ -134,17 +148,17 @@ def readiness_check():
                 "ready": False,
                 "message": "Application requires initial setup"
             }), 503
-        
+
         return jsonify({
             "ready": True,
             "message": "Application is ready to serve traffic"
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
         return jsonify({
             "ready": False,
-            "message": f"Readiness check failed: {str(e)}"
+            "message": f"Readiness check failed: {e!s}"
         }), 503
 
 @common_bp.route('/api/sleep.json', methods=['GET'])
@@ -152,10 +166,10 @@ def api_get_sleep_json():
     """API endpoint to serve sleep/cycle data from the database for frontend access"""
     try:
         from src.primary.utils.database import get_database
-        
+
         db = get_database()
         sleep_data = db.get_sleep_data()
-        
+
         # Convert database format to frontend format
         frontend_data = {}
         for app_type, data in sleep_data.items():
@@ -164,12 +178,12 @@ def api_get_sleep_json():
                 "updated_at": data.get("last_cycle_end") or data.get("last_cycle_start"),
                 "cyclelock": data.get("cycle_lock", True)
             }
-        
+
         # Add CORS headers to allow any origin to access this resource
         response = jsonify(frontend_data)
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response
-        
+
     except Exception as e:
         logger.error(f"Error serving sleep data from database: {e}")
         # Return empty object instead of error to prevent UI breaking
@@ -194,7 +208,7 @@ def login_route():
 
             # Call verify_user which now returns (auth_success, needs_2fa)
             auth_success, needs_2fa = verify_user(username, password, twoFactorCode)
-            
+
             logger.debug(f"Auth result for '{username}': success={auth_success}, needs_2fa={needs_2fa}")
 
             if auth_success:
@@ -209,12 +223,12 @@ def login_route():
                 # Authentication failed *because* 2FA was required (or code was invalid)
                 # The specific reason (missing vs invalid code) is logged in verify_user
                 logger.warning(f"Login failed for '{username}': 2FA required or invalid.")
-                logger.debug(f"Returning 2FA required response: {{\"success\": False, \"requires_2fa\": True, \"requiresTwoFactor\": True, \"error\": \"Invalid or missing 2FA code\"}}")
-                
+                logger.debug("Returning 2FA required response: {\"success\": False, \"requires_2fa\": True, \"requiresTwoFactor\": True, \"error\": \"Invalid or missing 2FA code\"}")
+
                 # Use all common variations of the 2FA flag to ensure compatibility
                 return jsonify({
-                    "success": False, 
-                    "requires_2fa": True, 
+                    "success": False,
+                    "requires_2fa": True,
                     "requiresTwoFactor": True,
                     "requires2fa": True,
                     "requireTwoFactor": True,
@@ -234,7 +248,7 @@ def login_route():
         # If user doesn't exist or setup is in progress, redirect to setup
         if not user_exists():
              logger.info("No user exists, redirecting to setup.")
-             
+
              # Get the base URL from settings to ensure proper subpath redirect
              try:
                  from src.primary.settings_manager import get_setting
@@ -249,14 +263,14 @@ def login_route():
              except Exception as e:
                  logger.warning(f"Error getting base URL for setup redirect: {e}")
                  return redirect(url_for('common.setup'))
-        
+
         # Check if setup is in progress even if user exists
         try:
             from src.primary.utils.database import get_database
             db = get_database()
             if db.is_setup_in_progress():
                 logger.info("Setup is in progress, redirecting to setup.")
-                
+
                 # Get the base URL from settings to ensure proper subpath redirect
                 try:
                     from src.primary.settings_manager import get_setting
@@ -274,7 +288,7 @@ def login_route():
         except Exception as e:
             logger.error(f"Error checking setup progress in login route: {e}")
             # Continue to show login page if we can't check setup progress
-        
+
         # Check if any users have Plex authentication configured
         try:
             from src.primary.utils.database import get_database
@@ -283,7 +297,7 @@ def login_route():
         except Exception as e:
             logger.error(f"Error checking for Plex users: {e}")
             plex_auth_enabled = False
-        
+
         logger.debug("Displaying login page (React).")
         return serve_react_app()
 
@@ -312,36 +326,36 @@ def setup():
     # Allow setup page access even if user exists - setup might be in progress
     # The authentication middleware will handle proper authentication checks
     # This handles cases like returning from Plex authentication during setup
-    
+
     if request.method == 'GET':
         # For GET requests, check if we should restore setup progress
         try:
             from src.primary.utils.database import get_database
             db = get_database()
-            
+
             # Get setup progress for restoration
             setup_progress = db.get_setup_progress()
             logger.debug(f"Setup page accessed, current progress: {setup_progress}")
-            
+
             # If user exists but setup is in progress, allow continuation
             if user_exists() and not db.is_setup_in_progress():
                 logger.info("User exists and setup is complete, redirecting to login")
                 return redirect(url_for('common.login_route'))
-            
+
             # Render React setup page
             return serve_react_app()
-            
+
         except Exception as e:
             logger.error(f"Error checking setup progress: {e}")
             # Fallback to React setup page
             return serve_react_app()
-    
+
     elif request.method == 'POST':
         # For POST requests, check if user exists to prevent duplicate creation
         if user_exists():
             logger.warning("Attempted to create user during setup but user already exists")
             return jsonify({"success": False, "error": "User already exists"}), 400
-            
+
         username = None # Initialize username for logging in case of early failure
         try: # Add try block to catch potential errors during user creation
             data = request.json
@@ -353,7 +367,7 @@ def setup():
             # Basic validation
             if not username or not password or not confirm_password:
                 return jsonify({"success": False, "error": "Missing required fields"}), 400
-            
+
             # Add username length validation
             if len(username.strip()) < 3:
                 return jsonify({"success": False, "error": "Username must be at least 3 characters long"}), 400
@@ -368,24 +382,24 @@ def setup():
 
             logger.info(f"Attempting to create user '{username}' during setup.")
             if create_user(username, password): # This function should now be defined via import
-                
+
                 # If proxy auth bypass is enabled, update general settings
                 if proxy_auth_bypass:
                     try:
                         from src.primary import settings_manager
-                        
+
                         # Load current general settings
                         general_settings = settings_manager.load_settings('general')
-                        
+
                         # Update the proxy_auth_bypass setting
                         general_settings['proxy_auth_bypass'] = True
-                        
+
                         # Save the updated settings
                         settings_manager.save_settings('general', general_settings)
                         logger.debug("Proxy auth bypass setting enabled during setup")
                     except Exception as e:
                         logger.error(f"Error saving proxy auth bypass setting: {e}", exc_info=True)
-                
+
                 # Save setup progress after account creation
                 try:
                     from src.primary.utils.database import get_database
@@ -405,7 +419,7 @@ def setup():
                     logger.debug("Setup progress saved after account creation")
                 except Exception as e:
                     logger.error(f"Error saving setup progress: {e}")
-                
+
                 # Automatically log in the user after setup
                 logger.debug(f"User '{username}' created successfully during setup. Creating session.")
                 session_token = create_session(username)
@@ -436,17 +450,17 @@ def get_user_for_request():
     # First try to get username from session
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
     username = get_username_from_session(session_token)
-    
+
     if username:
         return username
-    
+
     # If no session username, check if we're in bypass mode
     try:
         from src.primary.settings_manager import load_settings
         settings = load_settings("general")
         local_access_bypass = settings.get("local_access_bypass", False)
         proxy_auth_bypass = settings.get("proxy_auth_bypass", False)
-        
+
         if proxy_auth_bypass or local_access_bypass:
             # In bypass mode, get the first user from database
             from src.primary.utils.database import get_database
@@ -456,7 +470,7 @@ def get_user_for_request():
                 return first_user.get('username')
     except Exception as e:
         logger.error(f"Error checking bypass mode for user request: {e}")
-    
+
     return None
 
 @common_bp.route('/api/user/info', methods=['GET'])
@@ -502,7 +516,7 @@ def change_username_route():
                 logger.debug(f"Session updated with new username '{new_username}' for session {session_token}")
             else:
                 logger.warning(f"Failed to update session with new username '{new_username}'")
-        
+
         logger.info(f"Username changed successfully for '{current_username}' to '{new_username}'.")
         return jsonify({"success": True, "username": new_username})
     else:
@@ -659,7 +673,7 @@ def generate_recovery_key():
     """Generate a new recovery key for the authenticated user"""
     # Get username handling bypass modes and setup mode
     username = get_user_for_request()
-    
+
     # If not authenticated, check if we're in setup mode and get username from setup progress
     if not username:
         try:
@@ -709,7 +723,7 @@ def generate_recovery_key():
                 if not two_factor_code:
                     logger.warning(f"Recovery key generation for '{username}' failed: 2FA code required.")
                     return jsonify({"success": False, "error": "Two-factor authentication code is required"}), 400
-                
+
                 if not verify_2fa_code(username, two_factor_code):
                     logger.warning(f"Recovery key generation for '{username}' failed: Invalid 2FA code.")
                     return jsonify({"success": False, "error": "Invalid two-factor authentication code"}), 400
@@ -722,7 +736,7 @@ def generate_recovery_key():
         if recovery_key:
             logger.info(f"Recovery key generated successfully for user: {username} (setup_mode: {setup_mode})")
             return jsonify({
-                "success": True, 
+                "success": True,
                 "recovery_key": recovery_key,
                 "message": "Recovery key generated successfully. Please save this key securely - it will not be shown again."
             })
@@ -742,7 +756,7 @@ def verify_recovery_key():
         client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
         if ',' in client_ip:
             client_ip = client_ip.split(',')[0].strip()
-            
+
         data = request.json or {}
         recovery_key = data.get('recovery_key', '').strip()
 
@@ -753,7 +767,7 @@ def verify_recovery_key():
         from ..utils.database import get_database
         db = get_database()
         rate_limit_check = db.check_recovery_key_rate_limit(client_ip)
-        
+
         if rate_limit_check["locked"]:
             from datetime import datetime
             try:
@@ -762,7 +776,7 @@ def verify_recovery_key():
                 if minutes_remaining > 0:
                     logger.warning(f"Recovery key verification blocked for IP {client_ip} - locked for {minutes_remaining} more minutes")
                     return jsonify({
-                        "success": False, 
+                        "success": False,
                         "error": f"Too many failed attempts. Please try again in {minutes_remaining} minutes."
                     }), 429
             except (ValueError, TypeError):
@@ -781,17 +795,17 @@ def verify_recovery_key():
             # Record failed attempt
             db.record_recovery_key_attempt(client_ip, success=False)
             failed_attempts = rate_limit_check["failed_attempts"] + 1
-            
+
             if failed_attempts >= 3:
                 logger.warning(f"Recovery key rate limit triggered for IP {client_ip} after {failed_attempts} failed verification attempts")
                 return jsonify({
-                    "success": False, 
+                    "success": False,
                     "error": "Too many failed attempts. Recovery key access has been temporarily disabled for 15 minutes."
                 }), 429
             else:
                 logger.warning(f"Invalid recovery key verification attempt from IP {client_ip} ({failed_attempts}/3 attempts)")
                 return jsonify({
-                    "success": False, 
+                    "success": False,
                     "error": f"Invalid recovery key. {3 - failed_attempts} attempts remaining."
                 }), 400
 
@@ -807,7 +821,7 @@ def reset_password_with_recovery_key():
         client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
         if ',' in client_ip:
             client_ip = client_ip.split(',')[0].strip()
-        
+
         data = request.json or {}
         recovery_key = data.get('recovery_key', '').strip()
         new_password = data.get('new_password', '').strip()
@@ -823,7 +837,7 @@ def reset_password_with_recovery_key():
         from ..utils.database import get_database
         db = get_database()
         rate_limit_check = db.check_recovery_key_rate_limit(client_ip)
-        
+
         if rate_limit_check["locked"]:
             from datetime import datetime
             try:
@@ -832,7 +846,7 @@ def reset_password_with_recovery_key():
                 if minutes_remaining > 0:
                     logger.warning(f"Recovery key attempt blocked for IP {client_ip} - locked for {minutes_remaining} more minutes")
                     return jsonify({
-                        "success": False, 
+                        "success": False,
                         "error": f"Too many failed attempts. Please try again in {minutes_remaining} minutes."
                     }), 429
             except (ValueError, TypeError):
@@ -846,17 +860,17 @@ def reset_password_with_recovery_key():
             # Record failed attempt
             db.record_recovery_key_attempt(client_ip, success=False)
             failed_attempts = rate_limit_check["failed_attempts"] + 1
-            
+
             if failed_attempts >= 3:
                 logger.warning(f"Recovery key rate limit triggered for IP {client_ip} after {failed_attempts} failed attempts")
                 return jsonify({
-                    "success": False, 
+                    "success": False,
                     "error": "Too many failed attempts. Recovery key access has been temporarily disabled for 15 minutes."
                 }), 429
             else:
                 logger.warning(f"Invalid recovery key attempt from IP {client_ip} ({failed_attempts}/3 attempts)")
                 return jsonify({
-                    "success": False, 
+                    "success": False,
                     "error": f"Invalid recovery key. {3 - failed_attempts} attempts remaining."
                 }), 400
 
@@ -864,17 +878,17 @@ def reset_password_with_recovery_key():
         if db.update_user_password(username, new_password):
             # Record successful attempt to clear rate limiting
             db.record_recovery_key_attempt(client_ip, username=username, success=True)
-            
+
             # Disable 2FA since user needed recovery key (likely lost 2FA device)
             two_fa_disabled = db.update_user_2fa(username, two_fa_enabled=False, two_fa_secret=None)
             if two_fa_disabled:
                 logger.info(f"Disabled 2FA for user '{username}' after password reset via recovery key from IP {client_ip}")
             else:
                 logger.warning(f"Failed to disable 2FA for user '{username}' after password reset")
-            
+
             # Keep recovery key valid - user may need it again and should manually generate new one
             logger.info(f"Password reset successfully using recovery key for user: {username} from IP {client_ip}")
-            
+
             # Update message to inform user that 2FA has been disabled and recovery key is still valid
             message = "Password reset successfully. Two-factor authentication has been disabled for security - you can re-enable it in your account settings. Your recovery key remains valid until you generate a new one."
             return jsonify({"success": True, "message": message})
@@ -891,7 +905,7 @@ def reset_password_with_recovery_key():
 def set_theme():
     # Get username handling bypass modes
     username = get_user_for_request()
-    
+
     if not username:
          logger.warning("Theme setting attempt failed: Not authenticated and not in bypass mode.")
          return jsonify({"error": "Unauthorized"}), 401
@@ -930,10 +944,10 @@ def get_local_access_bypass_status_route():
         # Get both bypass settings from the 'general' section, default to False if not found
         local_access_bypass = settings_manager.get_setting('general', 'local_access_bypass', False)
         proxy_auth_bypass = settings_manager.get_setting('general', 'proxy_auth_bypass', False)
-        
+
         # Enable if either bypass mode is active
         bypass_enabled = local_access_bypass or proxy_auth_bypass
-        
+
         # Bypass status retrieved - debug spam removed
         # Return status in the format expected by the frontend
         return jsonify({"isEnabled": bypass_enabled})
@@ -949,11 +963,11 @@ def get_stats_api():
     try:
         # Import here to avoid circular imports
         from ..stats_manager import get_stats
-        
+
         # Get stats from stats_manager
         stats = get_stats()
         # Stats retrieved - debug spam removed
-        
+
         # Return success response with stats
         return jsonify({"success": True, "stats": stats})
     except Exception as e:
@@ -966,21 +980,21 @@ def reset_stats_api():
     try:
         # Import here to avoid circular imports
         from ..stats_manager import reset_stats
-        
+
         # Check if authenticated
         session_token = request.cookies.get(SESSION_COOKIE_NAME)
         if not verify_session(session_token):
             logger.warning("Stats reset attempt failed: Not authenticated.")
             return jsonify({"error": "Unauthorized"}), 401
-            
+
         # Get app type from request if provided
         data = request.json or {}
         app_type = data.get('app_type')  # None will reset all
-        
+
         if app_type is not None and app_type not in ["sonarr", "radarr", "lidarr", "readarr", "whisparr"]:
             logger.warning(f"Invalid app_type for stats reset: {app_type}")
             return jsonify({"success": False, "error": "Invalid app_type"}), 400
-            
+
         # Reset stats
         if reset_stats(app_type):
             message = f"Reset statistics for {app_type}" if app_type else "Reset all statistics"
@@ -1004,21 +1018,21 @@ def database_integrity():
     username = get_user_for_request()
     if not username:
         return jsonify({"success": False, "error": "Authentication required"}), 401
-    
+
     try:
         from primary.utils.database import get_database
-        
+
         repair = request.json.get('repair', False) if request.method == 'POST' else False
-        
+
         db = get_database()
         results = db.perform_integrity_check(repair=repair)
-        
+
         return jsonify({
             'success': True,
             'integrity_check': results,
             'timestamp': datetime.now().isoformat()
         })
-        
+
     except Exception as e:
         logger.error(f"Database integrity check failed: {e}")
         return jsonify({
@@ -1033,26 +1047,26 @@ def create_database_backup():
     username = get_user_for_request()
     if not username:
         return jsonify({"success": False, "error": "Authentication required"}), 401
-    
+
     try:
         from primary.utils.database import get_database
-        
+
         backup_name = request.json.get('backup_name') if request.json else None
-        
+
         db = get_database()
         backup_path = db.create_backup(backup_name)
-        
+
         # Get backup file size for confirmation
         from pathlib import Path
         backup_size = Path(backup_path).stat().st_size
-        
+
         return jsonify({
             'success': True,
             'backup_path': backup_path,
             'backup_size': backup_size,
             'timestamp': datetime.now().isoformat()
         })
-        
+
     except Exception as e:
         logger.error(f"Database backup creation failed: {e}")
         return jsonify({
@@ -1067,30 +1081,30 @@ def trigger_database_maintenance():
     username = get_user_for_request()
     if not username:
         return jsonify({"success": False, "error": "Authentication required"}), 401
-    
+
     try:
         from primary.utils.database import get_database
-        
+
         db = get_database()
-        
+
         # Perform maintenance operations
         maintenance_results = {
             'integrity_check': db.perform_integrity_check(repair=True),
             'optimization': {'status': 'completed'},
             'checkpoint': {'status': 'completed'}
         }
-        
+
         # Run optimization and checkpoint
         with db.get_connection() as conn:
             conn.execute("PRAGMA optimize")
             conn.execute("PRAGMA wal_checkpoint(PASSIVE)")
-        
+
         return jsonify({
             'success': True,
             'maintenance_results': maintenance_results,
             'timestamp': datetime.now().isoformat()
         })
-        
+
     except Exception as e:
         logger.error(f"Database maintenance failed: {e}")
         return jsonify({
@@ -1105,16 +1119,17 @@ def database_status():
     username = get_user_for_request()
     if not username:
         return jsonify({"success": False, "error": "Authentication required"}), 401
-    
+
     try:
-        from primary.utils.database import get_database
         import os
-        
+
+        from primary.utils.database import get_database
+
         db = get_database()
-        
+
         # Get database file info
         db_size = os.path.getsize(db.db_path) if db.db_path.exists() else 0
-        
+
         # Get database stats
         with db.get_connection() as conn:
             page_count = conn.execute("PRAGMA page_count").fetchone()[0]
@@ -1122,7 +1137,7 @@ def database_status():
             freelist_count = conn.execute("PRAGMA freelist_count").fetchone()[0]
             journal_mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
             cache_size = conn.execute("PRAGMA cache_size").fetchone()[0]
-            
+
         status_info = {
             'database_path': str(db.db_path),
             'database_size': db_size,
@@ -1134,13 +1149,13 @@ def database_status():
             'cache_size': cache_size,
             'utilization': round((page_count - freelist_count) / page_count * 100, 2) if page_count > 0 else 0
         }
-        
+
         return jsonify({
             'success': True,
             'database_status': status_info,
             'timestamp': datetime.now().isoformat()
         })
-        
+
     except Exception as e:
         logger.error(f"Failed to get database status: {e}")
         return jsonify({
@@ -1154,7 +1169,7 @@ def setup_progress():
     try:
         from src.primary.utils.database import get_database
         db = get_database()
-        
+
         if request.method == 'GET':
             # Get current setup progress
             progress = db.get_setup_progress()
@@ -1162,23 +1177,23 @@ def setup_progress():
                 'success': True,
                 'progress': progress
             })
-        
+
         elif request.method == 'POST':
             # Save setup progress
             data = request.json
             progress_data = data.get('progress', {})
-            
+
             # Add timestamp
             progress_data['timestamp'] = datetime.now().isoformat()
-            
+
             # Save to database
             success = db.save_setup_progress(progress_data)
-            
+
             return jsonify({
                 'success': success,
                 'message': 'Setup progress saved' if success else 'Failed to save setup progress'
             })
-    
+
     except Exception as e:
         logger.error(f"Setup progress API error: {e}")
         return jsonify({
@@ -1192,14 +1207,14 @@ def clear_setup_progress():
     try:
         from src.primary.utils.database import get_database
         db = get_database()
-        
+
         success = db.clear_setup_progress()
-        
+
         return jsonify({
             'success': success,
             'message': 'Setup progress cleared' if success else 'Failed to clear setup progress'
         })
-    
+
     except Exception as e:
         logger.error(f"Clear setup progress API error: {e}")
         return jsonify({
@@ -1238,8 +1253,8 @@ def auth_status():
     This endpoint must be accessible without authentication (in bypass list).
     """
     try:
-        from src.primary.utils.database import get_database
         from src.primary.settings_manager import get_setting
+        from src.primary.utils.database import get_database
 
         db = get_database()
 

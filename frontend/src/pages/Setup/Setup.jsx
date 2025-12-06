@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchWithTimeout } from '../../api/client'
 import styles from './Setup.module.css'
@@ -14,7 +14,7 @@ async function checkSetupStatus() {
         setup_complete: data.user_exists && !data.setup_in_progress
       }
     }
-  } catch (err) {
+  } catch (_err) {
     // If we can't check status, let setup proceed
   }
   return { setup_complete: false }
@@ -36,7 +36,7 @@ const AUTH_MODES = [
 ]
 
 function Setup() {
-  const navigate = useNavigate()
+  const _navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -113,7 +113,7 @@ function Setup() {
       } else {
         setError(data.error || 'Failed to create account')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Connection error. Please try again.')
     } finally {
       setLoading(false)
@@ -136,7 +136,7 @@ function Setup() {
         setTwoFactorQR(data.qr_code_url)
       }
     } catch (err) {
-      console.error('Failed to setup 2FA:', err)
+      console.error('Failed to setup 2FA:', err) // Error logged for debugging
     }
   }
 
@@ -164,7 +164,7 @@ function Setup() {
       } else {
         setError(data.error || 'Invalid code. Please try again.')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to verify code')
     } finally {
       setLoading(false)
@@ -195,7 +195,7 @@ function Setup() {
       } else {
         setError(data.error || 'Failed to start Plex authentication')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to connect to Plex')
     }
   }
@@ -228,7 +228,7 @@ function Setup() {
             setShowPlexModal(false)
           }
         }
-      } catch (err) {
+      } catch (_err) {
         // Continue polling
       }
     }
@@ -274,7 +274,7 @@ function Setup() {
       } else {
         setError(data.error || 'Failed to save settings')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to save settings')
     } finally {
       setLoading(false)

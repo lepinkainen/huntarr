@@ -24,8 +24,8 @@ def get_configured_instances():
     # Check if instances are configured
     if "instances" in settings and isinstance(settings["instances"], list) and settings["instances"]:
 
-        for idx, instance in enumerate(settings["instances"]):
-    
+        for _idx, instance in enumerate(settings["instances"]):
+
             # Enhanced validation
             api_url = instance.get("api_url", "").strip()
             api_key = instance.get("api_key", "").strip()
@@ -41,9 +41,9 @@ def get_configured_instances():
             # Only include properly configured instances
             if is_enabled and api_url and api_key:
                 # Get the exact instance name as configured in the UI
-                instance_name = instance.get("name", "Default") 
-    
-                
+                instance_name = instance.get("name", "Default")
+
+
                 # Return only essential instance details including per-instance hunt values
                 instance_data = {
                     "instance_name": instance_name,
@@ -56,7 +56,7 @@ def get_configured_instances():
                     "air_date_delay_days": instance.get("air_date_delay_days", 0),  # Per-instance air date delay
                 }
                 instances.append(instance_data)
-    
+
             elif not is_enabled:
                 sonarr_logger.debug(f"Skipping disabled instance: {instance.get('name', 'Unnamed')}")
             else:
@@ -74,4 +74,4 @@ def get_configured_instances():
     # Use debug level to avoid spamming logs, especially with 0 instances
     return instances
 
-__all__ = ["process_missing_episodes", "process_cutoff_upgrades", "get_configured_instances"]
+__all__ = ["get_configured_instances", "process_cutoff_upgrades", "process_missing_episodes"]

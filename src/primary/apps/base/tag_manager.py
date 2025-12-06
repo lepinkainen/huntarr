@@ -13,8 +13,6 @@ Supported entity types:
 - author (Readarr)
 """
 
-import logging
-from typing import Optional
 
 from src.primary.apps.base.api_client import ArrAPIClient
 
@@ -80,7 +78,7 @@ class TagManager:
         api_key: str,
         api_timeout: int,
         tag_label: str
-    ) -> Optional[int]:
+    ) -> int | None:
         """
         Get existing tag ID or create a new tag.
 

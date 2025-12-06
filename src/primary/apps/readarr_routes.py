@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
+import logging
 
-from src.primary.state import reset_state_file, check_state_reset
-from src.primary.utils.logger import get_logger
+from flask import Blueprint, jsonify, request
+
+from src.primary import settings_manager
 from src.primary.apps.base.routes import test_connection_handler
-import traceback
 from src.primary.apps.readarr import missing, upgrade
 from src.primary.auth import get_app_url_and_key
-from src.primary import settings_manager
-import logging
+from src.primary.state import check_state_reset, reset_state_file
+from src.primary.utils.logger import get_logger
 
 logger = logging.getLogger(__name__)
 

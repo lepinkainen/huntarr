@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchWithTimeout } from '../../api/client'
 import styles from './Login.module.css'
@@ -25,14 +25,14 @@ async function checkInitialStatus() {
         return { redirect: '/' }
       }
     }
-  } catch (err) {
+  } catch (_err) {
     // If we can't check, continue to login page
   }
   return { redirect: null }
 }
 
 function Login() {
-  const navigate = useNavigate()
+  const _navigate = useNavigate()
   const [checkingStatus, setCheckingStatus] = useState(true)
 
   // Check if setup needed or already authenticated on mount
@@ -62,7 +62,7 @@ function Login() {
   const [showPlexModal, setShowPlexModal] = useState(false)
   const [showRecoveryModal, setShowRecoveryModal] = useState(false)
   const [plexPinId, setPlexPinId] = useState(null)
-  const [plexAuthUrl, setPlexAuthUrl] = useState('')
+  const [_plexAuthUrl, setPlexAuthUrl] = useState('')
   const [plexChecking, setPlexChecking] = useState(false)
   // Use ref for popup window so we can close it synchronously
   const plexWindowRef = useRef(null)
@@ -105,7 +105,7 @@ function Login() {
       } else {
         setError(data.error || 'Login failed')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Connection error. Please try again.')
     } finally {
       setLoading(false)
@@ -142,7 +142,7 @@ function Login() {
         setError(data.error || 'Failed to start Plex authentication')
         setPlexChecking(false)
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to connect to Plex')
       setPlexChecking(false)
     }
@@ -185,7 +185,7 @@ function Login() {
             setPlexChecking(false)
           }
         }
-      } catch (err) {
+      } catch (_err) {
         // Continue polling
       }
     }
@@ -252,7 +252,7 @@ function Login() {
       } else {
         setRecoveryError(data.error || 'Invalid recovery key')
       }
-    } catch (err) {
+    } catch (_err) {
       setRecoveryError('Failed to verify recovery key')
     } finally {
       setRecoveryLoading(false)
@@ -295,7 +295,7 @@ function Login() {
       } else {
         setRecoveryError(data.error || 'Failed to reset password')
       }
-    } catch (err) {
+    } catch (_err) {
       setRecoveryError('Failed to reset password')
     } finally {
       setRecoveryLoading(false)

@@ -5,10 +5,9 @@ Handles cross-platform path resolution for Docker, Windows, and macOS
 """
 
 import os
-import sys
 import pathlib
-import tempfile
 import platform
+import tempfile
 import time
 
 # Determine operating system
@@ -35,13 +34,13 @@ CONFIG_PATH = pathlib.Path(CONFIG_DIR)
 # Try to create the directory if it doesn't exist
 try:
     CONFIG_PATH.mkdir(parents=True, exist_ok=True)
-    
+
     # Define only the directories we actually use
     LOG_DIR = CONFIG_PATH / "logs"
-    
+
     # Create essential directories
     LOG_DIR.mkdir(exist_ok=True)
-    
+
     print(f"Using configuration directory: {CONFIG_DIR}")
     # Check write permissions with a test file
     test_file = CONFIG_PATH / f"write_test_{int(time.time())}.tmp"
@@ -50,20 +49,20 @@ try:
     if test_file.exists():
         test_file.unlink()  # Remove the test file
 except Exception as e:
-    print(f"Warning: Could not create or write to config directory at {CONFIG_DIR}: {str(e)}")
+    print(f"Warning: Could not create or write to config directory at {CONFIG_DIR}: {e!s}")
     # Fall back to temp directory as last resort
     temp_base = tempfile.gettempdir()
     CONFIG_DIR = os.path.join(temp_base, f"huntarr_config_{os.getpid()}")
     CONFIG_PATH = pathlib.Path(CONFIG_DIR)
     CONFIG_PATH.mkdir(parents=True, exist_ok=True)
     print(f"Using temporary config directory: {CONFIG_DIR}")
-    
+
     # Also write to desktop log for visibility in case of issues
     try:
         desktop_log = os.path.expanduser("~/Desktop/huntarr_error.log")
         with open(desktop_log, "a") as f:
             f.write(f"\nUsing temporary config directory: {CONFIG_DIR}\n")
-            f.write(f"Original error accessing primary config: {str(e)}\n")
+            f.write(f"Original error accessing primary config: {e!s}\n")
     except OSError:
         pass  # Silently ignore if we can't write to desktop
 
@@ -75,7 +74,7 @@ for dir_path in [LOG_DIR]:
     try:
         dir_path.mkdir(parents=True, exist_ok=True)
     except Exception as e:
-        print(f"Warning: Could not create directory {dir_path}: {str(e)}")
+        print(f"Warning: Could not create directory {dir_path}: {e!s}")
 
 # Set environment variables for backwards compatibility
 os.environ["HUNTARR_CONFIG_DIR"] = str(CONFIG_PATH)

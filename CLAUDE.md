@@ -184,3 +184,46 @@ SELECT * FROM settings WHERE app_name='sonarr';
 - **Subpath deployment breaks**: Ensure all frontend URLs are relative (`./api/` not `/api/`)
 - **Database errors**: Always use `get_database()` from `src/primary/utils/database.py`, never direct SQLite
 - **Settings not persisting**: Check database exists: `docker exec huntarr ls -la /config/huntarr.db`
+
+## Code Quality & Linting
+
+### Python (Ruff)
+```bash
+# Run linter
+source .venv/bin/activate
+ruff check src main.py
+
+# Auto-fix issues
+ruff check src main.py --fix
+
+# Format code
+ruff format src main.py
+```
+
+Configuration in `pyproject.toml`. Key rules enabled:
+- E/W: pycodestyle (style)
+- F: Pyflakes (errors)
+- I: isort (imports)
+- B: flake8-bugbear (common bugs)
+- UP: pyupgrade (modernize syntax)
+
+### React Frontend (ESLint)
+```bash
+cd frontend
+npm run lint        # Check for issues
+npm run lint:fix    # Auto-fix issues
+```
+
+Configuration in `frontend/eslint.config.js`.
+
+### Pre-commit Hooks
+```bash
+# Install hooks (first time)
+pip install pre-commit
+pre-commit install
+
+# Run manually on all files
+pre-commit run --all-files
+```
+
+Configuration in `.pre-commit-config.yaml`.

@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
 
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-
-from src.primary.state import reset_state_file, check_state_reset
-from src.primary.utils.logger import get_logger, APP_LOG_FILES
-from src.primary.settings_manager import load_settings, get_ssl_verify_setting
-from src.primary.apps.base.routes import eros_test_connection_handler
-import traceback
+import logging
 import socket
 from urllib.parse import urlparse
-from src.primary.apps.eros import api as eros_api
-from src.primary.apps.eros import get_configured_instances
-from src.primary.apps.eros import missing, upgrade
-from src.primary.auth import get_app_url_and_key
+
+import requests
+from flask import Blueprint, jsonify, request
+
 from src.primary import settings_manager
-import logging
+from src.primary.apps.base.routes import eros_test_connection_handler
+from src.primary.apps.eros import get_configured_instances, missing, upgrade
+from src.primary.auth import get_app_url_and_key
+from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.state import check_state_reset, reset_state_file
+
 # Import centralized path configuration
-from src.primary.utils.config_paths import CONFIG_PATH
+from src.primary.utils.logger import get_logger
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +125,7 @@ def test_connection_internal(url, api_key):
         eros_logger.error(error_msg)
         return {"success": False, "message": error_msg}
     except Exception as e:
-        eros_logger.debug(f"Socket test error, continuing with full request: {str(e)}")
+        eros_logger.debug(f"Socket test error, continuing with full request: {e!s}")
 
     # For Eros, we only use v3 API path
     api_url = f"{url.rstrip('/')}/api/v3/system/status"
@@ -155,11 +153,11 @@ def test_connection_internal(url, api_key):
         else:
             return {"success": False, "message": f"Eros server error (HTTP {response.status_code})"}
     except requests.exceptions.ConnectionError as e:
-        return {"success": False, "message": f"Connection error: {str(e)}"}
+        return {"success": False, "message": f"Connection error: {e!s}"}
     except requests.exceptions.Timeout:
         return {"success": False, "message": "Connection timed out"}
     except Exception as e:
-        return {"success": False, "message": f"Unexpected error: {str(e)}"}
+        return {"success": False, "message": f"Unexpected error: {e!s}"}
 
 @eros_bp.route('/status', methods=['GET'])
 def get_status():
@@ -182,7 +180,7 @@ def get_status():
             eros_logger.debug("No Eros instances configured")
             return jsonify({"configured": False, "connected": False})
     except Exception as e:
-        eros_logger.error(f"Error getting Eros status: {str(e)}")
+        eros_logger.error(f"Error getting Eros status: {e!s}")
         return jsonify({"configured": False, "connected": False, "error": str(e)})
 
 @eros_bp.route('/test-connection', methods=['POST'])
@@ -195,7 +193,7 @@ def test_eros_settings():
     """Debug endpoint to test Eros settings loading from database"""
     try:
         results = {}
-        
+
         # Load settings from database via settings_manager
         try:
             from src.primary.settings_manager import load_settings
@@ -204,9 +202,9 @@ def test_eros_settings():
             results["configured"] = bool(settings.get("url") and settings.get("api_key"))
         except Exception as e:
             results["database_error"] = str(e)
-            
+
         results["note"] = "Settings are now stored in database. Legacy JSON files are no longer used."
-            
+
         return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e)})
@@ -218,11 +216,11 @@ def reset_processed_state():
         # Reset the state files for missing and upgrades
         reset_state_file("eros", "processed_missing")
         reset_state_file("eros", "processed_upgrades")
-        
+
         eros_logger.info("Successfully reset Eros processed state files")
         return jsonify({"success": True, "message": "Successfully reset processed state"})
     except Exception as e:
-        error_msg = f"Error resetting Eros state: {str(e)}"
+        error_msg = f"Error resetting Eros state: {e!s}"
         eros_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500
 

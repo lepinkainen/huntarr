@@ -1,0 +1,94 @@
+[project]
+name = "huntarr"
+version = "1.0.0"
+description = "Media automation tool for *arr applications"
+requires-python = ">=3.10"
+
+[tool.ruff]
+# Target Python 3.10+
+target-version = "py310"
+
+# Line length matches common standards
+line-length = 120
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".pytest_cache",
+    "*.pyc",
+    "node_modules",
+    "frontend",
+    "data",
+]
+
+[tool.ruff.lint]
+# Enable common rule sets
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+    "RUF",    # Ruff-specific rules
+]
+
+# Ignore rules that are too noisy or conflict with project style
+ignore = [
+    "E501",   # Line too long - handled by formatter
+    "B008",   # Do not perform function calls in argument defaults
+    "B905",   # zip without strict
+    "SIM102", # Use a single if statement instead of nested if statements
+    "SIM108", # Use ternary operator - can reduce readability
+    "RUF012", # Mutable class attributes should be annotated with typing.ClassVar
+]
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.isort]
+# Force single line imports
+force-single-line = false
+# Group local imports separately
+known-first-party = ["src"]
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+# Indent with spaces
+indent-style = "space"
+# Respect magic trailing commas
+skip-magic-trailing-comma = false
+
+[tool.pyright]
+# Type checking configuration
+include = ["src", "main.py"]
+exclude = [
+    ".venv",
+    "venv",
+    "__pycache__",
+    "frontend",
+    "data",
+]
+pythonVersion = "3.10"
+pythonPlatform = "Linux"
+
+# Type checking mode - basic is less strict, good for gradual adoption
+typeCheckingMode = "basic"
+
+# Report settings for gradual adoption
+reportMissingImports = "warning"
+reportMissingTypeStubs = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportGeneralTypeIssues = "warning"
+reportOptionalMemberAccess = "warning"
+reportOptionalSubscript = "warning"
+reportPrivateUsage = "warning"

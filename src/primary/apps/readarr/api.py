@@ -7,18 +7,20 @@ This module has been refactored to use the base API client, tag manager,
 and pagination helpers to eliminate code duplication across *arr apps.
 """
 
-import requests
+import importlib
 import json
-import time
 import random
-from typing import List, Dict, Any, Optional, Union
+import time
+from typing import Any
+
+import requests
 
 # Import base modules for shared functionality
 from src.primary.apps.base.api_client import ArrAPIClient
+from src.primary.apps.base.pagination import PaginationHelper
 from src.primary.apps.base.tag_manager import TagManager
-from src.primary.apps.base.pagination import PaginationHelper, readarr_monitored_filter
+from src.primary.settings_manager import get_ssl_verify_setting
 from src.primary.utils.logger import get_logger
-from src.primary.settings_manager import load_settings, get_ssl_verify_setting
 
 # Get app-specific logger
 logger = get_logger("readarr")
@@ -42,7 +44,7 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
     """
     return _api_client.check_connection(api_url, api_key, api_timeout)
 
-def get_download_queue_size(api_url: str = None, api_key: str = None, timeout: int = 30) -> int:
+def get_download_queue_size(api_url: str | None = None, api_key: str | None = None, timeout: int = 30) -> int:
     """
     Get the current size of the download queue.
 
@@ -64,15 +66,15 @@ def get_download_queue_size(api_url: str = None, api_key: str = None, timeout: i
         logger.error(f"Error getting download queue size: {e}")
         return 0
 
-def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type: str = "readarr",
-                api_url: str = None, api_key: str = None, api_timeout: int = None, 
-                params: Dict = None, instance_data: Dict = None, count_api: bool = True) -> Any:
+def arr_request(endpoint: str, method: str = "GET", data: dict | None = None, app_type: str = "readarr",
+                api_url: str | None = None, api_key: str | None = None, api_timeout: int | None = None,
+                params: dict | None = None, instance_data: dict | None = None, count_api: bool = True) -> Any:
     """
     Make a request to the Readarr API.
-    
+
     This function handles making API requests to Readarr, with automatic
     instance detection or manual override of API details.
-    
+
     Args:
         endpoint: The API endpoint to call (relative path)
         method: HTTP method (GET, POST, PUT, DELETE)
@@ -83,13 +85,13 @@ def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type:
         api_timeout: Optional timeout override
         params: Optional query parameters
         instance_data: Optional specific instance data to use
-        
+
     Returns:
         The parsed JSON response or None if the request failed
     """
     # Initialize logger
     logger = get_logger(app_type)
-    
+
     # Try to get instance data if not provided directly
     if not instance_data and not (api_url and api_key):
         # Import at function level to avoid circular imports
@@ -103,7 +105,7 @@ def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type:
                     instance_data = instances[0]
         except (ImportError, AttributeError) as e:
             logger.error(f"Error importing module for {app_type}: {e}")
-    
+
     # Get the API details - either from instance_data, direct parameters, or by loading settings
     if instance_data:
         # Instance data directly provided or loaded above
@@ -126,40 +128,40 @@ def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type:
         except Exception as e:
             logger.error(f"Error loading {app_type} settings: {e}")
             return None
-    
+
     # Validate the required parameters
     if not url or not key:
         logger.error(f"Missing API URL or key for {app_type}")
         return None
-    
+
     # Normalize the URL
     url = url.rstrip('/')
-    
+
     # Ensure endpoint starts correctly
     endpoint = endpoint.lstrip('/')
-    
+
     # API version path - different for each app
     api_version = "v1"  # Default for Readarr
-    
+
     # Construct the full URL
     full_url = f"{url}/api/{api_version}/{endpoint}"
-    
+
     # Set up headers
     headers = {
         "X-Api-Key": key,
         "Content-Type": "application/json",
         "User-Agent": f"Huntarr/1.0 ({app_type})"
     }
-    
+
     # Get SSL verification setting
     verify_ssl = get_ssl_verify_setting()
-    
+
     if not verify_ssl:
         logger.debug("SSL verification disabled by user setting")
-    
+
     # Log the request
     logger.debug(f"Making {method} request to {full_url}")
-    
+
     # Make the request with appropriate method
     try:
         if method.upper() == "GET":
@@ -173,10 +175,10 @@ def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type:
         else:
             logger.error(f"Unsupported HTTP method: {method}")
             return None
-        
+
         # Check for errors
         response.raise_for_status()
-        
+
         # Increment API counter only if count_api is True and request was successful
         if count_api:
             try:
@@ -184,20 +186,20 @@ def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type:
                 increment_hourly_cap("readarr")
             except Exception as e:
                 logger.warning(f"Failed to increment API counter for readarr: {e}")
-        
+
         # Parse JSON response
         if response.text:
             return response.json()
         return {}
-        
+
     except requests.exceptions.RequestException as e:
         logger.error(f"API request failed: {e}")
         return None
 
-def get_books_with_missing_files() -> List[Dict]:
+def get_books_with_missing_files() -> list[dict]:
     """
     Get a list of books with missing files (not downloaded/available).
-    
+
     Returns:
         A list of book objects with missing files
     """
@@ -205,26 +207,26 @@ def get_books_with_missing_files() -> List[Dict]:
     books = arr_request("book", count_api=False)
     if not books:
         return []
-    
+
     # Filter for books with missing files
     missing_books = []
     for book in books:
         # Check if book is monitored and doesn't have a file
         if book.get("monitored", False) and not book.get("bookFile", None):
             missing_books.append(book)
-    
+
     return missing_books
 
-def get_cutoff_unmet_books(api_url: Optional[str] = None, api_key: Optional[str] = None, api_timeout: Optional[int] = None) -> List[Dict]:
+def get_cutoff_unmet_books(api_url: str | None = None, api_key: str | None = None, api_timeout: int | None = None) -> list[dict]:
     """
     Get a list of books that don't meet their quality profile cutoff.
     Accepts optional API credentials.
-    
+
     Args:
         api_url: Optional API URL
         api_key: Optional API key
         api_timeout: Optional API timeout
-        
+
     Returns:
         A list of book objects that need quality upgrades
     """
@@ -234,10 +236,10 @@ def get_cutoff_unmet_books(api_url: Optional[str] = None, api_key: Optional[str]
     books = arr_request(f"wanted/cutoff?{params}", api_url=api_url, api_key=api_key, api_timeout=api_timeout, count_api=False)
     if not books or "records" not in books:
         return []
-    
+
     return books.get("records", [])
 
-def get_wanted_missing_books(api_url: str, api_key: str, api_timeout: int, monitored_only: bool = True) -> List[Dict]:
+def get_wanted_missing_books(api_url: str, api_key: str, api_timeout: int, monitored_only: bool = True) -> list[dict]:
     """
     Get wanted/missing books from Readarr, handling pagination.
 
@@ -306,18 +308,18 @@ def get_wanted_missing_books(api_url: str, api_key: str, api_timeout: int, monit
     logger.info(f"Successfully fetched {len(all_missing_books)} missing books from Readarr.")
     return all_missing_books
 
-def get_wanted_missing_books_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> List[Dict]:
+def get_wanted_missing_books_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> list[dict]:
     """
     Get a specified number of random missing books by selecting a random page.
     This is much more efficient for very large libraries.
-    
+
     Args:
         api_url: The base URL of the Readarr API
         api_key: The API key for authentication
         api_timeout: Timeout for the API request
         monitored_only: Whether to include only monitored books
         count: How many books to return
-        
+
     Returns:
         A list of randomly selected missing books, up to the requested count
     """
@@ -325,78 +327,78 @@ def get_wanted_missing_books_random_page(api_url: str, api_key: str, api_timeout
     page_size = 100  # Smaller page size for better performance
     retries = 2
     retry_delay = 3
-    
+
     # Ensure api_url is properly formatted
     if not (api_url.startswith('http://') or api_url.startswith('https://')):
         logger.error(f"Invalid URL format: {api_url}")
         return []
     base_url = api_url.rstrip('/')
     url = f"{base_url}/api/v1/{endpoint.lstrip('/')}"
-    
+
     # Add User-Agent header to identify Huntarr
     headers = {
         "X-Api-Key": api_key,
         "User-Agent": "Huntarr/1.0 (https://huntarr.io)",
         "Content-Type": "application/json"
     }
-    
+
     # First, make a request to get just the total record count (page 1 with size=1)
     params = {
         'page': 1,
         'pageSize': 1
     }
-    
+
     for attempt in range(retries + 1):
         try:
             # Get total record count from a minimal query
             logger.debug(f"Getting missing books count (attempt {attempt+1}/{retries+1})")
             response = requests.get(url, headers=headers, params=params, timeout=api_timeout)
             response.raise_for_status()
-            
+
             if not response.content:
                 logger.warning(f"Empty response when getting missing count (attempt {attempt+1})")
                 if attempt < retries:
                     time.sleep(retry_delay)
                     continue
                 return []
-                
+
             try:
                 data = response.json()
                 total_records = data.get('totalRecords', 0)
-                
+
                 if total_records == 0:
                     logger.info("No missing books found in Readarr.")
                     return []
-                    
+
                 # Calculate total pages with our desired page size
                 total_pages = (total_records + page_size - 1) // page_size
                 logger.info(f"Found {total_records} total missing books across {total_pages} pages")
-                
+
                 if total_pages == 0:
                     return []
-                    
+
                 # Select a random page
                 random_page = random.randint(1, total_pages)
                 logger.info(f"Selected random page {random_page} of {total_pages} for missing books")
-                
+
                 # Get books from the random page
                 params = {
                     'page': random_page,
                     'pageSize': page_size
                 }
-                
+
                 response = requests.get(url, headers=headers, params=params, timeout=api_timeout)
                 response.raise_for_status()
-                
+
                 if not response.content:
                     logger.warning(f"Empty response when getting missing books page {random_page}")
                     return []
-                    
+
                 try:
                     data = response.json()
                     records = data.get('records', [])
                     logger.info(f"Retrieved {len(records)} missing books from page {random_page}")
-                    
+
                     # Apply monitored filter if requested (Readarr API may not support this directly)
                     if monitored_only:
                         filtered_records = [
@@ -405,7 +407,7 @@ def get_wanted_missing_books_random_page(api_url: str, api_key: str, api_timeout
                         ]
                         logger.debug(f"Filtered to {len(filtered_records)} monitored missing books")
                         records = filtered_records
-                    
+
                     # Select random books from this page
                     if len(records) > count:
                         selected_records = random.sample(records, count)
@@ -415,50 +417,50 @@ def get_wanted_missing_books_random_page(api_url: str, api_key: str, api_timeout
                         # If we have fewer books than requested, return all of them
                         logger.debug(f"Returning all {len(records)} missing books from page {random_page} (fewer than requested {count})")
                         return records
-                        
+
                 except json.JSONDecodeError as jde:
-                    logger.error(f"Failed to decode JSON response for missing books page {random_page}: {str(jde)}")
+                    logger.error(f"Failed to decode JSON response for missing books page {random_page}: {jde!s}")
                     if attempt < retries:
                         time.sleep(retry_delay)
                         continue
                     return []
-                    
+
             except json.JSONDecodeError as jde:
-                logger.error(f"Failed to decode JSON response for missing books count: {str(jde)}")
+                logger.error(f"Failed to decode JSON response for missing books count: {jde!s}")
                 if attempt < retries:
                     time.sleep(retry_delay)
                     continue
                 return []
-                
+
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting missing books from Readarr (attempt {attempt+1}): {str(e)}")
+            logger.error(f"Error getting missing books from Readarr (attempt {attempt+1}): {e!s}")
             if attempt < retries:
                 time.sleep(retry_delay)
                 continue
             return []
-            
+
         except Exception as e:
-            logger.error(f"Unexpected error getting missing books (attempt {attempt+1}): {str(e)}", exc_info=True)
+            logger.error(f"Unexpected error getting missing books (attempt {attempt+1}): {e!s}", exc_info=True)
             if attempt < retries:
                 time.sleep(retry_delay)
                 continue
             return []
-    
+
     # If we get here, all retries failed
     logger.error("All attempts to get missing books failed")
     return []
 
-def refresh_author(author_id: int, api_url: Optional[str] = None, api_key: Optional[str] = None, api_timeout: Optional[int] = None) -> bool:
+def refresh_author(author_id: int, api_url: str | None = None, api_key: str | None = None, api_timeout: int | None = None) -> bool:
     """
     Refresh functionality has been removed as it was a performance bottleneck.
     This function now returns a success value without making any API calls.
-    
+
     Args:
         author_id: The ID of the author to refresh
         api_url: Optional API URL
         api_key: Optional API key
         api_timeout: Optional API timeout
-        
+
     Returns:
         Always returns True to simulate success
     """
@@ -466,17 +468,17 @@ def refresh_author(author_id: int, api_url: Optional[str] = None, api_key: Optio
     # Always return success without making any API calls
     return True
 
-def book_search(book_ids: List[int], api_url: Optional[str] = None, api_key: Optional[str] = None, api_timeout: Optional[int] = None) -> bool:
+def book_search(book_ids: list[int], api_url: str | None = None, api_key: str | None = None, api_timeout: int | None = None) -> bool:
     """
     Trigger a search for one or more books.
     Accepts optional API credentials.
-    
+
     Args:
         book_ids: A list of book IDs to search for
         api_url: Optional API URL
         api_key: Optional API key
         api_timeout: Optional API timeout
-        
+
     Returns:
         True if the search command was successful, False otherwise
     """
@@ -485,14 +487,14 @@ def book_search(book_ids: List[int], api_url: Optional[str] = None, api_key: Opt
         "name": "BookSearch",
         "bookIds": book_ids
     }
-    
+
     # Pass credentials to arr_request
     response = arr_request(endpoint, method="POST", data=data, api_url=api_url, api_key=api_key, api_timeout=api_timeout, count_api=False)
     # Return the response object (contains command ID) instead of just True/False
     # The calling function expects the command object now.
-    return response 
+    return response
 
-def get_author_details(api_url: str, api_key: str, author_id: int, api_timeout: int = 120) -> Optional[Dict]:
+def get_author_details(api_url: str, api_key: str, author_id: int, api_timeout: int = 120) -> dict | None:
     """Fetches details for a specific author from the Readarr API."""
     endpoint = f"{api_url}/api/v1/author/{author_id}"
     headers = {'X-Api-Key': api_key}
@@ -509,9 +511,9 @@ def get_author_details(api_url: str, api_key: str, author_id: int, api_timeout: 
         logger.error(f"An unexpected error occurred fetching author details for ID {author_id}: {e}")
         return None
 
-def search_books(api_url: str, api_key: str, book_ids: List[int], api_timeout: int = 120) -> Optional[Dict]:
+def search_books(api_url: str, api_key: str, book_ids: list[int], api_timeout: int = 120) -> dict | None:
     """Triggers a search for specific book IDs in Readarr."""
-    
+
     # Check API limit before making request
     try:
         from src.primary.stats_manager import check_hourly_cap_exceeded
@@ -521,7 +523,7 @@ def search_books(api_url: str, api_key: str, book_ids: List[int], api_timeout: i
     except Exception as e:
         logger.error(f"Error checking hourly API cap: {e}")
         # Continue with request if cap check fails - safer than skipping
-    
+
     endpoint = f"{api_url}/api/v1/command" # This uses the full URL, not arr_request
     headers = {'X-Api-Key': api_key}
     payload = {
@@ -535,7 +537,7 @@ def search_books(api_url: str, api_key: str, book_ids: List[int], api_timeout: i
         command_data = response.json()
         command_id = command_data.get('id')
         logger.info(f"Successfully triggered BookSearch command for book IDs: {book_ids}. Command ID: {command_id}")
-        
+
         # Increment API counter after successful request
         try:
             from src.primary.stats_manager import increment_hourly_cap
@@ -543,7 +545,7 @@ def search_books(api_url: str, api_key: str, book_ids: List[int], api_timeout: i
             logger.debug(f"Incremented Readarr hourly API cap for book search ({len(book_ids)} books)")
         except Exception as cap_error:
             logger.error(f"Failed to increment hourly API cap for book search: {cap_error}")
-        
+
         return command_data # Return the full command object which includes the ID
     except requests.exceptions.RequestException as e:
         logger.error(f"Error triggering BookSearch command for book IDs {book_ids} via {endpoint}: {e}")
@@ -552,7 +554,7 @@ def search_books(api_url: str, api_key: str, book_ids: List[int], api_timeout: i
         logger.error(f"An unexpected error occurred triggering BookSearch for book IDs {book_ids}: {e}")
         return None
 
-def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> Optional[int]:
+def get_or_create_tag(api_url: str, api_key: str, api_timeout: int, tag_label: str) -> int | None:
     """
     Get existing tag ID or create a new tag in Readarr.
 
@@ -578,7 +580,7 @@ def tag_processed_author(api_url: str, api_key: str, api_timeout: int, author_id
     """
     return _tag_manager.tag_processed_entity(api_url, api_key, api_timeout, author_id, tag_label)
 
-def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> Optional[List[Dict]]:
+def get_quality_profiles(api_url: str, api_key: str, api_timeout: int) -> list[dict] | None:
     """
     Get all quality profiles configured in Readarr.
 

@@ -1,6 +1,8 @@
 import socket
 from urllib.parse import urlparse
+
 from src.primary.config import API_URL
+
 
 def get_ip_address():
     try:
@@ -14,7 +16,7 @@ def get_ip_address():
             hostname = socket.gethostname()
             ip = socket.gethostbyname(hostname)
             return ip
-        except (socket.error, socket.herror, socket.gaierror, socket.timeout):
+        except (TimeoutError, OSError, socket.herror, socket.gaierror):
             return "localhost"
 
 def _get_user_timezone():
@@ -28,15 +30,15 @@ def _get_user_timezone():
 
 def write_log(log_file, message):
     from datetime import datetime
-    
+
     # Use user's selected timezone
     user_tz = _get_user_timezone()
     now = datetime.now(user_tz)
     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-    
+
     # Add timezone information
     timezone_name = str(user_tz)
     timestamp_with_tz = f"{timestamp} {timezone_name}"
-    
+
     with open(log_file, 'a') as f:
         f.write(f"{timestamp_with_tz} - {message}\n")

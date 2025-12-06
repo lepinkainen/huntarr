@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../../api/client'
 import styles from './Settings.module.css'
 
@@ -58,6 +58,7 @@ function UserSettings() {
         clearInterval(plexPollingRef.current)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadUserInfo = async () => {

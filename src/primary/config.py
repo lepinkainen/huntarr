@@ -6,12 +6,12 @@ and perform configuration-related tasks like logging.
 Removes the old concept of loading a single app's config into global constants.
 """
 
-import os
-import sys
 import logging
+import sys
 import traceback
+
 from src.primary import settings_manager
-from src.primary.utils.logger import logger, get_logger # Import get_logger
+from src.primary.utils.logger import get_logger, logger  # Import get_logger
 
 # Removed global constants like APP_TYPE, API_URL, API_KEY, SLEEP_DURATION etc.
 # Settings should be fetched directly using settings_manager when needed.
@@ -45,10 +45,10 @@ def determine_hunt_mode(app_name: str) -> str:
         # Use hunt_missing_items instead of hunt_missing_albums
         hunt_missing = settings_manager.get_setting(app_name, "hunt_missing_items", 0)
         # Use hunt_upgrade_items instead of hunt_upgrade_albums
-        hunt_upgrade = settings_manager.get_setting(app_name, "hunt_upgrade_items", 0) 
-        
+        hunt_upgrade = settings_manager.get_setting(app_name, "hunt_upgrade_items", 0)
+
         # For Lidarr, also include the hunt_missing_mode
-        hunt_missing_mode = settings_manager.get_setting(app_name, "hunt_missing_mode", "artist")
+        settings_manager.get_setting(app_name, "hunt_missing_mode", "artist")
     elif app_name == "readarr":
         hunt_missing = settings_manager.get_setting(app_name, "hunt_missing_books", 0)
         hunt_upgrade = settings_manager.get_setting(app_name, "hunt_upgrade_books", 0)
@@ -67,7 +67,7 @@ def determine_hunt_mode(app_name: str) -> str:
         return "disabled"
 
 # Configure logging level based on an app's debug setting
-def configure_logging(app_name: str = None):
+def configure_logging(app_name: str | None = None):
     """Configure logging level based on the debug setting of a specific app or globally."""
     try:
         debug_mode = get_debug_mode()
@@ -99,11 +99,11 @@ def configure_logging(app_name: str = None):
         #     handler.setLevel(level)
 
     except Exception as e:
-        print(f"CRITICAL ERROR in configure_logging for app '{app_name}': {str(e)}", file=sys.stderr)
+        print(f"CRITICAL ERROR in configure_logging for app '{app_name}': {e!s}", file=sys.stderr)
         print(f"Traceback: {traceback.format_exc()}", file=sys.stderr)
         # Try to log it anyway
         if logger:
-            logger.error(f"Error in configure_logging for app '{app_name}': {str(e)}")
+            logger.error(f"Error in configure_logging for app '{app_name}': {e!s}")
             logger.error(traceback.format_exc())
         # Decide whether to raise or continue
         # raise

@@ -16,7 +16,7 @@ function Layout({ children }) {
     try {
       await fetchWithTimeout('/logout', { method: 'POST' })
       window.location.href = '/login'
-    } catch (err) {
+    } catch (_err) {
       // Still redirect on error
       window.location.href = '/login'
     }

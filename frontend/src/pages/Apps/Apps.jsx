@@ -276,7 +276,7 @@ function AppSection({ appName }) {
   const isConnected = status.connected_count > 0
 
   // Separate connection fields from settings fields for instances
-  const connectionFields = instanceFields.filter(f =>
+  const _connectionFields = instanceFields.filter(f =>
     ['name', 'api_url', 'api_key', 'external_url', 'enabled'].includes(f.name)
   )
   const instanceSettingsFields = instanceFields.filter(f =>

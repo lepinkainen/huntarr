@@ -4,60 +4,61 @@ Web server for Huntarr
 Provides a web interface to view logs in real-time, manage settings, and includes authentication
 """
 
-import os
-import datetime
-import time
-from threading import Lock
-from primary.utils.logger import LOG_DIR, APP_LOG_FILES, MAIN_LOG_FILE # Import log constants
-from primary import settings_manager # Import settings_manager
-from src.primary.stateful_manager import update_lock_expiration # Import stateful update function
+import importlib  # Added import
 
 # import socket # No longer used
-import json
+import logging
+import os
+
 # import signal # No longer used for reload
 import sys
-import qrcode
-import pyotp
-import logging
-import threading
-import importlib # Added import
-import requests
-from flask import Flask, request, jsonify, Response, send_from_directory, redirect, url_for, session, stream_with_context, Blueprint, current_app, g, make_response
+from threading import Lock
+
+from flask import (
+    Flask,
+    jsonify,
+    request,
+    send_from_directory,
+)
+
 # from src.primary.config import API_URL # No longer needed directly
-# Use only settings_manager
+# Use settings_manager from src.primary
 from src.primary import settings_manager
-from src.primary.utils.logger import setup_main_logger, get_logger, LOG_DIR, update_logging_levels # Import get_logger, LOG_DIR, and update_logging_levels
+
+# Import blueprints for each app from the centralized blueprints module
+from src.primary.apps.blueprints import eros_bp, lidarr_bp, radarr_bp, readarr_bp, sonarr_bp, whisparr_bp
+
 # Clean logging is now database-only
 from src.primary.auth import (
-    authenticate_request, user_exists, create_user, verify_user, create_session,
-    logout, SESSION_COOKIE_NAME, is_2fa_enabled, generate_2fa_secret,
-    verify_2fa_code, disable_2fa, change_username, change_password,
-    create_plex_pin, check_plex_pin, verify_plex_token, create_user_with_plex,
-    link_plex_account, verify_plex_user
+    SESSION_COOKIE_NAME,
+    authenticate_request,
+    user_exists,
 )
+
 # Import blueprint for common routes
 from src.primary.routes.common import common_bp
-from src.primary.routes.plex_auth_routes import plex_auth_bp
-# Import blueprints for each app from the centralized blueprints module
-from src.primary.apps.blueprints import sonarr_bp, radarr_bp, lidarr_bp, readarr_bp, whisparr_bp, eros_bp
-
-# Import stateful blueprint
-from src.primary.stateful_routes import stateful_api
 
 # Import history blueprint
 from src.primary.routes.history_routes import history_blueprint
 
+# Import log routes blueprint
+from src.primary.routes.log_routes import log_routes_bp
+from src.primary.routes.plex_auth_routes import plex_auth_bp
+
 # Import scheduler blueprint
 from src.primary.routes.scheduler_routes import scheduler_api
+from src.primary.stateful_manager import update_lock_expiration  # Import stateful update function
+
+# Import stateful blueprint
+from src.primary.stateful_routes import stateful_api
+from src.primary.utils.logger import (  # Import get_logger, LOG_DIR, and update_logging_levels
+    LOG_DIR,
+    get_logger,
+    update_logging_levels,
+)
 
 # Import backup blueprint
 from src.routes.backup_routes import backup_bp
-
-# Import log routes blueprint
-from src.primary.routes.log_routes import log_routes_bp
-
-# Import background module to trigger manual cycle resets
-from src.primary import background
 
 # Disable Flask default logging
 log = logging.getLogger('werkzeug')
@@ -74,7 +75,7 @@ if getattr(sys, 'frozen', False):
         os.path.join(base_path, 'frontend', 'templates'),                       # Alternate structure
         os.path.join(os.path.dirname(base_path), 'Resources', 'frontend', 'templates') # Mac app bundle with different path
     ]
-    
+
     # Find the first existing templates directory
     template_dir = None
     for candidate in template_candidates:
@@ -88,7 +89,7 @@ if getattr(sys, 'frozen', False):
                 break
             else:
                 print(f"Warning: setup.html not found in {template_dir}")
-    
+
     # Similar approach for static files
     static_candidates = [
         os.path.join(base_path, 'static'),
@@ -96,7 +97,7 @@ if getattr(sys, 'frozen', False):
         os.path.join(base_path, 'frontend', 'static'),
         os.path.join(os.path.dirname(base_path), 'Resources', 'frontend', 'static')
     ]
-    
+
     # Find the first existing static directory
     static_dir = None
     for candidate in static_candidates:
@@ -105,12 +106,12 @@ if getattr(sys, 'frozen', False):
             static_dir = candidate_path
             print(f"Found valid static directory: {static_dir}")
             break
-    
+
     # If no valid directories found, use defaults
     if not template_dir:
         template_dir = os.path.join(base_path, 'templates')
         print(f"Warning: Using default template dir: {template_dir}")
-    
+
     if not static_dir:
         static_dir = os.path.join(base_path, 'static')
         print(f"Warning: Using default static dir: {static_dir}")
@@ -159,7 +160,7 @@ def get_base_url():
     """
     Get the configured base URL from general settings.
     This allows Huntarr to run under a subpath like /huntarr when behind a reverse proxy.
-    
+
     Returns:
         str: The configured base URL (e.g., '/huntarr') or empty string if not configured
     """
@@ -180,7 +181,8 @@ def get_base_url():
 base_url = ''
 
 # Check for Windows platform and integrate Windows-specific helpers
-import platform
+import platform  # noqa: E402 - intentionally late for initialization order
+
 if platform.system() == "Windows":
     # Import Windows integration module for startup support
     try:
@@ -191,8 +193,8 @@ if platform.system() == "Windows":
         print(f"Error integrating Windows helpers: {e}")
 
 # Create Flask app with additional debug logging
-app = Flask(__name__, 
-             template_folder=template_dir, 
+app = Flask(__name__,
+             template_folder=template_dir,
              static_folder=static_dir,
              static_url_path='/static')
 
@@ -239,7 +241,7 @@ def debug_template_rendering():
     """Additional logging for Flask template rendering"""
     app.jinja_env.auto_reload = True
     orig_get_source = app.jinja_env.loader.get_source
-    
+
     def get_source_wrapper(environment, template):
         try:
             result = orig_get_source(environment, template)
@@ -255,14 +257,14 @@ def debug_template_rendering():
                     print(f"Using alternative loader: {type(environment.loader).__name__}")
             except Exception as loader_err:
                 print(f"Could not get loader info: {loader_err}")
-                
+
             # Print all available templates
             try:
                 all_templates = environment.loader.list_templates()
                 print(f"Available templates: {all_templates}")
             except Exception as templates_err:
                 print(f"Could not list available templates: {templates_err}")
-                
+
             # Add debug info for ARM application
             if getattr(sys, 'frozen', False):
                 print("Running as a PyInstaller bundle")
@@ -281,9 +283,9 @@ def debug_template_rendering():
                 except Exception as path_err:
                     print(f"Error checking paths: {path_err}")
             raise
-    
+
     app.jinja_env.loader.get_source = get_source_wrapper
-    
+
 debug_template_rendering()
 
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_for_sessions')
@@ -347,7 +349,7 @@ def react_spa_catchall(path):
         return app.send_static_file(path) if os.path.exists(os.path.join(static_dir, path)) else ('Not found', 404)
     # Serve React index.html for all other routes (SPA routing)
     return send_from_directory(react_dist_dir, 'index.html')
-    
+
 @app.route('/api/settings', methods=['GET'])
 def api_settings():
     if request.method == 'GET':
@@ -362,7 +364,7 @@ def save_general_settings():
 
     # SECURITY: Only allow unauthenticated access during setup
     # After setup is complete, require authentication
-    from src.primary.auth import user_exists, verify_session, SESSION_COOKIE_NAME
+    from src.primary.auth import verify_session
     from src.primary.utils.database import get_database
 
     db = get_database()
@@ -411,10 +413,10 @@ def save_general_settings():
     general_logger.debug(f"Received general settings data: {data}")
     if 'timezone' in data:
         general_logger.info(f"Timezone setting found: {data.get('timezone')}")
-    
+
     # Ensure auth_mode and bypass flags are consistent
     auth_mode = data.get('auth_mode')
-    
+
     # If auth_mode is explicitly set, ensure the bypass flags match it
     if auth_mode:
         if auth_mode == 'local_bypass':
@@ -426,7 +428,7 @@ def save_general_settings():
         elif auth_mode == 'login':
             data['local_access_bypass'] = False
             data['proxy_auth_bypass'] = False
-    
+
     # Handle timezone changes automatically with validation
     timezone_changed = False
     if 'timezone' in data:
@@ -434,21 +436,21 @@ def save_general_settings():
         current_settings = settings_manager.load_settings('general')
         current_timezone = current_settings.get('timezone', 'UTC')
         new_timezone = data.get('timezone', 'UTC')
-        
+
         # Validate the new timezone
         safe_timezone = settings_manager.get_safe_timezone(new_timezone)
         if safe_timezone != new_timezone:
             general_logger.warning(f"Invalid timezone '{new_timezone}' provided, using '{safe_timezone}' instead")
             data['timezone'] = safe_timezone  # Update the data to save the safe timezone
             new_timezone = safe_timezone
-        
+
         if current_timezone != new_timezone:
             timezone_changed = True
             general_logger.info(f"Timezone changed from {current_timezone} to {new_timezone}")
-    
+
     # Save general settings
     success = settings_manager.save_settings('general', data)
-    
+
     if success:
         # Apply timezone change if needed
         if timezone_changed:
@@ -469,7 +471,7 @@ def save_general_settings():
             except Exception as e:
                 general_logger.error(f"Error applying timezone: {e}")
                 # Continue anyway - settings were still saved
-        
+
         # Update expiration timing from general settings if applicable
         try:
             new_hours = int(data.get('stateful_management_hours'))
@@ -481,10 +483,10 @@ def save_general_settings():
             pass
         except Exception as e:
             general_logger.error(f"Error updating expiration timing: {e}")
-        
+
         # Update logging levels immediately when general settings are changed
         update_logging_levels()
-        
+
         # Return all settings
         return jsonify(settings_manager.get_all_settings())
     else:
@@ -495,10 +497,10 @@ def test_notification():
     """Test notification endpoint with enhanced Windows debugging"""
     import platform
     web_logger = get_logger("web_server")
-    
+
     try:
-        from src.primary.notification_manager import send_notification, get_notification_config, apprise_import_error
-        
+        from src.primary.notification_manager import apprise_import_error, get_notification_config, send_notification
+
         # Enhanced debugging for Windows issues
         system_info = {
             "platform": platform.system(),
@@ -506,9 +508,9 @@ def test_notification():
             "python_version": platform.python_version(),
             "apprise_available": apprise_import_error is None
         }
-        
+
         web_logger.info(f"Test notification requested on {system_info}")
-        
+
         # Check for Apprise import issues first (common Windows problem)
         if apprise_import_error:
             error_msg = f"Apprise library not available: {apprise_import_error}"
@@ -516,22 +518,22 @@ def test_notification():
                 error_msg += " (Common on Windows - try: pip install apprise)"
             web_logger.error(error_msg)
             return jsonify({
-                "success": False, 
+                "success": False,
                 "error": error_msg,
                 "system_info": system_info
             }), 500, {'Content-Type': 'application/json'}
-        
+
         # Get the user's configured notification level
         config = get_notification_config()
         user_level = config.get('level', 'info')
-        
+
         # Send a test notification using the user's configured level
         success = send_notification(
             title="🧪 Huntarr Test Notification",
             message="This is a test notification to verify your Apprise configuration is working correctly! If you see this, your notifications are set up properly. 🎉",
             level=user_level
         )
-        
+
         if success:
             web_logger.info(f"Test notification sent successfully on {platform.system()}")
             return jsonify({"success": True, "message": "Test notification sent successfully!"}), 200, {'Content-Type': 'application/json'}
@@ -541,16 +543,16 @@ def test_notification():
                 error_msg += " On Windows, ensure Apprise is properly installed and all dependencies are available."
             web_logger.warning(f"Test notification failed: {error_msg}")
             return jsonify({
-                "success": False, 
+                "success": False,
                 "error": error_msg,
                 "system_info": system_info
             }), 500, {'Content-Type': 'application/json'}
-            
+
     except Exception as e:
-        error_msg = f"Error sending test notification: {str(e)}"
+        error_msg = f"Error sending test notification: {e!s}"
         web_logger.error(f"{error_msg} | System: {platform.system()}")
         return jsonify({
-            "success": False, 
+            "success": False,
             "error": error_msg,
             "system_info": {
                 "platform": platform.system(),
@@ -561,39 +563,39 @@ def test_notification():
 @app.route('/api/settings/<app_name>', methods=['GET', 'POST'])
 def handle_app_settings(app_name):
     web_logger = get_logger("web_server")
-    
+
     # Validate app_name
     if app_name not in settings_manager.KNOWN_APP_TYPES:
         return jsonify({"success": False, "error": f"Unknown application type: {app_name}"}), 400
-    
+
     if request.method == 'GET':
         # Return settings for the specific app
         app_settings = settings_manager.load_settings(app_name)
         return jsonify(app_settings)
-    
+
     elif request.method == 'POST':
         # Make sure we have data
         if not request.is_json:
             return jsonify({"success": False, "error": "Expected JSON data"}), 400
-        
+
         data = request.json
         # Auto-save request received - debug spam removed
-        
+
         # Clean URLs in the data before saving
         if 'instances' in data and isinstance(data['instances'], list):
             for instance in data['instances']:
-                if 'api_url' in instance and instance['api_url']:
+                if instance.get('api_url'):
                     # Remove trailing slashes and special characters
                     instance['api_url'] = instance['api_url'].strip().rstrip('/').rstrip('\\')
-        elif 'api_url' in data and data['api_url']:
+        elif data.get('api_url'):
             # For apps that don't use instances array
             data['api_url'] = data['api_url'].strip().rstrip('/').rstrip('\\')
-        
+
         # Settings cleaned - debug spam removed
-        
+
         # Save the app settings
         success = settings_manager.save_settings(app_name, data)
-        
+
         if success:
             # Auto-save enabled - no need to log every successful save
             return jsonify({"success": True})
@@ -667,15 +669,15 @@ def api_app_status(app_name):
     web_logger = get_logger("web_server")
     response_data = {"configured": False, "connected": False} # Default for non-Sonarr apps
     status_code = 200
-    
+
     # First validate the app name
     if app_name not in settings_manager.KNOWN_APP_TYPES:
         web_logger.warning(f"Status check requested for invalid app name: {app_name}")
         return jsonify({"configured": False, "connected": False, "error": "Invalid app name"}), 400
-    
+
     try:
         if app_name in ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros']:
-            # --- Multi-Instance Status Check --- # 
+            # --- Multi-Instance Status Check --- #
             connected_count = 0
             total_configured = 0
             try:
@@ -683,17 +685,17 @@ def api_app_status(app_name):
                 module_name = f'src.primary.apps.{app_name}'
                 instances_module = importlib.import_module(module_name)
                 api_module = importlib.import_module(f'{module_name}.api')
-                
+
                 if hasattr(instances_module, 'get_configured_instances'):
-                    get_instances_func = getattr(instances_module, 'get_configured_instances')
+                    get_instances_func = instances_module.get_configured_instances
                     instances = get_instances_func()
                     total_configured = len(instances)
                     api_timeout = settings_manager.get_setting(app_name, "api_timeout", 10) # Get global timeout
-                    
+
                     if total_configured > 0:
                         web_logger.debug(f"Checking connection for {total_configured} {app_name.capitalize()} instances...")
                         if hasattr(api_module, 'check_connection'):
-                            check_connection_func = getattr(api_module, 'check_connection')
+                            check_connection_func = api_module.check_connection
                             for instance in instances:
                                 inst_url = instance.get("api_url")
                                 inst_key = instance.get("api_key")
@@ -706,21 +708,17 @@ def api_app_status(app_name):
                                     else:
                                         web_logger.debug(f"{app_name.capitalize()} instance '{inst_name}' connection check failed.")
                                 except Exception as e:
-                                    web_logger.error(f"Error checking connection for {app_name.capitalize()} instance '{inst_name}': {str(e)}")
+                                    web_logger.error(f"Error checking connection for {app_name.capitalize()} instance '{inst_name}': {e!s}")
                         else:
                             web_logger.warning(f"check_connection function not found in {app_name} API module")
-                
+
                 # Prepare multi-instance response
                 response_data = {"total_configured": total_configured, "connected_count": connected_count}
             except Exception as e:
-                web_logger.error(f"Failed to import {app_name} modules for status check: {e}")
-                response_data = {"total_configured": 0, "connected_count": 0, "error": "Import Error"}
-                status_code = 500
-            except Exception as e:
                 web_logger.error(f"Error during {app_name} multi-instance status check: {e}", exc_info=True)
-                response_data = {"total_configured": total_configured, "connected_count": connected_count, "error": "Check Error"}
+                response_data = {"total_configured": 0, "connected_count": 0, "error": "Check Error"}
                 status_code = 500
-                
+
         else:
             # --- Legacy/Single Instance Status Check (for other apps) --- #
             api_url = settings_manager.get_api_url(app_name)
@@ -733,9 +731,9 @@ def api_app_status(app_name):
                 try:
                     module_path = f'src.primary.apps.{app_name}.api'
                     api_module = importlib.import_module(module_path)
-                    
+
                     if hasattr(api_module, 'check_connection'):
-                        check_connection_func = getattr(api_module, 'check_connection')
+                        check_connection_func = api_module.check_connection
                         # Use a short timeout to prevent long waits
                         is_connected = check_connection_func(api_url, api_key, min(api_timeout, 5))
                     else:
@@ -744,16 +742,16 @@ def api_app_status(app_name):
                     web_logger.error(f"Could not import API module for {app_name}")
                     is_connected = False # Ensure connection is false on import error
                 except Exception as e:
-                    web_logger.error(f"Error checking connection for {app_name}: {str(e)}")
+                    web_logger.error(f"Error checking connection for {app_name}: {e!s}")
                     is_connected = False # Ensure connection is false on check error
-            
+
             # Prepare legacy response format
             response_data = {"configured": is_configured, "connected": is_connected}
-        
+
         return jsonify(response_data), status_code
-    
+
     except Exception as e:
-        web_logger.error(f"Unexpected error in status check for {app_name}: {str(e)}", exc_info=True)
+        web_logger.error(f"Unexpected error in status check for {app_name}: {e!s}", exc_info=True)
         # Return a valid response even on error to prevent UI issues
         return jsonify({"configured": False, "connected": False, "error": "Internal error"}), 200
 
@@ -768,17 +766,17 @@ def apply_timezone_setting():
 
     if not timezone:
         return jsonify({"success": False, "error": "No timezone specified"}), 400
-        
+
     web_logger.info(f"Applying timezone setting: {timezone}")
-    
+
     # Save the timezone to general settings
     general_settings = settings_manager.load_settings("general")
     general_settings["timezone"] = timezone
     settings_manager.save_settings("general", general_settings)
-    
+
     # Apply the timezone to the container
     success = settings_manager.apply_timezone(timezone)
-    
+
     if success:
         return jsonify({"success": True, "message": f"Timezone set to {timezone}. Container restart may be required for full effect."})
     else:
@@ -789,22 +787,22 @@ def api_get_hourly_caps():
     """Get hourly API usage caps for each app"""
     try:
         # Import necessary functions
-        from src.primary.stats_manager import load_hourly_caps
         from src.primary.settings_manager import load_settings
-        
+        from src.primary.stats_manager import load_hourly_caps
+
         # Get the logger
         web_logger = get_logger("web_server")
-        
+
         # Load the current hourly caps
         caps = load_hourly_caps()
-        
+
         # Get app-specific hourly cap limits
         app_limits = {}
         apps = ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros']
         for app in apps:
             app_settings = load_settings(app)
             app_limits[app] = app_settings.get('hourly_cap', 20)  # Default to 20 if not set
-        
+
         return jsonify({
             "success": True,
             "caps": caps,
@@ -824,28 +822,28 @@ def api_reset_stats_public():
     try:
         data = request.json or {}
         app_type = data.get('app_type')
-        
+
         # Get logger for logging the reset action
         web_logger = get_logger("web_server")
-        
+
         # Import the reset_stats function
         from src.primary.stats_manager import reset_stats
-        
+
         if app_type:
             web_logger.info(f"Resetting statistics for app (public): {app_type}")
             reset_success = reset_stats(app_type)
         else:
             web_logger.info("Resetting all media statistics (public)")
             reset_success = reset_stats(None)
-        
+
         if reset_success:
             return jsonify({"success": True, "message": "Statistics reset successfully"}), 200
         else:
             return jsonify({"success": False, "error": "Failed to reset statistics"}), 500
-        
+
     except Exception as e:
         web_logger = get_logger("web_server")
-        web_logger.error(f"Error resetting statistics (public): {str(e)}")
+        web_logger.error(f"Error resetting statistics (public): {e!s}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/version.txt')
@@ -889,17 +887,17 @@ def api_get_app_cycle_status(app_name):
 def reset_app_cycle(app_name):
     """
     Manually trigger a reset of the cycle for a specific app.
-    
+
     Args:
         app_name: The name of the app (sonarr, radarr, lidarr, readarr, etc.)
-    
+
     Returns:
         JSON response with success/error status
     """
     # Make sure to initialize web_logger if it's not available in this scope
     web_logger = get_logger("web_server")
     web_logger.info(f"Manual cycle reset requested for {app_name} via API")
-    
+
     # Check if app name is valid
     if app_name not in ['sonarr', 'radarr', 'lidarr', 'readarr', 'whisparr', 'eros']:
         return jsonify({
@@ -914,14 +912,14 @@ def reset_app_cycle(app_name):
             'success': False,
             'error': f"{app_name} is not configured"
         }), 400
-        
+
     try:
         # Trigger cycle reset using database
         from src.primary.utils.database import get_database
-        
+
         db = get_database()
         success = db.create_reset_request(app_name)
-        
+
         if success:
             web_logger.info(f"Created reset request for {app_name}")
         else:

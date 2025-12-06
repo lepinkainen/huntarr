@@ -21,7 +21,7 @@ Previously duplicated functions (~800+ lines total):
 import json
 import random
 import time
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
 
 from src.primary.apps.base.api_client import ArrAPIClient
 
@@ -77,14 +77,14 @@ class PaginationHelper:
         count: int,
         monitored_only: bool = True,
         page_size: int = 100,
-        additional_params: Optional[Dict] = None,
-        filter_func: Optional[Callable[[Dict], bool]] = None,
+        additional_params: dict | None = None,
+        filter_func: Callable[[dict], bool] | None = None,
         max_retries: int = 2,
         retry_delay: int = 3,
         include_series: bool = False,
         include_artist: bool = False,
         include_author: bool = False
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Get a random sample of records by selecting a random page.
 
@@ -239,15 +239,15 @@ class PaginationHelper:
         endpoint: str,
         monitored_only: bool = True,
         page_size: int = 1000,
-        additional_params: Optional[Dict] = None,
-        filter_func: Optional[Callable[[Dict], bool]] = None,
+        additional_params: dict | None = None,
+        filter_func: Callable[[dict], bool] | None = None,
         max_retries: int = 2,
         retry_delay: int = 3,
         include_series: bool = False,
         include_artist: bool = False,
         include_author: bool = False,
         max_pages: int = 1000
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Fetch all records across all pages.
 
@@ -376,7 +376,7 @@ def create_pagination_helper(api_client: ArrAPIClient) -> PaginationHelper:
 
 # Common filter functions for reuse across apps
 
-def create_monitored_filter(series_key: str = 'series', item_key: str = None) -> Callable[[Dict], bool]:
+def create_monitored_filter(series_key: str = 'series', item_key: str | None = None) -> Callable[[dict], bool]:
     """
     Create a filter function for monitored items.
 
@@ -387,7 +387,7 @@ def create_monitored_filter(series_key: str = 'series', item_key: str = None) ->
     Returns:
         Filter function that returns True for monitored items
     """
-    def filter_func(record: Dict) -> bool:
+    def filter_func(record: dict) -> bool:
         # Check parent entity is monitored
         parent = record.get(series_key, {})
         if not parent.get('monitored', False):
@@ -399,24 +399,24 @@ def create_monitored_filter(series_key: str = 'series', item_key: str = None) ->
     return filter_func
 
 
-def sonarr_monitored_filter(record: Dict) -> bool:
+def sonarr_monitored_filter(record: dict) -> bool:
     """Filter for monitored Sonarr episodes (series and episode both monitored)."""
     return (record.get('series', {}).get('monitored', False) and
             record.get('monitored', False))
 
 
-def radarr_monitored_filter(record: Dict) -> bool:
+def radarr_monitored_filter(record: dict) -> bool:
     """Filter for monitored Radarr movies."""
     return record.get('monitored', False)
 
 
-def lidarr_monitored_filter(record: Dict) -> bool:
+def lidarr_monitored_filter(record: dict) -> bool:
     """Filter for monitored Lidarr albums (artist and album both monitored)."""
     return (record.get('artist', {}).get('monitored', False) and
             record.get('monitored', False))
 
 
-def readarr_monitored_filter(record: Dict) -> bool:
+def readarr_monitored_filter(record: dict) -> bool:
     """Filter for monitored Readarr books (author and book both monitored)."""
     return (record.get('author', {}).get('monitored', False) and
             record.get('monitored', False))

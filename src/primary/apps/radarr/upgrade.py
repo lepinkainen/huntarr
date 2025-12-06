@@ -4,17 +4,18 @@ Quality Upgrade Processing for Radarr
 Handles searching for movies that need quality upgrades in Radarr
 """
 
-import time
-import random
 import datetime
-from typing import List, Dict, Any, Set, Callable
-from src.primary.utils.logger import get_logger
+import random
+from collections.abc import Callable
+from typing import Any
+
 from src.primary.apps.radarr import api as radarr_api
-from src.primary.stats_manager import increment_stat, increment_stat_only, check_hourly_cap_exceeded
-from src.primary.stateful_manager import is_processed, add_processed_id
-from src.primary.utils.history_utils import log_processed_media
 from src.primary.settings_manager import get_advanced_setting, load_settings
+from src.primary.stateful_manager import add_processed_id, is_processed
+from src.primary.stats_manager import check_hourly_cap_exceeded, increment_stat_only
 from src.primary.utils.date_utils import parse_date
+from src.primary.utils.history_utils import log_processed_media
+from src.primary.utils.logger import get_logger
 
 # Get logger for the app
 radarr_logger = get_logger("radarr")
@@ -22,59 +23,58 @@ radarr_logger = get_logger("radarr")
 def should_delay_movie_search(release_date_str: str, delay_days: int) -> bool:
     """
     Check if a movie search should be delayed based on its release date.
-    
+
     Args:
         release_date_str: Movie release date in ISO format (e.g., '2024-01-15T00:00:00Z')
         delay_days: Number of days to delay search after release date
-        
+
     Returns:
         True if search should be delayed, False if ready to search
     """
     if delay_days <= 0:
         return False  # No delay configured
-        
+
     if not release_date_str:
         return False  # No release date, don't delay (process immediately)
-        
+
     try:
         # Parse the release date
         release_date = parse_date(release_date_str)
         if not release_date:
             return False  # Invalid date, don't delay
-            
+
         current_time = datetime.datetime.now(datetime.timezone.utc)
-        
+
         # Calculate when search should start (release date + delay)
         search_start_time = release_date + datetime.timedelta(days=delay_days)
-        
+
         # Return True if we should still delay (current time < search start time)
         return current_time < search_start_time
-        
+
     except Exception as e:
         radarr_logger.warning(f"Could not parse release date '{release_date_str}' for delay calculation: {e}")
         return False  # Don't delay if we can't parse the date
 
 def process_cutoff_upgrades(
-    app_settings: Dict[str, Any],
+    app_settings: dict[str, Any],
     stop_check: Callable[[], bool] # Function to check if stop is requested
 ) -> bool:
     """
     Process quality cutoff upgrades for Radarr based on settings.
-    
+
     Args:
         app_settings: Dictionary containing all settings for Radarr
         stop_check: A function that returns True if the process should stop
-        
+
     Returns:
         True if any movies were processed for upgrades, False otherwise.
     """
     radarr_logger.info("Starting quality cutoff upgrades processing cycle for Radarr.")
-    processed_any = False
-    
+
     # Load settings to check if tagging is enabled
     radarr_settings = load_settings("radarr")
     tag_processed_items = radarr_settings.get("tag_processed_items", True)
-    
+
     # Extract necessary settings
     api_url = app_settings.get("api_url", "").strip()
     api_key = app_settings.get("api_key", "").strip()
@@ -83,31 +83,31 @@ def process_cutoff_upgrades(
     # skip_movie_refresh setting removed as it was a performance bottleneck
     hunt_upgrade_movies = app_settings.get("hunt_upgrade_movies", 0)
     skip_future_releases = app_settings.get("skip_future_releases", True)
-    
+
     # Use advanced settings from database for command operations
-    command_wait_delay = get_advanced_setting("command_wait_delay", 1)
-    command_wait_attempts = get_advanced_setting("command_wait_attempts", 600)
-    
+    get_advanced_setting("command_wait_delay", 1)
+    get_advanced_setting("command_wait_attempts", 600)
+
     # Get instance name - check for instance_name first, fall back to legacy "name" key if needed
     instance_name = app_settings.get("instance_name", app_settings.get("name", "Radarr Default"))
-    
+
     # Get movies eligible for upgrade
     radarr_logger.info("Retrieving movies eligible for cutoff upgrade...")
     upgrade_eligible_data = radarr_api.get_cutoff_unmet_movies_random_page(
         api_url, api_key, api_timeout, monitored_only, count=50
     )
-    
+
     if not upgrade_eligible_data:
         radarr_logger.info("No movies found eligible for upgrade or error retrieving them.")
         return False
-        
+
     radarr_logger.info(f"Found {len(upgrade_eligible_data)} movies eligible for upgrade.")
 
     # Skip future releases if enabled (matching missing movies logic)
     if skip_future_releases:
         radarr_logger.info("Filtering out future releases from upgrades...")
         now = datetime.datetime.now(datetime.timezone.utc)
-        
+
         filtered_movies = []
         skipped_count = 0
         no_date_count = 0
@@ -115,7 +115,7 @@ def process_cutoff_upgrades(
             movie_id = movie.get('id')
             movie_title = movie.get('title', 'Unknown Title')
             release_date_str = movie.get('releaseDate')
-            
+
             if release_date_str:
                 release_date = parse_date(release_date_str)
                 if release_date:
@@ -145,7 +145,7 @@ def process_cutoff_upgrades(
                 else:
                     radarr_logger.debug(f"Skipping movie ID {movie_id} ('{movie_title}') for upgrade - no releaseDate field and process_no_release_dates is disabled")
                     no_date_count += 1
-        
+
         radarr_logger.info(f"Filtered out {skipped_count} future releases and {no_date_count} movies with no release dates from upgrades")
         radarr_logger.debug(f"After filtering: {len(filtered_movies)} movies remaining from {len(upgrade_eligible_data)} original")
         upgrade_eligible_data = filtered_movies
@@ -156,21 +156,21 @@ def process_cutoff_upgrades(
     release_date_delay_days = app_settings.get("release_date_delay_days", 0)
     if release_date_delay_days > 0:
         radarr_logger.info(f"Applying {release_date_delay_days}-day release date delay for upgrades...")
-        original_count = len(upgrade_eligible_data)
+        len(upgrade_eligible_data)
         delayed_movies = []
         delayed_count = 0
-        
+
         for movie in upgrade_eligible_data:
             movie_id = movie.get('id')
             movie_title = movie.get('title', 'Unknown Title')
             release_date_str = movie.get('releaseDate')
-            
+
             if should_delay_movie_search(release_date_str, release_date_delay_days):
                 delayed_count += 1
                 radarr_logger.debug(f"Delaying upgrade search for movie ID {movie_id} ('{movie_title}') - released {release_date_str}, waiting {release_date_delay_days} days")
             else:
                 delayed_movies.append(movie)
-        
+
         upgrade_eligible_data = delayed_movies
         if delayed_count > 0:
             radarr_logger.info(f"Delayed {delayed_count} movies for upgrades due to {release_date_delay_days}-day release date delay setting.")
@@ -187,25 +187,25 @@ def process_cutoff_upgrades(
             unprocessed_movies.append(movie)
         else:
             radarr_logger.debug(f"Skipping already processed movie ID: {movie_id}")
-    
+
     radarr_logger.info(f"Found {len(unprocessed_movies)} unprocessed movies for upgrade out of {len(upgrade_eligible_data)} total.")
-    
+
     if not unprocessed_movies:
         radarr_logger.info("No upgradeable movies found to process (after filtering already processed). Skipping.")
         return False
-        
+
     radarr_logger.info(f"Randomly selecting up to {hunt_upgrade_movies} movies for upgrade search.")
     movies_to_process = random.sample(unprocessed_movies, min(hunt_upgrade_movies, len(unprocessed_movies)))
-        
+
     radarr_logger.info(f"Selected {len(movies_to_process)} movies to search for upgrades.")
     processed_count = 0
     processed_something = False
-    
+
     for movie in movies_to_process:
         if stop_check():
             radarr_logger.info("Stop signal received, aborting Radarr upgrade cycle.")
             break
-        
+
         # Check API limit before processing each movie
         try:
             if check_hourly_cap_exceeded("radarr"):
@@ -214,25 +214,25 @@ def process_cutoff_upgrades(
         except Exception as e:
             radarr_logger.error(f"Error checking hourly API cap: {e}")
             # Continue processing if cap check fails - safer than stopping
-            
+
         movie_id = movie.get("id")  # Radarr internal ID for API calls
         tmdb_id = movie.get("tmdbId")  # TMDB ID for Hunt Manager links
         movie_title = movie.get("title")
         movie_year = movie.get("year")
 
         radarr_logger.info(f"Processing upgrade for movie: \"{movie_title}\" ({movie_year}) (Movie ID: {movie_id}, TMDB: {tmdb_id})")
-        
+
         # Refresh functionality has been removed as it was identified as a performance bottleneck
-        
+
         # Search for cutoff upgrade
-        radarr_logger.info(f"  - Searching for quality upgrade...")
+        radarr_logger.info("  - Searching for quality upgrade...")
         search_result = radarr_api.movie_search(api_url, api_key, api_timeout, [movie_id])
-        
+
         if search_result:
-            radarr_logger.info(f"  - Successfully triggered search for quality upgrade.")
+            radarr_logger.info("  - Successfully triggered search for quality upgrade.")
             add_processed_id("radarr", instance_name, str(movie_id))
             increment_stat_only("radarr", "upgraded")
-            
+
             # Tag the movie if enabled
             if tag_processed_items:
                 from src.primary.settings_manager import get_custom_tag
@@ -242,18 +242,18 @@ def process_cutoff_upgrades(
                     radarr_logger.debug(f"Tagged movie {movie_id} with '{custom_tag}'")
                 except Exception as e:
                     radarr_logger.warning(f"Failed to tag movie {movie_id} with '{custom_tag}': {e}")
-            
+
             # Log to history so the upgrade appears in the history UI (use TMDB ID for links)
             media_name = f"{movie_title} ({movie_year})"
             log_processed_media("radarr", media_name, tmdb_id, instance_name, "upgrade")
             radarr_logger.debug(f"Logged quality upgrade to history for movie (TMDB: {tmdb_id})")
-            
+
             processed_count += 1
             processed_something = True
         else:
-            radarr_logger.warning(f"  - Failed to trigger search for quality upgrade.")
-            
+            radarr_logger.warning("  - Failed to trigger search for quality upgrade.")
+
     # Log final status
     radarr_logger.info(f"Completed processing {processed_count} movies for quality upgrades.")
-    
+
     return processed_something
