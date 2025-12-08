@@ -1,7 +1,9 @@
 name: Build and Push Docker Image
 
 on:
-  workflow_dispatch:  # Manual trigger only
+  push:
+    branches: [main]
+  workflow_dispatch:
     inputs:
       tags:
         description: 'Comma-separated tags (e.g., latest,v1.0.0)'
@@ -36,8 +38,12 @@ jobs:
       - name: Generate tag list
         id: tags
         run: |
+          # Use input tags for manual trigger, default to 'latest' for push
+          INPUT_TAGS="${{ github.event.inputs.tags }}"
+          TAGS_INPUT="${INPUT_TAGS:-latest}"
+
           TAGS=""
-          IFS=',' read -ra TAG_ARRAY <<< "${{ github.event.inputs.tags }}"
+          IFS=',' read -ra TAG_ARRAY <<< "$TAGS_INPUT"
           for tag in "${TAG_ARRAY[@]}"; do
             tag=$(echo "$tag" | xargs)  # trim whitespace
             TAGS="${TAGS}ghcr.io/adamflagg/huntarr:${tag}"$'\n'
